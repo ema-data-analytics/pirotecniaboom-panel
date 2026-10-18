@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Pirotecnia Boom · Gestión (prueba)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: barra superior fija con estado de caja + pestañas por área; cada área es una hoja de trabajo con formularios a la izquierda y listados a la derecha */
+:root{
+  --bg:#f3f4f8; --panel:#ffffff; --ink:#15203a; --muted:#5c6680; --line:#dfe3ec; --soft:#eef1f7;
+  --accent:#d9480f; --accent-ink:#ffffff; --spark:#b7791f; --ok:#1f7a4d; --ok-bg:#e3f4ea; --bad:#b42318; --bad-bg:#fde8e6; --warn:#8a5a00; --warn-bg:#fff3d6;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif; --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1424; --panel:#141d31; --ink:#e7ebf5; --muted:#9aa5bf; --line:#26314a; --soft:#1a2440;
+  --accent:#ff7a3d; --accent-ink:#1a0d05; --spark:#e6b54a; --ok:#5fd39a; --ok-bg:#12321f; --bad:#ff8a7a; --bad-bg:#3a1714; --warn:#f2c35a; --warn-bg:#352a0e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1424; --panel:#141d31; --ink:#e7ebf5; --muted:#9aa5bf; --line:#26314a; --soft:#1a2440;
+  --accent:#ff7a3d; --accent-ink:#1a0d05; --spark:#e6b54a; --ok:#5fd39a; --ok-bg:#12321f; --bad:#ff8a7a; --bad-bg:#3a1714; --warn:#f2c35a; --warn-bg:#352a0e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.02em;text-transform:uppercase;display:flex;align-items:baseline;gap:8px}
+.brand b{color:var(--accent)}
+.brand small{font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.grow{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--muted);padding:6px 12px;font:600 13px var(--body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:thin}
+nav.tabs button{border:0;background:transparent;color:var(--muted);font:600 15px var(--display);letter-spacing:.04em;text-transform:uppercase;padding:10px 12px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.note{background:var(--warn-bg);color:var(--warn);font-size:13px;padding:6px 0}
+main{padding-block:18px 60px}
+h2{font-family:var(--display);font-size:26px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
+h3{font-family:var(--display);font-size:18px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em}
+.lead{color:var(--muted);margin:0 0 16px;max-width:70ch}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:16px;align-items:start}
+.grid.even{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card.hl{border-color:var(--accent)}
+form{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.row > *{flex:1 1 120px;min-width:0}
+label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+label.chk{flex-direction:row;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);font-weight:500}
+input,select,textarea{font:500 15px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 9px;width:100%;min-width:0}
+input[type=checkbox]{width:auto}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.b{font:600 15px var(--body);border-radius:6px;padding:9px 14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
+button.b.p{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.b.s{padding:5px 9px;font-size:13px}
+button.b.d{color:var(--bad)}
+button.b:disabled{opacity:.55;cursor:progress}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.sel td{background:var(--soft)}
+.muted{color:var(--muted)} .small{font-size:13px}
+.tot{display:grid;grid-template-columns:1fr auto;gap:2px 16px;font-variant-numeric:tabular-nums}
+.tot .big{font-family:var(--display);font-size:30px;font-weight:700;color:var(--accent)}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;padding:2px 6px;background:var(--soft);color:var(--muted)}
+.tag.ok{background:var(--ok-bg);color:var(--ok)} .tag.bad{background:var(--bad-bg);color:var(--bad)} .tag.warn{background:var(--warn-bg);color:var(--warn)}
+.lines{display:flex;flex-direction:column;gap:8px}
+.line{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;padding:8px;border:1px dashed var(--line);border-radius:6px}
+.line > *{flex:1 1 110px;min-width:0}
+.line > .x{flex:0 0 auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;max-width:min(680px,calc(100vw - 32px));padding:12px 16px;border-radius:8px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.toast.ok{background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok)} .toast.err{background:var(--bad-bg);color:var(--bad);border:1px solid var(--bad)}
+.empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:6px}
+.inl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.inl input,.inl select{width:auto;flex:1 1 140px}
+.gate{max-width:640px;margin:60px auto}
+@media (prefers-reduced-motion:no-preference){button.b{transition:filter .12s} button.b:hover{filter:brightness(1.06)}}
+</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <div class="brand">Pirotecnia <b>Boom</b> <small>Gestión · pruebas</small></div>
+    <div class="grow"></div>
+    <span id="cajaPill" class="pill warn" hidden><i></i>Caja…</span>
+    <span id="usr" class="inl" hidden><span id="usrNom" class="small muted"></span><button class="b s" id="salir" type="button">Salir</button></span>
+  </div>
+  <div class="note"><div class="wrap">Versión de PRUEBA. Lo que se cargue acá queda en la base de prueba, no en la real.</div></div>
+  <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav></div>
+</header>
+
+<main class="wrap" id="main">
+  <div class="gate card" id="gate">
+    <h2>Ingresar</h2>
+    <p class="lead">Sistema de gestión de Pirotecnia Boom.</p>
+    <form id="fLogin" autocomplete="on">
+      <label>Usuario<input id="lUsr" name="username" autocomplete="username" required autocapitalize="none" spellcheck="false"></label>
+      <label>Contraseña<input id="lPass" name="password" type="password" autocomplete="current-password" required></label>
+      <p id="loginMsg" class="small" style="color:var(--bad);margin:0" hidden></p>
+      <button class="b p" type="submit">Ingresar</button>
+    </form>
+  </div>
+  <section id="view" hidden></section>
+</main>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+
+"use strict";
+const SB_URL = "https://ounzsqhxzdluqkcszkes.supabase.co";
+const SB_KEY = "sb_publishable_g5SGDg6taIq-O8-skchu0w_Zk1Ze1_W";
+const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+let M = null, TAB = "caja", USUARIO = null;
+try { const t = localStorage.getItem("pb_tab"); if (t) TAB = t; } catch (e) {}
+
+/* ---------- utilidades ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = n => (n === null || n === undefined || n === "") ? "—" : "$ " + Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const qty = n => Number(n || 0).toLocaleString("es-AR", { maximumFractionDigits: 3 });
+const fdate = d => d ? new Date(d.length === 10 ? d + "T12:00:00" : d).toLocaleDateString("es-AR") : "—";
+const fdt = d => d ? new Date(d).toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random());
+const hoy = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+function lit(s) { let t = "q" + Math.random().toString(36).slice(2, 8); while (String(s).includes("$" + t + "$")) t += "x"; return "$" + t + "$" + s + "$" + t + "$"; }
+const T = s => (s === null || s === undefined || s === "") ? "null" : lit(String(s));
+const J = o => lit(JSON.stringify(o)) + "::jsonb";
+function N(v, campo = "importe") { const n = Number(String(v).replace(",", ".")); if (v === "" || v === null || !Number.isFinite(n)) throw new Error("Revisá el campo " + campo + ": tiene que ser un número."); return String(n); }
+const num = v => { const n = Number(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? n : null; };
+const es_dueno = () => !!(M && M.es_dueno);
+
+let toastT;
+function toast(msg, kind = "ok") { const t = $("#toast"); t.textContent = msg; t.className = "toast " + kind; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, kind === "err" ? 9000 : 4500); }
+
+function errMsg(e) {
+  const t = (e && (e.message || e.error_description || e.msg)) || "";
+  if (/Failed to fetch|NetworkError|Load failed/i.test(t)) return "Sin conexión con el servidor. Revisá internet y probá de nuevo.";
+  if (/JWT expired|invalid JWT|not authenticated/i.test(t)) return "La sesión venció. Volvé a ingresar.";
+  if (/permission denied|row-level security/i.test(t)) return "Tu usuario no tiene permiso para esto.";
+  return t || "No se pudo completar la operación.";
+}
+
+/* Llama a una función de la base. Los permisos los aplica la base según el usuario que ingresó. */
+async function rpc(fn, args, comoPublico) {
+  const cli = comoPublico ? pub : sb;
+  const { data, error } = await cli.rpc(fn, args || {});
+  if (error) throw error;
+  return data;
+}
+async function tabla(q) { const { data, error } = await q; if (error) throw error; return data; }
+const pub = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false, autoRefreshToken: false, storageKey: "pb_publico" } });
+
+async function run(btn, fn) {
+  if (btn) btn.disabled = true;
+  try { await fn(); } catch (e) { toast(errMsg(e), "err"); console.log(e); }
+  finally { if (btn) btn.disabled = false; }
+}
+function onForm(form, fn) { form.addEventListener("submit", ev => { ev.preventDefault(); run(form.querySelector("button[type=submit]"), () => fn(new FormData(form), form)); }); }
+const opts = (arr, val, lab, sel, vacio) => (vacio ? '<option value="">' + esc(vacio) + "</option>" : "") + arr.map(o => '<option value="' + esc(o[val]) + '"' + (String(o[val]) === String(sel) ? " selected" : "") + ">" + esc(typeof lab === "function" ? lab(o) : o[lab]) + "</option>").join("");
+const tag = (txt, k = "") => '<span class="tag ' + k + '">' + esc(txt) + "</span>";
+const ESTADO_K = { cartera: "ok", depositado: "warn", acreditado: "ok", endosado: "", rechazado: "bad", emitido: "warn", debitado: "", anulado: "bad", anulada: "bad", abierto: "warn", confirmado: "ok", vencido: "bad", cancelado: "bad", registrado: "ok", activo: "ok", inactivo: "bad" };
+
+/* ---------- datos compartidos ---------- */
+const D = {};
+async function cargar(...q) {
+  const map = { productos: "panel_productos", clientes: "panel_clientes", proveedores: "panel_proveedores", cuentas: "panel_cuentas", cheques: "panel_cheques" };
+  for (const k of q) D[k] = await rpc(map[k]);
+}
+async function refrescarCaja() {
+  try {
+    const c = await rpc("panel_caja"); D.caja = c;
+    const p = $("#cajaPill");
+    if (c && c.abierta) { const ef = (c.resumen || []).find(r => r.medio_pago_id === 1); p.className = "pill ok"; p.innerHTML = "<i></i>Caja abierta · efectivo " + money(ef ? ef.saldo : 0); }
+    else { p.className = "pill bad"; p.innerHTML = "<i></i>Caja cerrada"; }
+  } catch (e) { $("#cajaPill").className = "pill warn"; $("#cajaPill").innerHTML = "<i></i>Caja: sin dato"; }
+}
+
+/* ---------- componente: medios de pago ---------- */
+function pagosUI(box, modo, total) {
+  const medios = (M.medios || []).filter(m => modo === "proveedor" ? m.id < 8 && m.tipo !== "tarjeta_credito" : m.id < 8);
+  box.innerHTML = '<div class="lines"></div><button type="button" class="b s" data-add>+ Agregar otro medio</button>';
+  const lines = $(".lines", box);
+  function addLine(pre = {}) {
+    const d = document.createElement("div"); d.className = "line";
+    d.innerHTML = '<label>Medio<select data-k="medio">' + opts(medios, "id", "nombre", pre.medio || 1) + '</select></label>' +
+      '<label>Importe<input data-k="importe" inputmode="decimal" value="' + esc(pre.importe ?? "") + '"></label><div class="extra" style="display:contents"></div>' +
+      '<button type="button" class="b s d x" title="Quitar">✕</button>';
+    lines.appendChild(d);
+    const extra = $(".extra", d);
+    const paint = () => {
+      const m = medios.find(x => String(x.id) === $("[data-k=medio]", d).value) || {};
+      let h = "";
+      const ctas = (D.cuentas || []).filter(c => c.estado === "activa");
+      if (m.tipo === "cheque" && modo === "cliente") h = '<label>N° cheque<input data-k="ch_numero"></label><label>Banco<input data-k="ch_banco"></label><label>Librador<input data-k="ch_librador"></label><label>CUIT librador<input data-k="ch_cuit"></label><label>Fecha de pago<input type="date" data-k="ch_fecha" value="' + hoy() + '"></label><label class="chk"><input type="checkbox" data-k="ch_echeq"> E-cheq</label>';
+      else if (m.tipo === "cheque") {
+        const cart = (D.cheques || []).filter(c => c.tipo === "tercero" && c.estado === "cartera");
+        h = '<label>Cheque<select data-k="ch_cual"><option value="propio">Cheque propio nuevo</option>' + cart.map(c => '<option value="' + c.id + '">De cartera: ' + esc(c.banco + " " + c.numero + " · " + money(c.importe)) + "</option>").join("") + "</select></label>" +
+          '<label>N° (propio)<input data-k="cp_numero"></label><label>Banco (propio)<input data-k="cp_banco"></label><label>Fecha de pago<input type="date" data-k="cp_fecha" value="' + hoy() + '"></label><label>Cuenta<select data-k="cuenta">' + opts(ctas, "id", "nombre", "", "Elegí cuenta") + "</select></label>";
+      }
+      else if (m.tipo === "tarjeta_credito") h = '<label>Cuotas<input data-k="cuotas" inputmode="numeric" value="1"></label>';
+      if (m.tipo && !["efectivo", "cheque"].includes(m.tipo)) h += '<label>Cuenta' + (modo === "proveedor" ? "" : " (opcional)") + '<select data-k="cuenta">' + opts(ctas, "id", "nombre", "", modo === "proveedor" ? "Elegí cuenta" : "Sin cuenta") + "</select></label><label>Referencia<input data-k=\"ref\"></label>";
+      extra.innerHTML = h;
+    };
+    $("[data-k=medio]", d).addEventListener("change", paint); paint();
+    $(".x", d).addEventListener("click", () => d.remove());
+  }
+  $("[data-add]", box).addEventListener("click", () => addLine({}));
+  addLine({ medio: 1, importe: total ?? "" });
+  return {
+    setTotal(t) { const ls = $$(".line", lines); if (ls.length === 1) $("[data-k=importe]", ls[0]).value = t; },
+    reset(t) { lines.innerHTML = ""; addLine({ medio: 1, importe: t ?? "" }); },
+    get() {
+      return $$(".line", lines).map(d => {
+        const g = k => { const el = $("[data-k=" + k + "]", d); return el ? (el.type === "checkbox" ? el.checked : el.value) : undefined; };
+        const medio = Number(g("medio")); const m = medios.find(x => x.id === medio) || {};
+        const o = { medio_pago_id: medio, importe: Number(N(g("importe"))) };
+        if (g("cuenta")) o.cuenta_id = Number(g("cuenta"));
+        if (g("ref")) o.referencia = g("ref");
+        if (g("cuotas")) o.cuotas = Number(g("cuotas"));
+        if (m.tipo === "cheque" && modo === "cliente") o.cheque = { numero: g("ch_numero"), banco: g("ch_banco"), librador: g("ch_librador"), cuit_librador: g("ch_cuit") || null, fecha_emision: hoy(), fecha_pago: g("ch_fecha"), echeq: g("ch_echeq") };
+        if (m.tipo === "cheque" && modo === "proveedor") {
+          if (g("ch_cual") && g("ch_cual") !== "propio") { o.cheque_id = Number(g("ch_cual")); delete o.cuenta_id; }
+          else o.cheque_propio = { numero: g("cp_numero"), banco: g("cp_banco"), fecha_pago: g("cp_fecha"), cuenta_id: o.cuenta_id || null };
+        }
+        return o;
+      });
+    }
+  };
+}
+
+/* ---------- componente: renglones de productos ---------- */
+function itemsUI(box, campos) {
+  box.innerHTML = '<div class="lines"></div><button type="button" class="b s" data-add>+ Agregar producto</button>';
+  const lines = $(".lines", box);
+  const prods = (D.productos || []).filter(p => p.estado === "activo");
+  function add() {
+    const d = document.createElement("div"); d.className = "line";
+    d.innerHTML = '<label style="flex:3 1 220px">Producto<select data-k="producto">' + opts(prods, "id", p => p.codigo + " · " + p.nombre, "", "Elegí producto") + "</select></label>" +
+      campos.map(c => '<label>' + esc(c.label) + '<input data-k="' + c.k + '" inputmode="decimal" placeholder="' + esc(c.ph || "") + '"' + (c.type ? ' type="' + c.type + '"' : "") + "></label>").join("") +
+      '<button type="button" class="b s d x" title="Quitar">✕</button>';
+    lines.appendChild(d); $(".x", d).addEventListener("click", () => d.remove());
+  }
+  $("[data-add]", box).addEventListener("click", add); add();
+  return { get() { return $$(".line", lines).filter(d => $("[data-k=producto]", d).value).map(d => { const o = { producto_id: Number($("[data-k=producto]", d).value) }; campos.forEach(c => { const v = $("[data-k=" + c.k + "]", d).value; if (v !== "") o[c.k] = c.type === "text" || c.type === "date" ? v : Number(N(v, c.label)); }); return o; }); } };
+}
+
+/* ---------- pestañas ---------- */
+const TABS = [
+  { id: "caja", t: "Caja" }, { id: "vender", t: "Vender" }, { id: "pedidos", t: "Pedidos web" }, { id: "clientes", t: "Clientes" },
+  { id: "productos", t: "Productos y stock" }, { id: "compras", t: "Compras", dueno: true }, { id: "gastos", t: "Gastos" },
+  { id: "cheques", t: "Cheques" }, { id: "bancos", t: "Bancos", dueno: true } ];
+function pintarTabs() {
+  const vis = TABS.filter(t => !t.dueno || es_dueno());
+  if (!vis.find(t => t.id === TAB)) TAB = "caja";
+  $("#tabs").innerHTML = vis.map(t => '<button role="tab" data-tab="' + t.id + '" aria-selected="' + (t.id === TAB) + '">' + esc(t.t) + "</button>").join("");
+  $$("#tabs button").forEach(b => b.addEventListener("click", () => { TAB = b.dataset.tab; try { localStorage.setItem("pb_tab", TAB); } catch (e) {} pintarTabs(); abrir(); }));
+}
+async function abrir() {
+  const v = $("#view"); v.innerHTML = '<div class="empty">Cargando…</div>';
+  try { await VISTAS[TAB](v); } catch (e) { v.innerHTML = '<div class="card"><h3>No se pudo cargar</h3><p>' + esc(errMsg(e)) + '</p><button class="b" id="reint">Reintentar</button></div>'; $("#reint").onclick = abrir; }
+}
+
+const VISTAS = {};
+
+/* ===== CAJA ===== */
+VISTAS.caja = async v => {
+  await refrescarCaja(); const c = D.caja;
+  if (!c || !c.abierta) {
+    v.innerHTML = '<h2>Caja</h2><p class="lead">No hay caja abierta. Para vender de contado, cobrar o pagar en efectivo hay que abrirla. Se abre una caja por día.</p>' +
+      '<div class="grid"><div class="card hl"><h3>Abrir caja</h3><form id="fAbrir"><label>Efectivo con el que arranca<input name="saldo" inputmode="decimal" value="0" required></label><button class="b p" type="submit">Abrir caja</button></form></div>' +
+      '<div class="card"><h3>Última caja</h3>' + (c && c.ultima ? "<p>Caja del " + fdate(c.ultima.fecha) + " · " + tag(c.ultima.estado, ESTADO_K[c.ultima.estado]) + "</p>" : '<p class="muted">Todavía no se abrió ninguna caja.</p>') + "</div></div>";
+    onForm($("#fAbrir"), async f => { await rpc("abrir_caja", { p_saldo_inicial: Number(N(f.get("saldo"))), p_billetes: [], p_puesto: "Caja 1" }); toast("Caja abierta."); abrir(); });
+    return;
+  }
+  const res = c.resumen || [];
+  v.innerHTML = '<h2>Caja del ' + fdate(c.fecha) + '</h2><p class="lead">Lo que entró y salió hoy, por medio de pago. Al cerrar, contás el efectivo y el sistema registra cualquier diferencia.</p>' +
+    '<div class="grid"><div class="col">' +
+    '<div class="card"><h3>Retiro o aporte de efectivo</h3><form id="fMov"><div class="row"><label>Tipo<select name="tipo"><option value="egreso">Retiro</option><option value="ingreso">Aporte</option></select></label><label>Importe<input name="imp" inputmode="decimal" required></label></div><label>Motivo<input name="desc" required placeholder="Ej.: cambio para la caja"></label><button class="b" type="submit">Registrar</button></form></div>' +
+    '<div class="card hl"><h3>Cerrar caja</h3><form id="fCerrar"><label>Efectivo contado<input name="contado" inputmode="decimal" required></label><label>Responsable de la diferencia (si hay)<input name="resp"></label><label>Observaciones<input name="obs"></label><button class="b p" type="submit">Cerrar caja</button></form><div id="cierreRes"></div></div>' +
+    '</div><div class="col"><div class="card"><h3>Resumen por medio</h3><div class="tw"><table><thead><tr><th>Medio</th><th class="n">Entró</th><th class="n">Salió</th><th class="n">Saldo</th></tr></thead><tbody>' +
+    res.map(r => "<tr><td>" + esc(r.medio) + '</td><td class="n">' + money(r.ingresos) + '</td><td class="n">' + money(r.egresos) + '</td><td class="n"><b>' + money(r.saldo) + "</b></td></tr>").join("") +
+    '</tbody></table></div></div><div class="card"><h3>Últimos movimientos</h3><div class="tw"><table><thead><tr><th>Hora</th><th>Detalle</th><th>Medio</th><th class="n">Importe</th></tr></thead><tbody>' +
+    (c.movimientos || []).map(m => "<tr><td>" + fdt(m.fecha) + "</td><td>" + esc(m.descripcion) + "</td><td>" + esc(m.medio) + '</td><td class="n" style="color:var(' + (m.tipo === "ingreso" ? "--ok" : "--bad") + ')">' + (m.tipo === "ingreso" ? "+" : "−") + money(m.importe) + "</td></tr>").join("") +
+    "</tbody></table></div></div></div></div>";
+  onForm($("#fMov"), async (f, form) => { await rpc("movimiento_caja_manual", { p_tipo: f.get("tipo"), p_medio: 1, p_importe: Number(N(f.get("imp"))), p_descripcion: f.get("desc") }); toast("Movimiento registrado."); abrir(); });
+  onForm($("#fCerrar"), async f => {
+    const r = await rpc("cerrar_caja", { p_caja: c.id, p_contado: [{ medio_pago_id: 1, importe: Number(N(f.get("contado"), "efectivo contado")) }], p_billetes: [], p_observaciones: f.get("obs") || null, p_responsable_diferencia: f.get("resp") || null });
+    const ef = (r || []).find(x => x.medio === "Efectivo");
+    toast("Caja cerrada." + (ef && Number(ef.diferencia) !== 0 ? " Diferencia en efectivo: " + money(ef.diferencia) : " Sin diferencias."), ef && Number(ef.diferencia) !== 0 ? "err" : "ok");
+    abrir();
+  });
+};
+
+/* ===== VENDER ===== */
+const VTA = { cart: [], pedido: null, clave: uid(), cot: null };
+VISTAS.vender = async v => {
+  await Promise.all([cargar("productos", "clientes", "cuentas"), refrescarCaja()]);
+  const cf = M.consumidor_final_id;
+  if (!VTA.cliente) VTA.cliente = cf;
+  const ped = VTA.pedido;
+  v.innerHTML = '<h2>Vender</h2><p class="lead">' + (ped ? "Cobrando el pedido <b>" + esc(ped.numero) + "</b> de " + esc(ped.nombre) + ". Se respetan los precios del pedido." : "Venta de mostrador. El total incluye IVA, descuentos por monto y redondeos: se calcula en la base antes de cobrar.") + "</p>" +
+    '<div class="grid"><div class="col"><div class="card" ' + (ped ? "hidden" : "") + '><h3>Productos</h3><input id="buscar" placeholder="Buscar por nombre o código"><div class="tw" style="max-height:420px;overflow:auto;margin-top:8px"><table><thead><tr><th>Producto</th><th class="n">Disp.</th><th class="n">Precio</th><th></th></tr></thead><tbody id="tbProd"></tbody></table></div></div>' +
+    (ped ? '<div class="card"><h3>Pedido ' + esc(ped.numero) + "</h3><p>" + esc(ped.items) + '</p><button class="b" id="soltarPed">Dejar el pedido y vender otra cosa</button></div>' : "") +
+    '</div><div class="col"><div class="card hl"><form id="fVenta"><div class="row"><label>Cliente<select name="cliente" ' + (ped ? "disabled" : "") + ">" + opts(D.clientes.filter(c => c.estado === "activo"), "id", c => c.nombre + (c.celular ? " · " + c.celular : "") + (c.tipo === "mayorista" ? " (mayorista)" : ""), ped ? ped.cliente_id : VTA.cliente) + '</select></label><label>Condición<select name="cond"><option value="contado">Contado</option><option value="cuenta_corriente">Cuenta corriente</option></select></label></div>' +
+    '<div id="carrito"></div>' +
+    (es_dueno() ? '<div class="row"><label>Descuento general %<input name="dpct" inputmode="decimal" placeholder="0"></label><label style="flex:2 1 200px">Motivo del descuento o precio especial<input name="dmot"></label></div>' : "") +
+    '<div class="row"><label>Recargo (neto)<input name="rec" inputmode="decimal" placeholder="0"></label><label>Envío (neto)<input name="env" inputmode="decimal" placeholder="0"></label></div>' +
+    '<button type="button" class="b" id="btnCot">Calcular total</button><div id="totBox"></div>' +
+    '<div id="cobroBox"><h3 style="margin-top:6px">Cómo paga</h3><div id="pagos"></div><label>Efectivo que entrega (para el vuelto)<input name="entrega" inputmode="decimal"></label></div>' +
+    '<button class="b p" type="submit">Registrar venta</button></form></div>' +
+    '<div class="card"><h3>Últimas ventas</h3><div id="ultVentas" class="tw"></div></div></div></div>';
+  const f = $("#fVenta");
+  const pag = pagosUI($("#pagos"), "cliente", "");
+  const cobroVis = () => { $("#cobroBox").hidden = f.cond.value !== "contado"; };
+  f.cond.addEventListener("change", cobroVis); cobroVis();
+  if (!ped) f.cliente.addEventListener("change", () => { VTA.cliente = Number(f.cliente.value); VTA.cot = null; $("#totBox").innerHTML = ""; });
+  if (ped) $("#soltarPed").onclick = () => { VTA.pedido = null; VTA.clave = uid(); abrir(); };
+
+  function pintarProd(q = "") {
+    const s = q.toLowerCase();
+    const lista = D.productos.filter(p => p.estado === "activo" && (!s || (p.nombre + " " + p.codigo).toLowerCase().includes(s))).slice(0, 200);
+    $("#tbProd").innerHTML = lista.length ? lista.map(p => "<tr><td>" + esc(p.nombre) + '<div class="muted small">' + esc(p.codigo) + '</div></td><td class="n">' + (p.controla_stock ? qty(p.disponible) : "∞") + '</td><td class="n">' + money(p.precio_publico_final) + '</td><td><button type="button" class="b s" data-id="' + p.id + '">Agregar</button></td></tr>').join("")
+      : '<tr><td colspan="4"><div class="empty">No hay productos' + (s ? " con esa búsqueda" : ". Cargalos en Productos y stock") + ".</div></td></tr>";
+    $$("#tbProd [data-id]").forEach(b => b.onclick = () => { const id = Number(b.dataset.id); const l = VTA.cart.find(x => x.producto_id === id); if (l) l.cantidad += 1; else VTA.cart.push({ producto_id: id, cantidad: 1 }); VTA.cot = null; pintarCarrito(); });
+  }
+  function pintarCarrito() {
+    const box = $("#carrito");
+    if (ped) { box.innerHTML = ""; return; }
+    if (!VTA.cart.length) { box.innerHTML = '<div class="empty">Agregá productos desde la lista.</div>'; $("#totBox").innerHTML = ""; return; }
+    box.innerHTML = '<div class="tw"><table><thead><tr><th>Producto</th><th class="n">Cant.</th>' + (es_dueno() ? '<th class="n">Desc. %</th>' : "") + '<th class="n">Precio</th><th></th></tr></thead><tbody>' +
+      VTA.cart.map((l, i) => { const p = D.productos.find(x => x.id === l.producto_id) || {}; return "<tr><td>" + esc(p.nombre) + '</td><td class="n"><input style="width:70px" data-i="' + i + '" data-k="cantidad" inputmode="decimal" value="' + l.cantidad + '"></td>' + (es_dueno() ? '<td class="n"><input style="width:60px" data-i="' + i + '" data-k="descuento_pct" inputmode="decimal" value="' + (l.descuento_pct || "") + '"></td>' : "") + '<td class="n">' + money(p.precio_publico_final) + '</td><td><button type="button" class="b s d" data-rm="' + i + '">✕</button></td></tr>'; }).join("") + "</tbody></table></div>";
+    $$("#carrito input").forEach(inp => inp.onchange = () => { const n = num(inp.value); const l = VTA.cart[Number(inp.dataset.i)]; if (inp.dataset.k === "cantidad") l.cantidad = n > 0 ? n : 1; else l.descuento_pct = n || 0; VTA.cot = null; $("#totBox").innerHTML = ""; });
+    $$("#carrito [data-rm]").forEach(b => b.onclick = () => { VTA.cart.splice(Number(b.dataset.rm), 1); VTA.cot = null; pintarCarrito(); });
+  }
+  function payload() {
+    const p = { cliente_id: ped ? ped.cliente_id : Number(f.cliente.value), condicion: f.cond.value };
+    if (ped) p.pedido_id = ped.id; else p.items = VTA.cart.map(l => { const o = { producto_id: l.producto_id, cantidad: l.cantidad }; if (l.descuento_pct) o.descuento_pct = l.descuento_pct; return o; });
+    if (f.dpct && num(f.dpct.value)) p.descuento_pct = num(f.dpct.value);
+    if (f.dmot && f.dmot.value) p.descuento_motivo = f.dmot.value;
+    if (num(f.rec.value)) p.recargo_neto = num(f.rec.value);
+    if (num(f.env.value)) p.envio_neto = num(f.env.value);
+    return p;
+  }
+  async function cotizar() {
+    const c = await rpc("cotizar_venta", { p_venta: payload() }); VTA.cot = c;
+    $("#totBox").innerHTML = '<div class="tot" style="margin-top:8px"><span class="muted">Subtotal sin IVA</span><span>' + money(c.subtotal_neto) + '</span><span class="muted">Descuentos</span><span>−' + money(c.descuento_neto) + "</span>" + (Number(c.recargo_neto) ? '<span class="muted">Recargo</span><span>' + money(c.recargo_neto) + "</span>" : "") + (Number(c.envio_neto) ? '<span class="muted">Envío</span><span>' + money(c.envio_neto) + "</span>" : "") + '<span class="muted">IVA</span><span>' + money(c.iva) + '</span><span><b>Total</b></span><span class="big">' + money(c.total) + "</span></div>";
+    pag.setTotal(c.total);
+    return c;
+  }
+  $("#btnCot").onclick = () => run($("#btnCot"), cotizar);
+  $("#buscar") && $("#buscar").addEventListener("input", e => pintarProd(e.target.value));
+  pintarProd(); pintarCarrito();
+  if (ped) run(null, cotizar);
+  onForm(f, async () => {
+    if (!ped && !VTA.cart.length) throw new Error("Agregá al menos un producto.");
+    if (!VTA.cot) await cotizar();
+    const p = payload(); p.clave = VTA.clave;
+    if (p.condicion === "contado") { p.pagos = pag.get(); if (num(f.entrega.value)) p.efectivo_entregado = num(f.entrega.value); }
+    const r = await rpc("registrar_venta", { p_venta: p });
+    toast((r.repetido ? "Esa venta ya estaba registrada: " : "Venta ") + r.numero + " · " + money(r.total) + (Number(r.vuelto) ? " · Vuelto " + money(r.vuelto) : ""));
+    VTA.cart = []; VTA.pedido = null; VTA.clave = uid(); VTA.cot = null; abrir();
+  });
+  const ult = await rpc("panel_comprobantes", { p_cliente: null, p_limite: 15 });
+  $("#ultVentas").innerHTML = ult.length ? '<table><thead><tr><th>Comprobante</th><th>Cliente</th><th class="n">Total</th><th class="n">Debe</th></tr></thead><tbody>' + ult.map(c => "<tr><td>" + esc(c.numero) + '<div class="muted small">' + fdt(c.fecha) + "</div></td><td>" + esc(c.cliente) + '<div class="muted small">' + esc(c.items || "") + '</div></td><td class="n">' + money(c.total) + '</td><td class="n">' + (Number(c.saldo) > 0 ? tag(money(c.saldo), "warn") : "—") + "</td></tr>").join("") + "</tbody></table>" : '<div class="empty">Todavía no hay ventas.</div>';
+};
+
+/* ===== PEDIDOS WEB ===== */
+let PED_TODOS = false;
+VISTAS.pedidos = async v => {
+  await cargar("productos");
+  const ps = await rpc("panel_pedidos", { p_solo_abiertos: !PED_TODOS });
+  v.innerHTML = '<h2>Pedidos web</h2><p class="lead">Los pedidos que la gente arma en el catálogo. Reservan stock hasta que vencen. Cobralos acá o cancelalos con motivo. Para probar sin el sitio, simulá un pedido como si fueras un cliente.</p>' +
+    '<div class="grid"><div class="col"><div class="card"><h3>Simular pedido del sitio</h3><form id="fPed"><div class="row"><label>Nombre<input name="nombre" required></label><label>Celular<input name="cel" required placeholder="387 474-9807"></label></div><div id="pedItems"></div><label>Nota<input name="nota"></label><button class="b p" type="submit">Enviar pedido como cliente</button></form></div></div>' +
+    '<div class="col"><div class="card"><div class="inl" style="justify-content:space-between"><h3 style="margin:0">' + (PED_TODOS ? "Todos los pedidos" : "Pedidos abiertos") + '</h3><label class="chk"><input type="checkbox" id="todos" ' + (PED_TODOS ? "checked" : "") + "> Ver también cerrados</label></div>" +
+    (ps.length ? ps.map(p => '<div class="card" style="margin-top:10px;padding:12px"><div class="inl" style="justify-content:space-between"><b>' + esc(p.numero) + " · " + esc(p.nombre) + "</b>" + tag(p.estado, ESTADO_K[p.estado]) + '</div><div class="small muted">' + esc(p.celular) + " · " + esc(p.canal) + " · creado " + fdt(p.created_at) + (p.estado === "abierto" ? " · vence " + fdt(p.vence_at) : "") + "</div><p style=\"margin:6px 0\">" + esc(p.items || "") + "</p><div class=\"inl\"><b>" + money(p.total) + "</b><span class=\"grow\"></span>" +
+      (p.estado === "abierto" ? '<button class="b s p" data-cobrar="' + p.id + '">Cobrar</button><button class="b s" data-wa="' + p.id + '">Copiar mensaje WhatsApp</button><input data-mot="' + p.id + '" placeholder="Motivo para cancelar" style="max-width:200px"><button class="b s d" data-cancel="' + p.id + '">Cancelar</button>' : "") + "</div></div>").join("")
+      : '<div class="empty" style="margin-top:10px">No hay pedidos ' + (PED_TODOS ? "" : "abiertos") + ".</div>") + "</div></div></div>";
+  const it = itemsUI($("#pedItems"), [{ k: "cantidad", label: "Cantidad" }]);
+  $("#todos").onchange = e => { PED_TODOS = e.target.checked; abrir(); };
+  onForm($("#fPed"), async f => {
+    const items = it.get(); if (!items.length) throw new Error("Elegí al menos un producto.");
+    const r = await rpc("crear_pedido", { p_nombre: f.get("nombre"), p_celular: f.get("cel"), p_items: items, p_nota: f.get("nota") || null }, true);
+    toast("Pedido " + r[0].numero + " creado · " + money(r[0].total) + ((r[0].cambios || []).length ? " · " + r[0].cambios.join(" ") : "")); abrir();
+  });
+  $$("[data-cobrar]").forEach(b => b.onclick = () => { VTA.pedido = ps.find(p => p.id === Number(b.dataset.cobrar)); VTA.clave = uid(); VTA.cot = null; TAB = "vender"; pintarTabs(); abrir(); });
+  $$("[data-cancel]").forEach(b => b.onclick = () => run(b, async () => { const id = b.dataset.cancel; await rpc("cancelar_pedido", { p_pedido: Number(id), p_motivo: $("[data-mot=\"" + id + "\"]").value }); toast("Pedido cancelado."); abrir(); }));
+  $$("[data-wa]").forEach(b => b.onclick = async () => {
+    const p = ps.find(x => x.id === Number(b.dataset.wa));
+    const txt = "¡Hola " + p.nombre + "! Recibimos tu pedido " + p.numero + " en Pirotecnia Boom por " + money(p.total) + ". Te lo reservamos hasta el " + fdt(p.vence_at) + ". ¿Coordinamos la entrega o el retiro?";
+    try { await navigator.clipboard.writeText(txt); toast("Mensaje copiado. Pegalo en el WhatsApp de " + p.celular + "."); } catch (e) { toast(txt); }
+  });
+};
+
+/* ===== CLIENTES ===== */
+let CLI_SEL = null;
+VISTAS.clientes = async v => {
+  await Promise.all([cargar("clientes", "cuentas"), refrescarCaja()]);
+  const sel = D.clientes.find(c => c.id === CLI_SEL);
+  v.innerHTML = '<h2>Clientes</h2><p class="lead">Cuenta corriente de cada cliente: lo que debe y lo que tiene a favor. Los mayoristas se reconocen por su celular cuando piden por la web.</p>' +
+    '<div class="grid"><div class="col">' +
+    (es_dueno() ? '<div class="card"><h3>' + (sel ? "Modificar " + esc(sel.nombre) : "Nuevo cliente") + '</h3><form id="fCli"><div class="row"><label>Tipo<select name="tipo"><option value="consumidor">Consumidor</option><option value="mayorista"' + (sel && sel.tipo === "mayorista" ? " selected" : "") + '>Mayorista</option></select></label><label>Límite de crédito<input name="lim" inputmode="decimal" value="' + esc(sel ? sel.limite_credito : 0) + '"></label></div><label>Nombre o razón social<input name="nombre" required value="' + esc(sel ? sel.nombre : "") + '"></label><div class="row"><label>Celular<input name="cel" value="' + esc(sel ? sel.celular || "" : "") + '" placeholder="387 474-9807"></label><label>CUIT / DNI<input name="doc" value="' + esc(sel ? sel.documento_nro || "" : "") + '"></label></div><label>Condición IVA<select name="iva"><option value="3">Consumidor Final</option><option value="2">Monotributo</option><option value="1">Responsable Inscripto</option><option value="4">Exento</option></select></label><div class="inl"><button class="b p" type="submit">Guardar cliente</button>' + (sel ? '<button type="button" class="b" id="nuevoCli">Nuevo</button>' : "") + "</div></form></div>" : "") +
+    '<div class="card hl"><h3>Cobrar a un cliente</h3><form id="fCob"><label>Cliente<select name="cli">' + opts(D.clientes.filter(c => c.estado === "activo"), "id", c => c.nombre + (Number(c.deuda) ? " · debe " + money(c.deuda) : ""), sel ? sel.id : "", "Elegí cliente") + '</select></label><div id="cobPagos"></div><label>Nota<input name="nota"></label><button class="b p" type="submit">Registrar cobro</button></form></div>' +
+    '</div><div class="col"><div class="card"><input id="bCli" placeholder="Buscar cliente"><div class="tw"><table><thead><tr><th>Cliente</th><th>Lista</th><th class="n">Debe</th><th class="n">A favor</th><th></th></tr></thead><tbody id="tbCli"></tbody></table></div></div>' +
+    (sel ? '<div class="card"><div class="inl" style="justify-content:space-between"><h3 style="margin:0">Cuenta de ' + esc(sel.nombre) + '</h3>' + (Number(sel.a_favor) > 0 ? '<button class="b s" id="aplicar">Aplicar saldo a favor</button>' : "") + '</div><div id="ctaCli" class="tw" style="margin-top:8px"></div></div>' : "") + "</div></div>";
+  const pag = pagosUI($("#cobPagos"), "cliente", "");
+  const pint = q => { const s = (q || "").toLowerCase(); $("#tbCli").innerHTML = D.clientes.filter(c => !s || (c.nombre + " " + (c.celular || "")).toLowerCase().includes(s)).map(c => '<tr class="' + (c.id === CLI_SEL ? "sel" : "") + '"><td>' + esc(c.nombre) + '<div class="muted small">' + esc(c.celular || "sin celular") + (c.tipo === "mayorista" ? " · mayorista" : "") + "</div></td><td>" + esc(c.lista) + '</td><td class="n">' + (Number(c.deuda) ? money(c.deuda) : "—") + '</td><td class="n">' + (Number(c.a_favor) ? money(c.a_favor) : "—") + '</td><td><button class="b s" data-ver="' + c.id + '">Ver</button></td></tr>').join(""); $$("[data-ver]").forEach(b => b.onclick = () => { CLI_SEL = Number(b.dataset.ver); abrir(); }); };
+  pint(); $("#bCli").addEventListener("input", e => pint(e.target.value));
+  if (es_dueno()) {
+    if (sel) { const ci = (await tabla(sb.from("clientes").select("condicion_iva_id").eq("id", sel.id).single())).condicion_iva_id; $("#fCli").iva.value = String(ci || 3); $("#nuevoCli").onclick = () => { CLI_SEL = null; abrir(); }; }
+    onForm($("#fCli"), async f => { const doc = (f.get("doc") || "").replace(/\D/g, ""); const id = await rpc("guardar_cliente", { p: { id: sel ? sel.id : null, tipo: f.get("tipo"), nombre: f.get("nombre"), celular: f.get("cel"), documento_nro: doc || null, documento_tipo: doc ? (doc.length === 11 ? "CUIT" : "DNI") : null, condicion_iva_id: Number(f.get("iva")), limite_credito: Number(N(f.get("lim") || 0, "límite")) } }); CLI_SEL = id; toast("Cliente guardado."); abrir(); });
+  }
+  onForm($("#fCob"), async f => { if (!f.get("cli")) throw new Error("Elegí el cliente."); const r = await rpc("registrar_cobro", { p_cliente: Number(f.get("cli")), p_pagos: pag.get(), p_comprobante: null, p_nota: f.get("nota") || null, p_clave: uid(), p_puesto: "Caja 1" }); toast("Recibo " + r.recibo + " · " + money(r.total) + (Number(r.saldo_a_favor) ? " · queda a favor " + money(r.saldo_a_favor) : "")); CLI_SEL = Number(f.get("cli")); abrir(); });
+  if (sel) {
+    if ($("#aplicar")) $("#aplicar").onclick = () => run($("#aplicar"), async () => { const n = await rpc("aplicar_saldo_a_favor", { p_cliente: sel.id }); toast("Se aplicaron " + money(n) + " del saldo a favor."); abrir(); });
+    const cs = await rpc("panel_comprobantes", { p_cliente: sel.id, p_limite: 100 });
+    $("#ctaCli").innerHTML = cs.length ? "<table><thead><tr><th>Comprobante</th><th>Detalle</th><th class=\"n\">Total</th><th class=\"n\">Pendiente</th></tr></thead><tbody>" + cs.map(c => "<tr><td>" + esc(c.numero) + '<div class="muted small">' + fdt(c.fecha) + "</div></td><td class=\"small\">" + esc(c.items || "") + '</td><td class="n">' + money(c.total) + '</td><td class="n">' + (Number(c.saldo) > 0 ? tag(money(c.saldo), "warn") : "—") + "</td></tr>").join("") + "</tbody></table>" : '<div class="empty">Sin comprobantes.</div>';
+  }
+};
+
+/* ===== PRODUCTOS ===== */
+VISTAS.productos = async v => {
+  await cargar("productos"); M = await rpc("panel_maestros");
+  const d = es_dueno(); const cats = M.categorias || [];
+  v.innerHTML = '<h2>Productos y stock</h2><p class="lead">El precio de venta sale del costo más el margen de cada lista, con el redondeo de la lista. ' + (d ? "Cambiá el costo o el margen y los precios se recalculan solos, guardando el historial." : "Como operador ves stock y precios, no costos.") + "</p>" +
+    '<div class="grid"><div class="col">' +
+    (d ? '<div class="card"><h3>Márgenes por lista</h3><form id="fMarg">' + (M.listas || []).map(l => '<label>' + esc(l.nombre) + ' (% sobre costo)<input name="m' + l.id + '" inputmode="decimal" value="' + esc(l.margen ?? "") + '"></label>').join("") + '<button class="b" type="submit">Guardar márgenes</button></form></div>' +
+      '<div class="card"><h3>Nuevo producto</h3><form id="fProd"><div class="row"><label>Código<input name="cod" required></label><label>IVA<select name="iva">' + opts(M.alicuotas, "id", a => a.porcentaje + " %", 1) + '</select></label></div><label>Nombre<input name="nom" required></label><div class="row"><label>Categoría<select name="cat">' + opts(cats, "id", "nombre", "", cats.length ? null : "Creá una categoría") + '</select></label><label>Nueva categoría<input name="ncat" placeholder="Si no existe"></label></div><label>Costo neto (sin IVA)<input name="costo" inputmode="decimal"></label><label class="chk"><input type="checkbox" name="stock" checked> Controla stock</label><label class="chk"><input type="checkbox" name="venc"> Pide lote y vencimiento al comprar</label><button class="b p" type="submit">Crear producto</button></form></div>' +
+      '<div class="card"><h3>Cambiar costo</h3><form id="fCosto"><label>Producto<select name="p">' + opts(D.productos, "id", p => p.codigo + " · " + p.nombre, "", "Elegí producto") + '</select></label><label>Costo neto nuevo<input name="c" inputmode="decimal" required></label><button class="b" type="submit">Guardar costo</button></form></div>' +
+      '<div class="card"><h3>Ajuste de stock</h3><form id="fAj"><div class="row"><label>Tipo<select name="tipo"><option value="inventario_inicial">Inventario inicial</option><option value="recuento">Recuento</option><option value="merma">Merma</option><option value="rotura">Rotura</option><option value="vencimiento">Vencimiento</option><option value="otro">Otro</option></select></label></div><label>Motivo<input name="mot" required></label><p class="small muted" style="margin:0">Cantidad positiva entra, negativa sale.</p><div id="ajItems"></div><button class="b" type="submit">Registrar ajuste</button></form></div>' : "") +
+    '</div><div class="col"><div class="card"><input id="bProd" placeholder="Buscar producto"><div class="tw"><table><thead><tr><th>Producto</th><th class="n">Stock</th><th class="n">Reserv.</th><th class="n">Disp.</th>' + (d ? '<th class="n">Costo</th><th class="n">Prom.</th>' : "") + '<th class="n">Público final</th><th class="n">Mayorista neto</th></tr></thead><tbody id="tbP"></tbody></table></div></div></div></div>';
+  const pint = q => { const s = (q || "").toLowerCase(); const ls = D.productos.filter(p => !s || (p.nombre + " " + p.codigo).toLowerCase().includes(s)); $("#tbP").innerHTML = ls.length ? ls.map(p => "<tr><td>" + esc(p.nombre) + '<div class="muted small">' + esc(p.codigo) + " · " + esc(p.categoria) + " · IVA " + p.iva_pct + "%</div></td>" + '<td class="n">' + (p.controla_stock ? qty(p.stock) : "—") + '</td><td class="n">' + (Number(p.reservado) ? qty(p.reservado) : "—") + '</td><td class="n">' + (p.controla_stock ? (Number(p.disponible) <= 0 ? tag(qty(p.disponible), "bad") : qty(p.disponible)) : "∞") + "</td>" + (d ? '<td class="n">' + money(p.costo) + '</td><td class="n">' + money(p.costo_promedio) + "</td>" : "") + '<td class="n">' + money(p.precio_publico_final) + '</td><td class="n">' + money(p.precio_mayorista_neto) + "</td></tr>").join("") : '<tr><td colspan="8"><div class="empty">Todavía no hay productos.' + (d ? " Primero cargá los márgenes y después creá productos con su costo." : "") + "</div></td></tr>"; };
+  pint(); $("#bProd").addEventListener("input", e => pint(e.target.value));
+  if (!d) return;
+  onForm($("#fMarg"), async f => { for (const l of M.listas) { const val = f.get("m" + l.id); if (val !== "" && Number(val) !== Number(l.margen)) await rpc("cambiar_margen", { p_lista: l.id, p_margen_pct: Number(N(val, "margen")) }); } toast("Márgenes guardados. Precios recalculados."); abrir(); });
+  onForm($("#fProd"), async f => {
+    let cat = f.get("cat");
+    if (f.get("ncat")) cat = (await tabla(sb.from("categorias").insert({ nombre: f.get("ncat") }).select("id").single())).id;
+    if (!cat) throw new Error("Elegí o creá una categoría.");
+    const id = (await tabla(sb.from("productos").insert({ codigo: f.get("cod"), nombre: f.get("nom"), categoria_id: Number(cat), unidad_id: 1, alicuota_iva_id: Number(f.get("iva")), controla_stock: !!f.get("stock"), controla_vencimiento: !!f.get("venc") }).select("id").single())).id;
+    if (f.get("costo")) await rpc("registrar_costo", { p_producto: id, p_costo_neto: Number(N(f.get("costo"), "costo")) });
+    toast("Producto creado."); abrir();
+  });
+  onForm($("#fCosto"), async f => { if (!f.get("p")) throw new Error("Elegí el producto."); await rpc("registrar_costo", { p_producto: Number(f.get("p")), p_costo_neto: Number(N(f.get("c"), "costo")) }); toast("Costo guardado. Precios recalculados."); abrir(); });
+  const aj = itemsUI($("#ajItems"), [{ k: "cantidad", label: "Cantidad" }, { k: "costo_unit", label: "Costo unit. (opcional)" }]);
+  onForm($("#fAj"), async f => { const its = aj.get(); if (!its.length) throw new Error("Agregá productos al ajuste."); const n = await rpc("registrar_ajuste_stock", { p_tipo: f.get("tipo"), p_motivo: f.get("mot"), p_items: its }); toast("Ajuste " + n + " registrado."); abrir(); });
+};
+
+/* ===== COMPRAS ===== */
+let COMP_SUB = "compra";
+VISTAS.compras = async v => {
+  await Promise.all([cargar("productos", "proveedores", "cuentas", "cheques"), refrescarCaja()]);
+  const compras = await rpc("panel_compras", { p_limite: 80 });
+  const provs = D.proveedores.filter(p => p.estado === "activo");
+  v.innerHTML = '<h2>Compras y proveedores</h2><p class="lead">Al cargar la factura del proveedor entra el stock, se recalcula el costo promedio y, si querés, el costo de venta y los precios. El flete y la bonificación se reparten en el costo de cada producto.</p>' +
+    '<div class="grid"><div class="col"><div class="card"><div class="seg" role="group"><button data-sub="compra" aria-pressed="' + (COMP_SUB === "compra") + '">Factura</button><button data-sub="pago" aria-pressed="' + (COMP_SUB === "pago") + '">Pago</button><button data-sub="nota" aria-pressed="' + (COMP_SUB === "nota") + '">NC / ND</button><button data-sub="prov" aria-pressed="' + (COMP_SUB === "prov") + '">Proveedor</button></div><div id="subForm" style="margin-top:12px"></div></div></div>' +
+    '<div class="col"><div class="card"><h3>Proveedores</h3><div class="tw"><table><thead><tr><th>Proveedor</th><th>CUIT</th><th class="n">Le debemos</th></tr></thead><tbody>' + (D.proveedores.length ? D.proveedores.map(p => "<tr><td>" + esc(p.razon_social) + "</td><td>" + esc(p.cuit || "—") + '</td><td class="n">' + (Number(p.saldo) > 0 ? tag(money(p.saldo), "warn") : Number(p.saldo) < 0 ? tag("a favor " + money(-p.saldo), "ok") : "—") + "</td></tr>").join("") : '<tr><td colspan="3"><div class="empty">Cargá el primer proveedor.</div></td></tr>') + "</tbody></table></div></div>" +
+    '<div class="card"><h3>Comprobantes de compra</h3><div class="tw"><table><thead><tr><th>Comprobante</th><th>Proveedor</th><th class="n">Total</th><th class="n">Pendiente</th><th></th></tr></thead><tbody>' + (compras.length ? compras.map(c => "<tr><td>" + tag(c.tipo) + " " + esc(c.comprobante) + '<div class="muted small">' + fdate(c.fecha) + " · " + esc(c.items || "") + "</div></td><td>" + esc(c.proveedor) + '</td><td class="n">' + money(c.total) + '</td><td class="n">' + (c.estado === "anulado" ? tag("anulado", "bad") : Number(c.saldo) > 0 ? money(c.saldo) : "—") + "</td><td>" + (c.estado === "registrado" ? '<div class="inl"><input data-mot="' + c.id + '" placeholder="Motivo" style="max-width:130px"><button class="b s d" data-anular="' + c.id + '">Anular</button></div>' : "") + "</td></tr>").join("") : '<tr><td colspan="5"><div class="empty">Todavía no hay compras.</div></td></tr>') + "</tbody></table></div></div></div></div>";
+  $$("[data-sub]").forEach(b => b.onclick = () => { COMP_SUB = b.dataset.sub; abrir(); });
+  $$("[data-anular]").forEach(b => b.onclick = () => run(b, async () => { const id = b.dataset.anular; await rpc("anular_compra", { p_compra: Number(id), p_motivo: $("[data-mot=\"" + id + "\"]").value }); toast("Comprobante anulado. Stock y saldo revertidos."); abrir(); }));
+  const sf = $("#subForm");
+  const provSel = (name = "prov") => '<label>Proveedor<select name="' + name + '">' + opts(provs, "id", "razon_social", "", "Elegí proveedor") + "</select></label>";
+  if (COMP_SUB === "prov") {
+    sf.innerHTML = '<form id="fProv"><label>Razón social<input name="rs" required></label><div class="row"><label>CUIT<input name="cuit"></label><label>Teléfono<input name="tel"></label></div><label>Email<input name="mail" type="email"></label><button class="b p" type="submit">Crear proveedor</button></form>';
+    onForm($("#fProv"), async f => { await tabla(sb.from("proveedores").insert({ razon_social: f.get("rs"), cuit: f.get("cuit") || null, telefono: f.get("tel") || null, email: f.get("mail") || null }).select("id").single()); toast("Proveedor creado."); COMP_SUB = "compra"; abrir(); });
+  } else if (COMP_SUB === "compra") {
+    sf.innerHTML = '<form id="fComp">' + provSel() + '<div class="row"><label>Letra<select name="letra"><option>A</option><option>B</option><option>C</option><option>X</option></select></label><label>Punto de venta<input name="pv" inputmode="numeric"></label><label>Número<input name="nro" required></label></div><label>Fecha<input type="date" name="fecha" value="' + hoy() + '"></label><div id="compItems"></div><div class="row"><label>Flete (neto)<input name="flete" inputmode="decimal"></label><label>Bonificación (neto)<input name="bonif" inputmode="decimal"></label></div><div class="row"><label>Percepción IIBB<input name="piibb" inputmode="decimal"></label><label>Percepción IVA<input name="piva" inputmode="decimal"></label></div><label>IVA de la factura (para controlar)<input name="ivainf" inputmode="decimal" placeholder="Opcional"></label><label class="chk"><input type="checkbox" name="act" checked> Actualizar costo y precios de venta</label><label>Condición<select name="cond"><option value="cuenta_corriente">Cuenta corriente</option><option value="contado">Contado</option></select></label><div id="compPag" hidden><h3>Cómo se paga</h3><div id="compPagos"></div></div><button class="b p" type="submit">Registrar compra</button></form>';
+    const f = $("#fComp"); const it = itemsUI($("#compItems"), [{ k: "cantidad", label: "Cantidad" }, { k: "costo_neto_unit", label: "Costo unit. neto" }, { k: "lote", label: "Lote", type: "text" }, { k: "vencimiento", label: "Vence", type: "date" }]);
+    const pag = pagosUI($("#compPagos"), "proveedor", ""); f.cond.onchange = () => $("#compPag").hidden = f.cond.value !== "contado";
+    onForm(f, async fd => {
+      if (!fd.get("prov")) throw new Error("Elegí el proveedor.");
+      const p = { proveedor_id: Number(fd.get("prov")), letra: fd.get("letra"), punto_venta: num(fd.get("pv")), numero: fd.get("nro"), fecha: fd.get("fecha"), items: it.get(), condicion: fd.get("cond"), actualiza_costo: !!fd.get("act") };
+      if (!p.items.length) throw new Error("Agregá los productos de la factura.");
+      p.items.forEach(i => { if (i.costo_neto_unit === undefined) throw new Error("Falta el costo unitario de algún producto."); });
+      if (num(fd.get("flete"))) p.flete_neto = num(fd.get("flete")); if (num(fd.get("bonif"))) p.bonificacion_neto = num(fd.get("bonif"));
+      p.percepciones = []; if (num(fd.get("piibb"))) p.percepciones.push({ tipo: "PERC_IIBB", importe: num(fd.get("piibb")) }); if (num(fd.get("piva"))) p.percepciones.push({ tipo: "PERC_IVA", importe: num(fd.get("piva")) });
+      if (num(fd.get("ivainf")) !== null && fd.get("ivainf") !== "") p.iva_informado = num(fd.get("ivainf"));
+      if (p.condicion === "contado") p.pagos = pag.get();
+      const r = await rpc("registrar_compra", { p: p });
+      toast("Compra registrada · total " + money(r.total) + (r.pago ? " · pago " + r.pago : "")); abrir();
+    });
+  } else if (COMP_SUB === "pago") {
+    sf.innerHTML = '<form id="fPago">' + provSel() + '<div id="pPagos"></div><label>Nota<input name="nota"></label><button class="b p" type="submit">Registrar pago</button></form>';
+    const pag = pagosUI($("#pPagos"), "proveedor", "");
+    onForm($("#fPago"), async f => { if (!f.get("prov")) throw new Error("Elegí el proveedor."); const r = await rpc("registrar_pago_proveedor", { p_proveedor: Number(f.get("prov")), p_pagos: pag.get(), p_comprobante: null, p_nota: f.get("nota") || null }); toast("Pago " + r.numero + " · " + money(r.total) + (Number(r.anticipo) ? " · anticipo " + money(r.anticipo) : "")); abrir(); });
+  } else {
+    const facs = compras.filter(c => c.tipo === "FAC" && c.estado === "registrado");
+    sf.innerHTML = '<form id="fNota"><div class="row"><label>Tipo<select name="tipo"><option value="NC">Nota de crédito</option><option value="ND">Nota de débito</option></select></label><label>Número<input name="nro" required></label></div><label>Factura de origen<select name="orig">' + opts(facs, "id", c => c.proveedor + " · " + c.comprobante + " · " + money(c.total), "", "Elegí factura") + '</select></label><label>Motivo<input name="mot" required></label><label class="chk"><input type="checkbox" name="dev"> Devuelvo mercadería</label><div id="ndev"><div class="row"><label>Neto<input name="neto" inputmode="decimal"></label><label>IVA %<select name="alic"><option>21</option><option>10.5</option><option>0</option></select></label></div></div><div id="devItems" hidden></div><button class="b p" type="submit">Registrar</button></form>';
+    const f = $("#fNota"); const dev = itemsUI($("#devItems"), [{ k: "cantidad", label: "Cantidad" }]);
+    f.dev.onchange = () => { $("#devItems").hidden = !f.dev.checked; $("#ndev").hidden = f.dev.checked; };
+    onForm(f, async fd => {
+      const orig = compras.find(c => c.id === Number(fd.get("orig"))); if (!orig) throw new Error("Elegí la factura de origen.");
+      const prov = D.proveedores.find(p => p.razon_social === orig.proveedor);
+      const p = { tipo: fd.get("tipo"), proveedor_id: prov.id, comprobante_origen_id: orig.id, numero: fd.get("nro"), motivo: fd.get("mot"), devuelve_mercaderia: !!fd.get("dev") };
+      if (p.devuelve_mercaderia) p.items = dev.get(); else { p.neto = Number(N(fd.get("neto"), "neto")); p.alicuota_iva_pct = Number(fd.get("alic")); }
+      const r = await rpc("registrar_nota_compra", { p: p }); toast((r.tipo === "NC" ? "Nota de crédito" : "Nota de débito") + " registrada · " + money(r.total)); abrir();
+    });
+  }
+};
+
+/* ===== GASTOS ===== */
+VISTAS.gastos = async v => {
+  await Promise.all([cargar("proveedores", "cuentas"), refrescarCaja()]);
+  const gs = await rpc("panel_gastos", { p_limite: 80 }); const d = es_dueno();
+  const medios = M.medios.filter(m => m.id < 8 && m.tipo !== "cheque");
+  v.innerHTML = '<h2>Gastos</h2><p class="lead">Gastos del negocio: luz, fletes, limpieza, alquiler. En efectivo salen de la caja; con transferencia, de la cuenta elegida.' + (d ? " En cuenta corriente quedan como deuda con el proveedor." : "") + "</p>" +
+    '<div class="grid"><div class="col"><div class="card hl"><h3>Registrar gasto</h3><form id="fGasto"><label>Descripción<input name="desc" required placeholder="Ej.: luz de octubre"></label><div class="row"><label>Concepto<select name="conc">' + opts(M.conceptos_gasto, "id", "nombre", 2) + '</select></label><label>Importe total<input name="imp" inputmode="decimal" required></label></div>' +
+    (d ? '<label>Condición<select name="cond"><option value="contado">Pagado ahora</option><option value="cuenta_corriente">A pagar (cuenta corriente)</option></select></label>' : "") +
+    '<div id="gCont"><div class="row"><label>Medio<select name="medio">' + opts(medios, "id", "nombre", 1) + '</select></label><label>Cuenta<select name="cta">' + opts(D.cuentas, "id", "nombre", "", "—") + "</select></label></div></div>" +
+    (d ? '<div id="gProv" hidden><label>Proveedor<select name="prov">' + opts(D.proveedores, "id", "razon_social", "", "Elegí proveedor") + "</select></label></div>" : "") +
+    '<div class="row"><label>N° de comprobante<input name="nro"></label><label>IVA incluido<input name="iva" inputmode="decimal" placeholder="0"></label></div><button class="b p" type="submit">Registrar gasto</button></form></div>' +
+    (d ? '<div class="card"><h3>Nuevo concepto de gasto</h3><form id="fConc"><div class="row"><label>Grupo<input name="tipo" required placeholder="Ej.: Servicios"></label><label>Concepto<input name="conc" required placeholder="Ej.: Luz"></label></div><button class="b" type="submit">Crear concepto</button></form></div>' : "") +
+    '</div><div class="col"><div class="card"><h3>Últimos gastos</h3><div class="tw"><table><thead><tr><th>Gasto</th><th>Medio</th><th class="n">Total</th><th></th></tr></thead><tbody>' +
+    (gs.length ? gs.map(g => "<tr><td>" + esc(g.numero + " · " + g.descripcion) + '<div class="muted small">' + fdate(g.fecha) + (g.proveedor ? " · " + esc(g.proveedor) : "") + "</div></td><td>" + esc(g.condicion === "cuenta_corriente" ? "Cuenta corriente" : g.medio) + '</td><td class="n">' + money(g.total) + "</td><td>" + (g.estado === "anulado" ? tag("anulado", "bad") : d ? '<div class="inl"><input data-mot="' + g.id + '" placeholder="Motivo" style="max-width:120px"><button class="b s d" data-anular="' + g.id + '">Anular</button></div>' : "") + "</td></tr>").join("") : '<tr><td colspan="4"><div class="empty">Sin gastos todavía.</div></td></tr>') + "</tbody></table></div></div></div></div>";
+  const f = $("#fGasto");
+  if (d) f.cond.onchange = () => { $("#gCont").hidden = f.cond.value !== "contado"; $("#gProv").hidden = f.cond.value === "contado"; };
+  onForm(f, async fd => {
+    const cond = d ? fd.get("cond") : "contado"; const imp = Number(N(fd.get("imp"))); const iva = num(fd.get("iva")) || 0;
+    const p = { descripcion: fd.get("desc"), items: [{ concepto_id: Number(fd.get("conc")), importe: imp }], condicion: cond, nro_comprobante: fd.get("nro") || null, neto: imp - iva, iva: iva };
+    if (cond === "contado") { p.medio_pago_id = Number(fd.get("medio")); if (fd.get("cta")) p.cuenta_id = Number(fd.get("cta")); } else p.proveedor_id = num(fd.get("prov"));
+    const r = await rpc("registrar_gasto", { p: p }); toast("Gasto " + r.numero + " · " + money(r.total)); abrir();
+  });
+  if (d) {
+    onForm($("#fConc"), async fd => { const ex = await tabla(sb.from("tipos_gasto").select("id").eq("nombre", fd.get("tipo")).limit(1)); let t = ex && ex[0] ? ex[0].id : null; if (!t) t = (await tabla(sb.from("tipos_gasto").insert({ nombre: fd.get("tipo") }).select("id").single())).id; await tabla(sb.from("conceptos_gasto").insert({ tipo_gasto_id: t, nombre: fd.get("conc") }).select("id").single()); M = await rpc("panel_maestros"); toast("Concepto creado."); abrir(); });
+    $$("[data-anular]").forEach(b => b.onclick = () => run(b, async () => { const id = b.dataset.anular; await rpc("anular_gasto", { p_gasto: Number(id), p_motivo: $("[data-mot=\"" + id + "\"]").value }); toast("Gasto anulado."); abrir(); }));
+  }
+};
+
+/* ===== CHEQUES ===== */
+VISTAS.cheques = async v => {
+  await cargar("cheques", "cuentas"); const d = es_dueno();
+  const bancos = D.cuentas.filter(c => c.tipo === "banco" && c.estado === "activa");
+  const tot = D.cheques.filter(c => c.tipo === "tercero" && c.estado === "cartera").reduce((a, c) => a + Number(c.importe), 0);
+  v.innerHTML = '<h2>Cheques</h2><p class="lead">Cartera de cheques recibidos y cheques propios emitidos. En cartera hay <b>' + money(tot) + "</b>." + (d ? "" : " Las operaciones con cheques las hace el dueño.") + '</p><div class="card"><div class="tw"><table><thead><tr><th>Cheque</th><th>De / para</th><th>Pago</th><th class="n">Importe</th><th>Estado</th>' + (d ? "<th>Acción</th>" : "") + "</tr></thead><tbody>" +
+    (D.cheques.length ? D.cheques.map(c => { let a = "";
+      if (d) {
+        if (c.tipo === "tercero" && c.estado === "cartera") a = '<div class="inl"><select data-cta="' + c.id + '">' + opts(bancos, "id", "nombre", "", "Banco") + '</select><button class="b s" data-dep="' + c.id + '">Depositar</button></div>';
+        if (c.estado === "depositado") a = '<button class="b s p" data-acr="' + c.id + '">Acreditado</button>';
+        if (c.estado === "emitido") a = '<button class="b s" data-deb="' + c.id + '">Debitado</button>';
+        if (["cartera", "depositado", "acreditado", "endosado", "emitido"].includes(c.estado)) a += '<div class="inl" style="margin-top:4px"><input data-mot="' + c.id + '" placeholder="Motivo rechazo" style="max-width:130px">' + (c.tipo === "tercero" ? '<input data-gas="' + c.id + '" placeholder="Gastos banco" style="max-width:100px" inputmode="decimal">' : "") + '<button class="b s d" data-rech="' + c.id + '">Rechazado</button></div>';
+      }
+      return "<tr><td>" + tag(c.tipo === "propio" ? "propio" : "tercero") + " " + esc(c.banco + " N° " + c.numero) + '<div class="muted small">' + esc(c.librador) + "</div></td><td>" + esc(c.cliente || c.proveedor || "—") + "</td><td>" + fdate(c.fecha_pago) + '</td><td class="n">' + money(c.importe) + "</td><td>" + tag(c.estado, ESTADO_K[c.estado]) + (c.cuenta ? '<div class="muted small">' + esc(c.cuenta) + "</div>" : "") + "</td>" + (d ? "<td>" + a + "</td>" : "") + "</tr>"; }).join("") : '<tr><td colspan="6"><div class="empty">No hay cheques. Entran al cobrar con cheque.</div></td></tr>') + "</tbody></table></div></div>";
+  $$("[data-dep]").forEach(b => b.onclick = () => run(b, async () => { const id = b.dataset.dep; const c = $("[data-cta=\"" + id + "\"]").value; if (!c) throw new Error("Elegí el banco."); await rpc("depositar_cheque", { p_cheque: Number(id), p_cuenta: Number(c) }); toast("Cheque depositado."); abrir(); }));
+  $$("[data-acr]").forEach(b => b.onclick = () => run(b, async () => { await rpc("acreditar_cheque", { p_cheque: Number(b.dataset.acr) }); toast("Cheque acreditado en el banco."); abrir(); }));
+  $$("[data-deb]").forEach(b => b.onclick = () => run(b, async () => { await rpc("debitar_cheque_propio", { p_cheque: Number(b.dataset.deb) }); toast("Cheque propio debitado."); abrir(); }));
+  $$("[data-rech]").forEach(b => b.onclick = () => run(b, async () => { const id = b.dataset.rech; const g = $("[data-gas=\"" + id + "\"]"); const r = await rpc("rechazar_cheque", { p_cheque: Number(id), p_motivo: $("[data-mot=\"" + id + "\"]").value, p_gastos_neto: g && g.value ? Number(N(g.value, "gastos")) : 0 }); toast("Cheque rechazado." + (r && r.nd_id ? " Se cargó la nota de débito al cliente." : "") + (r && r.aviso ? " " + r.aviso : "")); abrir(); }));
+};
+
+/* ===== BANCOS ===== */
+let CTA_SEL = null;
+VISTAS.bancos = async v => {
+  await Promise.all([cargar("cuentas"), refrescarCaja()]); M = await rpc("panel_maestros");
+  const ctas = D.cuentas.filter(c => c.estado === "activa"); if (!CTA_SEL && ctas[0]) CTA_SEL = ctas[0].id;
+  const sel = D.cuentas.find(c => c.id === CTA_SEL);
+  const medios = await tabla(sb.from("medios_pago").select("id, nombre, tipo, comision_pct, cuenta_id").eq("estado", "activo").lt("id", 8).order("id"));
+  v.innerHTML = '<h2>Bancos y billeteras</h2><p class="lead">Saldo de cada cuenta según lo registrado. Conciliá cada movimiento contra el resumen del banco.</p>' +
+    '<div class="grid"><div class="col"><div class="card"><h3>Nueva cuenta</h3><form id="fCta"><label>Nombre<input name="nom" required placeholder="Ej.: Macro cuenta corriente"></label><div class="row"><label>Tipo<select name="tipo"><option value="banco">Banco</option><option value="billetera">Billetera (MP)</option><option value="caja_fuerte">Caja fuerte</option></select></label><label>Banco<input name="banco"></label></div><label>CBU o alias<input name="cbu"></label><button class="b" type="submit">Crear cuenta</button></form></div>' +
+    '<div class="card"><h3>Mover plata</h3><form id="fMover"><label>Operación<select name="op"><option value="dep">Depositar efectivo de la caja</option><option value="tra">Transferir entre cuentas</option><option value="egr">Gasto o comisión bancaria</option><option value="ing">Ingreso / ajuste</option></select></label><div class="row"><label>Cuenta<select name="a">' + opts(ctas, "id", "nombre", CTA_SEL) + '</select></label><label id="lDest" hidden>Hacia<select name="b">' + opts(ctas, "id", "nombre", "") + '</select></label></div><label>Importe<input name="imp" inputmode="decimal" required></label><label>Descripción<input name="desc"></label><button class="b p" type="submit">Registrar</button></form></div>' +
+    '<div class="card"><h3>Medios de cobro</h3><p class="small muted" style="margin-top:0">Comisión que cobra cada medio (se registra como gasto al cobrar) y cuenta donde se acredita.</p><form id="fMed">' + medios.filter(m => m.tipo !== "efectivo" && m.tipo !== "cheque").map(m => '<div class="row"><label>' + esc(m.nombre) + ' · comisión %<input name="c' + m.id + '" inputmode="decimal" value="' + esc(m.comision_pct) + '"></label><label>Se acredita en<select name="k' + m.id + '">' + opts(ctas, "id", "nombre", m.cuenta_id, "—") + "</select></label></div>").join("") + '<button class="b" type="submit">Guardar medios</button></form></div></div>' +
+    '<div class="col"><div class="card"><div class="tw"><table><thead><tr><th>Cuenta</th><th>Tipo</th><th class="n">Saldo</th><th></th></tr></thead><tbody>' + (D.cuentas.length ? D.cuentas.map(c => '<tr class="' + (c.id === CTA_SEL ? "sel" : "") + '"><td>' + esc(c.nombre) + '<div class="muted small">' + esc(c.banco || "") + "</div></td><td>" + esc(c.tipo) + '</td><td class="n"><b>' + money(c.saldo) + '</b></td><td><button class="b s" data-ver="' + c.id + '">Movimientos</button></td></tr>').join("") : '<tr><td colspan="4"><div class="empty">Creá la primera cuenta.</div></td></tr>') + "</tbody></table></div></div>" +
+    (sel ? '<div class="card"><h3>Movimientos de ' + esc(sel.nombre) + '</h3><div id="movs" class="tw"></div></div>' : "") + "</div></div>";
+  $$("[data-ver]").forEach(b => b.onclick = () => { CTA_SEL = Number(b.dataset.ver); abrir(); });
+  onForm($("#fCta"), async f => { await tabla(sb.from("cuentas_fondos").insert({ nombre: f.get("nom"), tipo: f.get("tipo"), banco: f.get("banco") || null, cbu_alias: f.get("cbu") || null }).select("id").single()); toast("Cuenta creada."); abrir(); });
+  const fm = $("#fMover"); fm.op.onchange = () => $("#lDest").hidden = fm.op.value !== "tra";
+  onForm(fm, async f => {
+    const op = f.get("op"), a = Number(f.get("a")), imp = N(f.get("imp")), desc = f.get("desc");
+    if (!a) throw new Error("Elegí la cuenta.");
+    if (op === "dep") await rpc("depositar_efectivo", { p_cuenta: a, p_importe: Number(imp), p_descripcion: desc || null });
+    else if (op === "tra") await rpc("transferir_entre_cuentas", { p_desde: a, p_hasta: Number(f.get("b")), p_importe: Number(imp), p_descripcion: desc || null });
+    else await rpc("movimiento_fondos_manual", { p_cuenta: a, p_tipo: op === "egr" ? "egreso" : "ingreso", p_importe: Number(imp), p_descripcion: desc || (op === "egr" ? "Gasto bancario" : "Ajuste") });
+    toast("Movimiento registrado."); abrir();
+  });
+  onForm($("#fMed"), async f => { for (const m of medios.filter(m => m.tipo !== "efectivo" && m.tipo !== "cheque")) { const c = N(f.get("c" + m.id) || 0, "comisión"); const k = f.get("k" + m.id); await tabla(sb.from("medios_pago").update({ comision_pct: Number(c), cuenta_id: k ? Number(k) : null }).eq("id", m.id).select("id")); } M = await rpc("panel_maestros"); toast("Medios guardados."); abrir(); });
+  if (sel) {
+    const ms = await rpc("panel_movimientos_cuenta", { p_cuenta: sel.id });
+    $("#movs").innerHTML = ms.length ? '<table><thead><tr><th>Fecha</th><th>Detalle</th><th class="n">Importe</th><th>Conciliado</th></tr></thead><tbody>' + ms.map(m => "<tr><td>" + fdt(m.fecha) + "</td><td>" + esc(m.descripcion) + '</td><td class="n" style="color:var(' + (m.tipo === "ingreso" ? "--ok" : "--bad") + ')">' + (m.tipo === "ingreso" ? "+" : "−") + money(m.importe) + '</td><td><input type="checkbox" data-conc="' + m.id + '" ' + (m.conciliado ? "checked" : "") + "></td></tr>").join("") + "</tbody></table>" : '<div class="empty">Sin movimientos.</div>';
+    $$("[data-conc]").forEach(c => c.onchange = () => run(null, async () => { await rpc("conciliar_movimiento", { p_mov: Number(c.dataset.conc), p_conciliado: c.checked }); toast(c.checked ? "Conciliado." : "Marcado como no conciliado."); }));
+  }
+};
+
+/* ---------- ingreso ---------- */
+function mostrarLogin(msg) {
+  $("#view").hidden = true; $("#tabs").innerHTML = ""; $("#usr").hidden = true; $("#cajaPill").hidden = true;
+  $("#gate").hidden = false; $("#loginMsg").textContent = msg || ""; $("#loginMsg").hidden = !msg;
+}
+async function entrar() {
+  M = await rpc("panel_maestros");
+  const { data } = await sb.auth.getUser();
+  USUARIO = data && data.user ? data.user.email : "";
+  $("#usrNom").textContent = (M.es_dueno ? "Dueño" : "Operador") + " · " + USUARIO.replace("@pirotecniaboom.local", "");
+  $("#gate").hidden = true; $("#view").hidden = false; $("#usr").hidden = false; $("#cajaPill").hidden = false;
+  pintarTabs(); refrescarCaja(); abrir();
+}
+$("#fLogin").addEventListener("submit", ev => { ev.preventDefault(); run($("#fLogin button"), async () => {
+  let u = $("#lUsr").value.trim().toLowerCase(); if (!u.includes("@")) u += "@pirotecniaboom.local";
+  const { error } = await sb.auth.signInWithPassword({ email: u, password: $("#lPass").value });
+  if (error) { mostrarLogin(/invalid/i.test(error.message) ? "Usuario o contraseña incorrectos." : errMsg(error)); return; }
+  $("#lPass").value = ""; await entrar();
+}); });
+$("#salir").onclick = async () => { await sb.auth.signOut(); M = null; VTA.cart = []; VTA.pedido = null; mostrarLogin(); };
+(async () => {
+  try { const { data } = await sb.auth.getSession(); if (data && data.session) { await entrar(); return; } } catch (e) {}
+  mostrarLogin();
+})();
+</script>
+</body>
+</html>
