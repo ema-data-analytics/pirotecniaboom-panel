@@ -1,0 +1,528 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><title>Manual Pirotecnia Boom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: índice fijo a la izquierda que copia el menú del sistema; a la derecha, una pantalla del manual por vez. */
+:root{
+  --rojo:#e31e24; --amarillo:#fecc00; --vino:#4a0a0d;
+  --bg:#f7f3f1; --panel:#ffffff; --fg:#26181a; --dim:#76656a; --line:#e8dcd8; --soft:#fbefe9;
+  --side:#3a0709; --side-fg:#f5e6e3; --side-dim:#c99b97; --side-act:#fecc00;
+  --ok:#14804a; --okbg:#e6f6ec; --warn:#8a5a00; --warnbg:#fff4cf; --bad:#b4141a; --badbg:#fde8e8; --info:#1d4f91; --infobg:#e8f0fb;
+  --f-body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#170b0c; --panel:#221315; --fg:#f3e7e5; --dim:#b29d9a; --line:#3d2629; --soft:#2c1719;
+  --side:#120607; --side-fg:#f0dfdc; --side-dim:#a27e7a;
+  --ok:#5fd394; --okbg:#10291b; --warn:#ffd45c; --warnbg:#2e2408; --bad:#ff7b80; --badbg:#3a1214; --info:#8db8f5; --infobg:#132338; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#170b0c; --panel:#221315; --fg:#f3e7e5; --dim:#b29d9a; --line:#3d2629; --soft:#2c1719;
+  --side:#120607; --side-fg:#f0dfdc; --side-dim:#a27e7a;
+  --ok:#5fd394; --okbg:#10291b; --warn:#ffd45c; --warnbg:#2e2408; --bad:#ff7b80; --badbg:#3a1214; --info:#8db8f5; --infobg:#132338; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--f-body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--side)}
+.app{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100%}
+/* ---- índice ---- */
+.side{background:var(--side);color:var(--side-fg);position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow-y:auto;padding-block:18px 30px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:14px}
+.brand{display:flex;flex-direction:column;gap:2px;margin-bottom:14px}
+.brand b{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.brand b span{color:var(--amarillo)}
+.brand small{color:var(--side-dim);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.busca{width:100%;border:1px solid #6b2a2d;background:#2a0607;color:#fff;border-radius:8px;padding:9px 11px;font:inherit;font-size:14px}
+.busca::placeholder{color:#c99b97}
+.rol{display:flex;margin:10px 0 6px;border:1px solid #6b2a2d;border-radius:8px;overflow:hidden}
+.rol button{flex:1;background:transparent;color:var(--side-dim);border:0;padding:7px 4px;font:600 12px var(--f-body);cursor:pointer}
+.rol button[aria-pressed="true"]{background:var(--amarillo);color:var(--vino)}
+.grp{margin-top:16px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--side-dim);font-weight:800}
+.nav a{display:flex;align-items:center;gap:8px;color:var(--side-fg);text-decoration:none;padding:6px 8px;border-radius:7px;font-size:14px;line-height:1.3}
+.nav a:hover{background:#ffffff14}
+.nav a.act{background:#ffffff1f;color:var(--side-act);font-weight:700}
+.nav a .d{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--vino);background:var(--side-dim);border-radius:4px;padding:1px 5px}
+.nav a.hit{outline:1px dashed var(--amarillo)}
+.sinres{color:var(--side-dim);font-size:13px;margin-top:12px}
+/* ---- contenido ---- */
+.main{min-width:0;padding-block:28px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.top{display:none}
+.ruta{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.05em;padding:2px 8px;border-radius:5px;text-transform:uppercase}
+.chip.d{background:var(--vino);color:var(--amarillo)}
+.chip.t{background:var(--okbg);color:var(--ok)}
+h1{font-size:34px;line-height:1.15;margin:4px 0 0;letter-spacing:-.02em;font-weight:800;text-wrap:balance}
+h1 i{font-style:normal;color:var(--rojo)}
+.lead{font-size:17px;color:var(--fg);max-width:65ch;margin:0}
+h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px;font-weight:800;color:var(--rojo);display:flex;align-items:center;gap:8px}
+h2::after{content:"";flex:1;height:1px;background:var(--line)}
+h3{font-size:16px;margin:16px 0 6px}
+.blk{display:flex;flex-direction:column}
+.shot{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);cursor:zoom-in;display:block;padding:0}
+.shot img{display:block;width:100%;height:auto}
+.shotcap{font-size:12px;color:var(--dim);margin-top:6px}
+ol.pasos{list-style:none;counter-reset:p;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+ol.pasos>li{counter-increment:p;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;align-items:start}
+ol.pasos>li::before{content:counter(p);width:28px;height:28px;border-radius:50%;background:var(--rojo);color:#fff;font:700 13px var(--f-mono);display:grid;place-items:center;margin-top:1px}
+ol.pasos ul{margin:6px 0 0;padding-left:18px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--vino);color:#fff;text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:9px 12px;font-weight:700}
+td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:700;white-space:nowrap}
+td.o{white-space:nowrap;font-size:12px;font-weight:700}
+td.o.si{color:var(--bad)}
+td.o.no{color:var(--dim);font-weight:500}
+kbd,.btn{display:inline-block;font:600 12.5px var(--f-body);padding:1px 8px;border-radius:6px;background:var(--rojo);color:#fff;white-space:nowrap;line-height:1.6}
+.btn.s{background:var(--soft);color:var(--fg);border:1px solid var(--line)}
+.btn.y{background:var(--amarillo);color:var(--vino)}
+.btn.g{background:#1f9d55;color:#fff}
+code{font:500 13px var(--f-mono);background:var(--soft);padding:1px 5px;border-radius:4px}
+.nota{border-radius:10px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.nota b.t{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.nota.ojo{background:var(--warnbg);color:var(--warn)}
+.nota.ok{background:var(--okbg);color:var(--ok)}
+.nota.info{background:var(--infobg);color:var(--info)}
+.nota.mal{background:var(--badbg);color:var(--bad)}
+.nota ul{margin:4px 0 0;padding-left:18px}
+.nota p{margin:0}
+.check{display:flex;flex-direction:column;gap:6px}
+.check label{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 12px;cursor:pointer}
+.check input{width:18px;height:18px;margin-top:3px;accent-color:var(--rojo)}
+.check label:has(input:checked){opacity:.6}
+.check label:has(input:checked) span{text-decoration:line-through}
+.progreso{height:8px;background:var(--line);border-radius:6px;overflow:hidden}
+.progreso i{display:block;height:100%;background:linear-gradient(90deg,var(--amarillo),var(--rojo));width:0;transition:width .3s}
+.pie{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}
+.pie a{display:flex;flex-direction:column;text-decoration:none;color:var(--fg);border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 14px;min-width:0;max-width:48%}
+.pie a small{color:var(--dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+.pie a b{font-size:15px}
+.pie a.sig{margin-left:auto;text-align:right}
+.pie a:hover{border-color:var(--rojo)}
+a{color:var(--rojo)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
+mark{background:var(--amarillo);color:var(--vino);border-radius:3px;padding:0 2px}
+.zoom{position:fixed;inset:0;background:#000c;z-index:50;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
+.zoom img{max-height:100%;max-width:100%;border-radius:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.tarj{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.tarj b{font-size:15px}
+.tarj span{color:var(--dim);font-size:13.5px}
+.tarj a{font-size:13.5px;font-weight:600}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;inset:0 auto 0 0;width:min(300px,86vw);height:100%;z-index:40;transform:translateX(-102%);transition:transform .2s;padding-top:calc(18px + env(safe-area-inset-top,0px))}
+  body.menu .side{transform:none;box-shadow:0 0 0 100vmax #0007}
+  .top{display:flex;position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--side);color:var(--side-fg);align-items:center;gap:12px;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .top button{background:var(--amarillo);color:var(--vino);border:0;border-radius:7px;padding:6px 12px;font:700 14px var(--f-body)}
+  .top b{font-size:15px}
+  h1{font-size:27px}
+  .main{padding-top:18px}
+  .pie a{max-width:100%;flex:1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="top"><button id="abrir" aria-label="Abrir índice">☰ Índice</button><b>Manual · Pirotecnia Boom</b></div>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><b>Pirotecnia <span>Boom</span></b><small>Manual de uso</small></div>
+    <input class="busca" id="q" type="search" placeholder="Buscar: cobrar, nota de crédito…" autocomplete="off">
+    <div class="rol" role="group" aria-label="Qué usuario sos">
+      <button id="r-d" aria-pressed="true">Soy dueño</button><button id="r-o" aria-pressed="false">Soy operador</button>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sinres" id="sinres" hidden>No hay pantallas con esa palabra.</div>
+  </aside>
+  <main class="main"><div class="wrap" id="cont"></div></main>
+</div>
+
+<script>
+'use strict';
+const PANEL = 'https://ema-data-analytics.github.io/pirotecniaboom-panel/';
+const CATALOGO = PANEL + 'catalogo.html';
+const B = (t, c = '') => `<span class="btn ${c}">${t}</span>`;
+const N = (tipo, titulo, html) => `<div class="nota ${tipo}"><b class="t">${titulo}</b>${html}</div>`;
+
+/* Cada pantalla: grupo, titulo, d (solo dueño), shot, para, pasos[], campos[[campo, qué poner, obligatorio]], botones[[botón, qué hace]], ojo[], extra (html) */
+const S = [
+{ id:'empezar', g:'Empezá acá', t:'Cómo entrar y moverse', shot:'01_inicio', cap:'Pantalla de Inicio después de entrar como dueño.',
+  para:'Esta página explica cómo entrar al sistema, quién ve qué y cómo se usa cualquier pantalla. Leela una vez y después andá directo a la pantalla que necesites.',
+  pasos:[
+    `Abrí el panel en la computadora o el celular: <a href="${PANEL}" target="_blank">${PANEL}</a>`,
+    'En <b>Usuario</b> escribí tu usuario: <code>dueno</code> u <code>operador</code>. Da igual mayúsculas o la ñ: <code>dueño</code> entra igual.',
+    'En <b>Contraseña</b> escribí tu clave y tocá ' + B('Ingresar') + ' o Enter.',
+    'Entrás a la pantalla <b>Inicio</b>. A la izquierda está el menú; en el celular se abre con el botón ☰ de arriba a la izquierda.',
+    'Para salir, tocá el ícono de la puerta al lado de tu nombre, arriba del menú.'],
+  campos:[['Usuario','Tu nombre de usuario, sin espacios.','Sí'],['Contraseña','Tu clave (mínimo 8 caracteres).','Sí']],
+  extra:`<div class="blk"><h2>Quién ve qué</h2><div class="tw"><table><thead><tr><th>Usuario</th><th>Puede</th><th>No ve</th></tr></thead><tbody>
+    <tr><td>Dueño</td><td>Todo: ventas, compras, costos, bancos, márgenes, usuarios, anulaciones y notas de crédito.</td><td>—</td></tr>
+    <tr><td>Operador</td><td>Vender, presupuestar, cobrar, abrir y cerrar caja, cargar gastos de contado, dar de alta clientes.</td><td>Compras, pagos a proveedores, bancos, costos, márgenes, usuarios y datos de la empresa. No puede poner descuentos ni precios especiales.</td></tr>
+    <tr><td>Mayorista</td><td>Solo el catálogo, con precios por mayor.</td><td>Todo el panel de gestión.</td></tr></tbody></table></div></div>
+  <div class="blk"><h2>Cómo es cualquier pantalla</h2><div class="grid2">
+    <div class="tarj"><b>Encabezado</b><span>Título, para qué sirve y a la derecha los botones ${B('Excel','s')} ${B('PDF','s')} ${B('+ Nuevo')}. Excel y PDF bajan exactamente lo que muestra la grilla.</span></div>
+    <div class="tarj"><b>Tarjetas de resumen</b><span>Los recuadros de colores de arriba: totales de lo que está filtrado.</span></div>
+    <div class="tarj"><b>Barra de filtros</b><span>Desde, Hasta, listas y el cuadro Buscar. La grilla se actualiza sola. La goma borra los filtros.</span></div>
+    <div class="tarj"><b>Grilla</b><span>Una fila por registro. La fila TOTAL suma los importes sin contar lo anulado. Las filas grises tachadas están anuladas o dadas de baja.</span></div>
+    <div class="tarj"><b>Acciones de cada fila</b><span>Ojo = ver el detalle · lápiz = editar · PDF · círculo tachado = anular o dar de baja · y los propios de cada pantalla (Cobrar, Pagar, WhatsApp…).</span></div>
+    <div class="tarj"><b>Buscadores</b><span>Cliente, producto, proveedor y concepto no se escriben a mano: tocá el campo o empezá a escribir y elegí de la lista que aparece.</span></div>
+  </div></div>`,
+  ojo:['<b>Nada se borra.</b> Lo que está mal se anula o se da de baja, siempre con un motivo, y queda registrado.',
+       '<b>Una venta emitida no se cambia.</b> Se corrige con una nota de crédito (devolver o bonificar) o una nota de débito (cobrar algo más).',
+       '<b>Los precios se calculan solos</b>: costo × (1 + margen de la lista). Para cambiar precios se cambia el costo del producto o el margen de la lista.',
+       'Los campos con <b style="color:var(--rojo)">*</b> son obligatorios. Los avisos de abajo a la derecha dicen si salió bien (verde) o por qué no se pudo (rojo).'] },
+
+{ id:'primerdia', g:'Empezá acá', t:'Primer día: qué cargar y en qué orden', check:true,
+  para:'Si el sistema se usa por primera vez, cargá las cosas en este orden: cada paso usa datos del anterior. Tildá lo que ya hiciste; queda guardado en este navegador.',
+  lista:[
+    ['empresa','<b>Datos de la empresa</b>: razón social, CUIT, dirección, horarios, WhatsApp de pedidos.'],
+    ['usuarios','<b>Usuarios</b>: creá uno por persona que use el sistema y cambiá las claves iniciales.'],
+    ['cuentas','<b>Cuentas bancarias</b>: banco, Mercado Pago, caja fuerte.'],
+    ['medios','<b>Medios de pago</b>: indicá en qué cuenta acredita cada uno (transferencia → banco, QR → Mercado Pago) y la comisión de las tarjetas.'],
+    ['listas','<b>Listas de precios</b>: margen de Público y de Mayorista.'],
+    ['categorias','<b>Categorías</b>: los rubros del catálogo y su orden.'],
+    ['proveedores','<b>Proveedores</b>.'],
+    ['productos','<b>Productos y precios</b>: cada producto con su costo. Los precios salen solos.'],
+    ['stock','<b>Stock y ajustes</b>: un ajuste de tipo Inventario inicial con lo que hay en el depósito.'],
+    ['conceptos','<b>Tipos y conceptos de gasto</b>: luz, alquiler, sueldos, etc.'],
+    ['clientes','<b>Clientes</b> habituales y mayoristas (los nuevos también se cargan al vender).'],
+    ['caja','<b>Caja</b>: abrila con el efectivo del día. Ya podés vender.']] },
+
+{ id:'inicio', g:'Principal', t:'Inicio', shot:'p_inicio', cap:'Tablero de Inicio.',
+  para:'Resumen del día apenas entrás: cuánto se vendió, si la caja está abierta y qué está pendiente.',
+  pasos:['Mirá las tarjetas de arriba: <b>Ventas de hoy</b>, <b>Ventas del mes</b> (ya descontadas las notas de crédito), <b>Cobrado hoy</b> y <b>Clientes deben</b>.',
+    'La segunda fila muestra si la <b>Caja</b> está abierta, cuántos <b>Pedidos web</b> esperan confirmación, cuántos <b>Presupuestos vigentes</b> hay y, para el dueño, cuánto <b>Debemos a proveedores</b> (el operador ve los productos bajo stock mínimo).',
+    'El gráfico muestra las ventas de los últimos 7 días.',
+    'El cuadro <b>Avisos</b> lista lo que hay que atender: caja cerrada, pedidos para confirmar, presupuestos que vencen en 2 días, cheques que vencen en la semana y productos bajo el mínimo. Cada aviso tiene un enlace que te lleva a la pantalla.',
+    'Arriba a la derecha tenés atajos: ' + B('+ Nueva venta') + ' y ' + B('Nuevo presupuesto','y') + '.'],
+  ojo:['Si dice <b>Caja CERRADA</b>, no vas a poder vender de contado ni cobrar en efectivo: primero abrí la caja.'] },
+
+{ id:'presupuestos', g:'Ventas', t:'Presupuestos', shot:'10_presupuesto', cap:'Presupuesto con dos productos, listo para PDF, WhatsApp o convertir en venta.',
+  para:'Cotizaciones para clientes. El presupuesto guarda sus precios mientras está vigente: si después sube un costo, el cliente paga lo presupuestado.',
+  pasos:['Tocá ' + B('+ Nuevo presupuesto') + '.',
+    '<b>Paso 1 · Encabezado.</b> Elegí el <b>Cliente</b> en el buscador. Si no existe, tocá el botón de la persona con + al lado y dalo de alta ahí mismo.',
+    'Revisá <b>Lista de precios</b> (por defecto la del cliente) y <b>Válido hasta</b> (por defecto hoy + 7 días). Si corresponde, completá descuento y nota.',
+    'Tocá ' + B('Guardar encabezado y cargar productos') + '. Aparece el número <code>PR-000001</code> y se habilita el paso 2.',
+    '<b>Paso 2 · Productos.</b> En <b>Producto</b> buscá por código, nombre o categoría y elegilo. Debajo aparece el precio de lista y el disponible.',
+    'Poné la <b>Cantidad</b> y tocá ' + B('+ Agregar') + ' (o Enter). La línea entra en la grilla y el total de abajo a la derecha se actualiza.',
+    'Repetí con cada producto. Para corregir una línea tocá el lápiz; para sacarla, el tacho.',
+    'Para mandarlo: ' + B('PDF','s') + ' lo descarga, ' + B('Enviar por WhatsApp','g') + ' abre WhatsApp con un mensaje y un link donde el cliente lo ve y lo descarga. Al enviarlo pasa a estado <b>Enviado</b>.',
+    'Cuando el cliente acepta, tocá ' + B('Convertir en venta') + ': elegí Contado (pasa al cobro) o Cuenta corriente, y si emitiste factura ARCA aparte, su número. Se emite la venta con los precios del presupuesto.',
+    'Si no acepta, tocá ' + B('Rechazado','s') + ' y anotá el motivo. ' + B('Duplicar','s') + ' crea uno nuevo igual pero con los precios de hoy.'],
+  campos:[['Cliente','Elegilo del buscador. Botón de la persona + para crear uno nuevo.','Sí'],
+    ['Lista de precios','“La del cliente” o una lista puntual.','No'],
+    ['Válido hasta','Fecha de vencimiento. Después de esa fecha pasa solo a Vencido.','No'],
+    ['Descuento general %','Descuento sobre todo el presupuesto. Solo el dueño.','No'],
+    ['Motivo del descuento','Por qué se hizo el descuento o el precio especial.','No'],
+    ['Nota para el cliente','Sale impresa en el PDF.','No'],
+    ['Producto','Buscador por código, nombre o categoría.','Sí'],
+    ['Cantidad','Unidades.','Sí'],
+    ['Precio neto unit.','Vacío = precio de lista. Escribir un precio = precio especial. Solo el dueño.','No'],
+    ['Desc. línea %','Descuento de esa línea. Solo el dueño.','No']],
+  botones:[['Excel / PDF','Descarga el listado filtrado.'],['Lápiz u ojo','Abre el presupuesto (lápiz si se puede editar, ojo si ya está cerrado).'],['WhatsApp','Lo manda al celular del cliente.'],['Caja registradora','Convertir en venta.'],['Copiar','Duplicar con precios actuales.']],
+  ojo:['Estados: <b>Borrador</b> → <b>Enviado</b> → <b>Aceptado</b> (se convirtió en venta) · <b>Rechazado</b> · <b>Vencido</b>.',
+    'Un presupuesto aceptado, rechazado o vencido ya no se edita: duplicalo.',
+    'Las tarjetas de arriba muestran la <b>Efectividad</b>: aceptados sobre enviados.'] },
+
+{ id:'ventas', g:'Ventas', t:'Ventas y notas', shot:'20_venta_cc', cap:'Venta en carga: encabezado, productos y botón Confirmar venta.',
+  para:'Acá se hace una venta en mostrador y se consultan todas las ventas, notas de crédito (NC) y notas de débito (ND).',
+  pasos:['Si la venta es de contado, la caja tiene que estar abierta (menú Caja).',
+    'Tocá ' + B('+ Nueva venta') + '.',
+    '<b>Paso 1 · Encabezado.</b> Elegí el <b>Cliente</b> (para un mostrador sin datos usá <b>Consumidor Final</b>). Elegí la <b>Condición</b>: Contado o Cuenta corriente.',
+    'Completá si hace falta Recargo, Envío, Nota o N° de factura ARCA, y tocá ' + B('Guardar encabezado y cargar productos') + '.',
+    '<b>Paso 2 · Productos.</b> Buscá el producto, poné la cantidad y tocá ' + B('+ Agregar') + '. Repetí. Si no hay stock suficiente, el sistema avisa y no lo deja agregar.',
+    '<b>Paso 3 · Confirmar.</b> Revisá el total y tocá ' + B('Confirmar venta') + '.',
+    'Si es <b>Cuenta corriente</b>, confirmás y listo: queda como deuda del cliente.',
+    'Si es <b>Contado</b>, se abre la ventana de cobro (ver abajo). Al confirmar el cobro se emite la venta <code>VTA 0001-00000001</code> y se abre el comprobante.',
+    'Desde el comprobante podés bajar el ' + B('PDF','s') + ', mandarlo por ' + B('WhatsApp','g') + ', ' + B('Cobrar','g') + ' si quedó saldo o hacer una ' + B('Nota de crédito','y') + '.'],
+  campos:[['Cliente','Del buscador. Botón de la persona + para crearlo.','Sí'],['Lista de precios','La del cliente o una puntual.','No'],['Condición','Contado (se cobra ahora) o Cuenta corriente (queda debiendo).','Sí'],
+    ['Descuento general %','Solo el dueño.','No'],['Motivo del descuento','Obligatorio en la práctica si hay descuento o precio especial.','No'],
+    ['Recargo (neto)','Recargo sin IVA, por ejemplo por pago con tarjeta.','No'],['Envío (neto)','Costo de envío sin IVA.','No'],['Nota','Observación interna.','No'],['N° de factura ARCA','Si la factura electrónica se hizo aparte.','No']],
+  extra:`<div class="blk"><h2>La ventana de cobro</h2><a class="shot" data-z="img/11_cobro.jpg"><img src="img/11_cobro.jpg" alt="Ventana de cobro" loading="lazy"></a><div class="shotcap">Cobro de una venta de contado.</div>
+  <ol class="pasos" style="margin-top:12px">
+    <li><div>Arriba ves el <b>TOTAL A COBRAR</b> y lo que <b>FALTA</b>. Arranca con una línea de Efectivo por el total.</div></li>
+    <li><div>Si paga todo en efectivo: opcionalmente escribí en <b>Efectivo que entrega el cliente</b> cuánto te dio y el sistema calcula el <b>Vuelto</b>.</div></li>
+    <li><div>Si paga con otro medio, cambiá el <b>Medio</b> de la línea. Transferencia, QR y tarjetas piden <b>Cuenta donde acredita</b> y una <b>Referencia</b>; tarjeta de crédito también las <b>Cuotas</b>; cheque pide banco, número, librador, fechas y si es e-cheq.</div></li>
+    <li><div>Si paga con dos medios, corregí el importe de la primera línea y tocá ${B('+ Agregar otro medio','s')}: la nueva línea viene con lo que falta.</div></li>
+    <li><div>Cuando <b>FALTA</b> queda en $ 0 (en verde), tocá ${B('Confirmar')}.</div></li></ol></div>
+  <div class="blk"><h2>Nota de crédito (solo dueño)</h2><a class="shot" data-z="img/40_nc.jpg"><img src="img/40_nc.jpg" alt="Nota de crédito" loading="lazy"></a>
+  <ol class="pasos" style="margin-top:12px">
+    <li><div>En la grilla de ventas tocá el botón amarillo de la flecha que vuelve en la venta a corregir (o ${B('Nota de crédito','y')} desde el comprobante).</div></li>
+    <li><div><b>Por productos</b>: en <b>A acreditar</b> poné cuántas unidades devuelve. ${B('Acreditar todo','s')} completa todo. Dejá tildado <b>Vuelve la mercadería al stock</b> si la mercadería vuelve.</div></li>
+    <li><div><b>Por importe (bonificación)</b>: escribí el importe neto sin IVA; al lado ves el total con IVA.</div></li>
+    <li><div>Escribí el <b>Motivo</b> (obligatorio).</div></li>
+    <li><div>En <b>Lo que sobre después de cancelar la venta</b> elegí: queda a favor del cliente, se le devuelve en efectivo (sale de la caja) o por transferencia (elegís la cuenta).</div></li>
+    <li><div>Tocá ${B('Emitir nota de crédito')}. La NC primero cancela el saldo de esa venta y lo que sobra va a donde elegiste.</div></li></ol></div>
+  <div class="blk"><h2>Nota de débito (solo dueño)</h2><p style="margin:0">Botón ${B('Nota de débito','y')} arriba en Ventas. Sirve para cobrar algo después de emitida la venta.</p>
+  <div class="tw" style="margin-top:10px"><table><thead><tr><th>Campo</th><th>Qué poner</th><th>Oblig.</th></tr></thead><tbody>
+  <tr><td>Cliente</td><td>Del buscador.</td><td class="o si">Sí</td></tr><tr><td>Concepto</td><td>Recargo financiero, Envío, Intereses o Diferencia de precio.</td><td class="o si">Sí</td></tr>
+  <tr><td>Importe NETO</td><td>Sin IVA; abajo muestra el total con IVA.</td><td class="o si">Sí</td></tr><tr><td>Motivo</td><td>Por qué se cobra.</td><td class="o si">Sí</td></tr></tbody></table></div></div>`,
+  botones:[['Ojo','Ver el comprobante con sus cobros y notas aplicadas.'],['PDF','Comprobante interno en PDF.'],['Billete verde','Cobrar el saldo pendiente.'],['Flecha amarilla','Nota de crédito (solo dueño).'],['Continuar','En “Ventas en carga”: retoma una venta que quedó sin confirmar.'],['Tacho','Descarta una venta en carga (no se emitió nada).']],
+  ojo:['Si dejás una venta a medio cargar, aparece arriba en <b>Ventas en carga (sin confirmar)</b>. Continuala o descartala.',
+    'El operador no puede poner descuentos ni precios especiales: esos campos le aparecen bloqueados.',
+    'Si la cuenta corriente supera el límite de crédito del cliente, el sistema no deja confirmar.'] },
+
+{ id:'cobranzas', g:'Ventas', t:'Cobranzas', shot:'p_cobranzas', cap:'Listado de recibos.',
+  para:'Registra lo que paga un cliente que tiene deuda en cuenta corriente, o una seña. Cada cobro genera un recibo.',
+  pasos:['Tocá ' + B('+ Nuevo cobro') + '.',
+    'Elegí el <b>Cliente</b>. Aparecen tres tarjetas (Debe, A favor, Saldo) y la lista de comprobantes que debe, con sus días de atraso.',
+    'En <b>Importe a cobrar</b> viene cargada toda la deuda; cambialo si paga una parte.',
+    'En <b>Aplicar primero a</b> dejá “Las deudas más viejas” o elegí un comprobante puntual.',
+    'Si el cliente tiene saldo a favor y también deuda, aparece ' + B('Aplicar saldo a favor','y') + ': usalo antes de cobrar.',
+    'Tocá ' + B('Elegir medios de pago') + ' y completá la ventana de cobro igual que en una venta.',
+    'Al confirmar se emite el recibo. Si pagó de más, el excedente queda a favor del cliente.'],
+  campos:[['Cliente','Del buscador.','Sí'],['Importe a cobrar','Lo que paga ahora.','Sí'],['Aplicar primero a','Las deudas más viejas, o una en particular.','No']],
+  botones:[['Ojo','Ver el recibo: medios, a qué deuda se aplicó y si quedó a favor.'],['PDF','Recibo en PDF.'],['Círculo tachado','Anular el recibo (solo dueño): vuelve la deuda y se revierte la caja.']],
+  ojo:['El filtro <b>Sin ventas de contado</b> viene tildado para ver solo cobranzas; destildalo para ver también los cobros de ventas de contado.',
+    'Para cobrar efectivo la caja tiene que estar abierta.'] },
+
+{ id:'ctacte', g:'Ventas', t:'Cuenta corriente de clientes', shot:'30_estado_cuenta', cap:'Estado de cuenta de un cliente.',
+  para:'Quién debe, cuánto y desde cuándo. Desde acá se ve el estado de cuenta de cada cliente y se cobra.',
+  pasos:['La grilla muestra cada cliente con saldo: Límite, Deuda, Deuda de más de 30 días, A favor y Saldo.',
+    'Filtrá por nombre, tildá <b>Incluir saldo cero</b> para ver todos o <b>Solo con deuda de +30 días</b> para los atrasados.',
+    'Tocá el ojo para abrir el <b>Estado de cuenta</b>: elegí Desde/Hasta y ' + B('Actualizar','s') + '. Ves saldo anterior, cada movimiento (debe, haber, saldo) y saldo final.',
+    'Desde el estado de cuenta: ' + B('Excel','s') + ', ' + B('PDF','s') + ' para mandarle al cliente o ' + B('Cobrar','g') + '.',
+    'El botón de WhatsApp de la grilla abre un mensaje recordándole el saldo.'],
+  botones:[['Ojo','Estado de cuenta.'],['Billete verde','Cobrar.'],['WhatsApp','Recordatorio de saldo.']] },
+
+{ id:'pedidos', g:'Ventas', t:'Pedidos web', shot:'p_pedidos', cap:'Pedidos que llegan del catálogo.',
+  para:'Los pedidos que hacen los clientes desde el catálogo. Se guardan solos y el cliente avisa por WhatsApp. Acá se confirman (se emite la venta), se editan o se cancelan.',
+  pasos:['Por defecto se ven los pedidos <b>Abiertos</b>. Cada uno muestra nombre, celular, total y hasta cuándo vence (48 h).',
+    'Tocá el ojo para ver el detalle: productos, precio y si hay disponible (en rojo si falta stock).',
+    'Si el cliente cambia algo, tocá el lápiz: cambiá cantidades, sacá productos con el tacho o agregá con el buscador, escribí el <b>Motivo del cambio</b> y ' + B('Guardar') + '.',
+    'Para venderlo tocá el tilde verde: elegí Contado o Cuenta corriente, Recargo y Envío si corresponde, factura ARCA y ' + B('Continuar') + '. Si es contado pasa a la ventana de cobro.',
+    'Si no se concreta, tocá el círculo tachado y escribí el motivo: queda cancelado y libera el stock reservado.'],
+  ojo:['Mientras el pedido está abierto, su mercadería queda <b>reservada</b>: no se puede vender a otro.',
+    'Los productos que ya estaban en el pedido mantienen su precio; los que se agregan al editar toman el precio de hoy.',
+    'Si nadie lo confirma en 48 h, vence solo.'] },
+
+{ id:'compras', g:'Compras', d:1, t:'Compras', shot:'50_compra', cap:'Carga de una factura de compra.',
+  para:'Facturas de proveedores. Suman stock y actualizan el costo de los productos, y con el costo se recalculan los precios.',
+  pasos:['Tocá ' + B('+ Nueva compra') + '.',
+    '<b>Paso 1 · Encabezado.</b> Elegí el <b>Proveedor</b>, la <b>Fecha de la factura</b> y la <b>Condición</b>: Cuenta corriente (se paga después) o Contado (se paga ahora).',
+    'Completá <b>Letra</b>, <b>Punto de venta</b> y <b>Número</b> tal como dice la factura.',
+    'Si la factura tiene bonificación, flete o percepciones, cargalos. En <b>IVA que dice la factura</b> podés poner el IVA impreso para controlar que coincida.',
+    'Dejá tildado <b>Actualizar el costo de los productos</b> para que los precios se recalculen con este costo.',
+    '<b>Paso 2 · Productos.</b> Elegí el producto: el costo actual aparece solo. Poné cantidad y <b>Costo neto unit.</b> de la factura y tocá ' + B('+ Agregar') + '. Si el producto pide lote y vencimiento, completalos.',
+    'Revisá el total de abajo contra la factura y tocá ' + B('Registrar compra') + '. Si es contado se abre la ventana de pago.'],
+  campos:[['Proveedor','Del buscador.','Sí'],['Fecha de la factura','La de la factura.','No'],['Condición','Cuenta corriente o Contado.','Sí'],['Letra','A, B, C o X.','No'],['Punto de venta','Ej: 0001.','No'],['Número','Ej: 00001234.','Sí'],
+    ['Bonificación / Flete (neto)','Sin IVA.','No'],['Percepción IVA / IIBB','Importe de cada percepción.','No'],['IVA que dice la factura','Solo para control.','No'],['Actualizar el costo','Tildado = los precios se recalculan.','No'],
+    ['Producto, Cantidad, Costo neto unit.','Una línea por renglón de la factura.','Sí'],['Lote / vence','Solo en productos que lo piden.','A veces']],
+  botones:[['Billete verde','Pagar la factura.'],['Flecha amarilla','Nota de crédito o débito del proveedor: por devolución de mercadería (elegís cantidades) o por importe (neto y alícuota).'],['Círculo tachado','Anular la compra: solo para errores de carga. Saca del stock lo que entró y vuelve el costo anterior. No se puede si esa mercadería ya se vendió o si la factura tiene pagos.']],
+  ojo:['Si el proveedor te devolvió plata o te bonificó, no anules: cargá una nota de crédito del proveedor.'] },
+
+{ id:'pagos', g:'Compras', d:1, t:'Pagos a proveedores', shot:'p_pagos', cap:'Listado de órdenes de pago.',
+  para:'Órdenes de pago a proveedores, separadas de las compras. Se paga con efectivo, transferencia, cheques de la cartera o cheques propios.',
+  pasos:['Tocá ' + B('+ Nuevo pago') + ' (o el billete verde desde una compra o desde la cuenta del proveedor).',
+    'Elegí el <b>Proveedor</b>: ves cuánto le debemos y las facturas pendientes.',
+    'Corregí el <b>Importe a pagar</b> si pagás una parte y elegí en <b>Aplicar primero a</b> si va a una factura puntual. Opcional: <b>Nota</b>.',
+    'Si hay anticipos sin aplicar, aparece ' + B('Aplicar anticipos','y') + '.',
+    'Tocá ' + B('Elegir medios de pago') + '. Por cada medio: Efectivo (sale de la caja), Transferencia (elegís la cuenta de la que sale), <b>Cheque de terceros</b> (elegís uno de la cartera y el importe se completa solo) o <b>Cheque propio / e-cheq</b> (cuenta, banco, número y fecha de pago).',
+    'Cuando FALTA está en $ 0, tocá ' + B('Confirmar pago') + '.'],
+  extra:`<div class="blk"><h2>Cuenta corriente de proveedores</h2><p style="margin:0">Menú <b>Cuenta corriente proveedores</b>: saldo con cada proveedor. El ojo abre el estado de cuenta (facturas al haber, pagos y NC al debe) con Excel, PDF y ${B('Pagar','g')}. Saldo negativo = le pagamos de más (anticipo).</p></div>`,
+  botones:[['Ojo','Ver la orden de pago.'],['PDF','Orden de pago en PDF.'],['Círculo tachado','Anular: vuelve la deuda, se revierte la caja o el banco y los cheques vuelven a la cartera.']] },
+
+{ id:'caja', g:'Caja y fondos', t:'Caja', shot:'70_caja', cap:'Caja abierta con sus movimientos.',
+  para:'La caja de efectivo del día. Se abre a la mañana, registra sola cada cobro y pago, y se cierra a la noche contando la plata.',
+  pasos:['<b>Abrir:</b> en <b>Efectivo con el que arranca</b> poné el cambio inicial. Si querés, abrí <b>Contar billetes</b> y cargá cuántos hay de cada uno: el total se calcula solo. Tocá ' + B('Abrir caja') + '.',
+    'Con la caja abierta ves el <b>Efectivo en caja</b> según el sistema, los totales de otros medios y cada movimiento con su hora.',
+    '<b>Retiro:</b> ' + B('Retiro','s') + ' para sacar efectivo (retiro del dueño, depósito). Importe y descripción obligatorios.',
+    '<b>Aporte:</b> ' + B('Aporte','s') + ' para poner efectivo (cambio).',
+    'Si cargaste mal un retiro o aporte, tocá la flecha roja de ese movimiento: se registra el movimiento inverso con su motivo.',
+    '<b>Cerrar:</b> ' + B('Cerrar caja') + '. Por cada medio ves lo que dice el sistema; en <b>Contado</b> poné lo que contaste (o contá los billetes). La <b>Diferencia</b> se pinta en rojo si no coincide.',
+    'Completá Observaciones y, si hay diferencia, el Responsable. Tocá ' + B('Cerrar caja') + ' y confirmá. Se descarga el PDF de la caja.'],
+  campos:[['Efectivo con el que arranca','Plata en la caja al abrir.','No'],['Contar billetes','Cantidad por billete, de $20.000 a $10.','No'],['Retiro / Aporte: Importe','Cuánto.','Sí'],['Retiro / Aporte: Descripción','Para qué.','Sí'],['Cierre: Contado','Lo que contaste de cada medio.','Sí'],['Observaciones / Responsable','Si hubo faltante o sobrante.','No']],
+  ojo:['Se abre una caja por día. Una vez cerrada, la de hoy no se vuelve a abrir.',
+    'Los cheques no se cuentan en el arqueo: se controlan en la pantalla Cheques.',
+    'Abajo está el <b>Historial de cajas</b> con inicial, ingresos, egresos, efectivo final y diferencia de cada día.'] },
+
+{ id:'gastos', g:'Caja y fondos', t:'Gastos', shot:'p_gastos', cap:'Listado de gastos del mes.',
+  para:'Todo lo que se paga que no es mercadería: luz, alquiler, sueldos, comisiones. Alimenta el estado de resultados.',
+  pasos:['Tocá ' + B('+ Nuevo gasto') + '.',
+    'Escribí la <b>Descripción</b> (por ejemplo “Luz de octubre”) y la <b>Fecha</b>.',
+    'Elegí la <b>Condición</b>: Contado (se paga ahora) o, solo el dueño, A pagar.',
+    'Si es contado elegí el <b>Medio de pago</b>; si no es efectivo, también la <b>Cuenta de la que sale</b>.',
+    'Opcional: Proveedor, N° de comprobante e IVA incluido (si tiene factura A).',
+    'En <b>Conceptos</b>: elegí el concepto, poné el importe y un detalle, y tocá +. Podés repartir un gasto en varios conceptos.',
+    'Tocá ' + B('Registrar gasto') + '.'],
+  campos:[['Descripción','Qué se pagó.','Sí'],['Fecha','Del gasto.','No'],['Condición','Contado o A pagar.','Sí'],['Medio de pago','Efectivo, transferencia, etc.','Si es contado'],['Cuenta de la que sale','Banco o billetera.','Si no es efectivo'],
+    ['Proveedor','Del buscador.','No'],['N° de comprobante','El de la factura o ticket.','No'],['IVA incluido','Solo con factura A.','No'],['Concepto + Importe','Al menos uno.','Sí']],
+  ojo:['Las comisiones de tarjetas y billeteras se cargan solas como gasto (dicen <b>automático</b>).','Anular un gasto (solo dueño) revierte el pago en la caja o el banco.'] },
+
+{ id:'cheques', g:'Caja y fondos', t:'Cheques', shot:'p_cheques', cap:'Cartera de cheques.',
+  para:'Los cheques de terceros que recibís y los propios que emitís. Entran solos al cobrar o pagar con cheque; acá se sigue su vida.',
+  pasos:['Las tarjetas muestran: en cartera, depositados a acreditar, propios a debitar y rechazados.',
+    'Filtrá por tipo (de terceros o propios), estado o texto. La fecha de vencimiento se pinta en rojo si vence en 7 días.',
+    '<b>Depositar</b> (botón del banco): elegí la cuenta y confirmá. Pasa a Depositado.',
+    '<b>Acreditado</b> (tilde): cuando el banco lo acredita.',
+    '<b>Rechazado</b> (círculo tachado): poné el motivo y, si hay, los gastos bancarios. Se genera una nota de débito al cliente por el cheque más los gastos.',
+    '<b>Debitado</b> (tilde, en cheques propios): cuando el banco lo debitó.'],
+  ojo:['Estas acciones las hace solo el dueño.','Un cheque de cartera también se puede usar para pagarle a un proveedor (Pagos a proveedores).'] },
+
+{ id:'bancos', g:'Caja y fondos', d:1, t:'Bancos y billeteras', shot:'p_bancos', cap:'Saldos y movimientos de una cuenta.',
+  para:'Saldo de cada cuenta bancaria o billetera y sus movimientos, para conciliar con el resumen del banco.',
+  pasos:['Arriba ves el saldo de cada cuenta.',
+    'Elegí la cuenta en la lista de Movimientos. Tildá <b>Conciliado</b> en cada movimiento que ya viste en el resumen del banco.',
+    B('Transferir entre cuentas','s') + ': desde, hacia, importe.',
+    B('Depositar efectivo','s') + ': saca efectivo de la caja y lo pone en la cuenta.',
+    B('Movimiento manual','s') + ': gastos bancarios, intereses o ajustes; Tipo, Importe y Descripción obligatoria.'] },
+
+{ id:'productos', g:'Stock', t:'Productos y precios', shot:'60_productos', cap:'Listado de productos con stock y precios.',
+  para:'El catálogo de productos: stock, disponible y precios de cada lista. Lo que se carga acá es lo que ve el cliente en el catálogo web.',
+  pasos:['Buscá por código o nombre, filtrá por categoría, o tildá <b>Bajo mínimo</b> o <b>Sin stock</b>.',
+    'Columnas: Stock, <b>Disponible</b> (stock menos lo reservado en pedidos web), Costo (solo dueño), precio <b>Público final</b> y <b>Mayorista neto</b>.',
+    'Ojo: ficha del producto con precios vigentes por lista, historial de costos y movimientos de stock de 12 meses.',
+    '<b>Alta (solo dueño):</b> ' + B('+ Nuevo') + ', completá los campos y ' + B('Guardar') + '. Los precios se calculan al guardar.',
+    '<b>Cambiar precio:</b> editá el producto y cambiá el <b>Costo neto</b>. Todas las listas se recalculan.',
+    '<b>Baja:</b> círculo tachado. Deja de aparecer en el catálogo y en las ventas; no se borra.'],
+  campos:[['Código','Único. Ej: PA0600.','Sí'],['Nombre','Como lo ve el cliente.','Sí'],['Categoría','Rubro del catálogo.','Sí'],['Costo neto del proveedor','Sin IVA. Sin costo no hay precio.','Sí al crear'],
+    ['IVA','Alícuota, normalmente 21%.','Sí'],['Unidad de venta','Unidad, caja, etc.','Sí'],['Unidades por bulto','Para mayoristas.','No'],['Proveedor principal','Del buscador.','No'],['Stock mínimo','Debajo de esto avisa en Inicio.','No'],
+    ['Código de barras','Para buscar con lector.','No'],['Uso','Venta libre o Uso profesional.','No'],['Edad mínima','Años.','No'],['Descripción','Texto del catálogo.','No'],
+    ['Controla stock','Destildar para servicios o conceptos.','No'],['Pide lote y vencimiento','Al comprar pide lote y fecha.','No'],['Nuevo / Destacado / Outlet','Etiquetas del catálogo.','No'],['Envío por correo','Si se puede mandar por correo.','No'],
+    ['Fotos','Una dirección por línea; la primera es la principal.','No']],
+  ojo:['El stock no se edita acá: se mueve con compras, ventas, notas de crédito y ajustes.','El operador ve los productos pero no los puede modificar ni ve costos.'] },
+
+{ id:'stock', g:'Stock', t:'Stock y ajustes', shot:'p_stock', cap:'Ajustes de stock y movimientos de un producto.',
+  para:'Inventario inicial, recuentos, mermas, roturas y vencidos. Cada cambio es un ajuste con su motivo.',
+  pasos:['Tocá ' + B('+ Nuevo ajuste') + ' (solo dueño).',
+    'Elegí el <b>Tipo</b>: Inventario inicial (entra), Recuento (+ o −), Merma, Rotura o Vencimiento (salen), Otro (+ o −). Escribí el <b>Motivo</b>.',
+    'Elegí el producto, poné la cantidad y tocá +. En merma, rotura y vencimiento poné la cantidad en positivo: el sistema la descuenta. En recuento poné +5 si sobran o −3 si faltan.',
+    'Tocá ' + B('Registrar ajuste') + '.',
+    'Abajo, en <b>Movimientos de un producto</b>, elegí uno y ves cada entrada y salida con su saldo.'],
+  ojo:['Las mermas y roturas se restan como costo en el estado de resultados.'] },
+
+{ id:'clientes', g:'Maestros', t:'Clientes', shot:'p_clientes', cap:'Listado de clientes.',
+  para:'Consumidores y mayoristas, con su deuda y saldo a favor.',
+  pasos:['Buscá por nombre, celular o documento; filtrá por tipo o tildá <b>Solo con deuda</b>.',
+    B('+ Nuevo') + ': completá los campos y ' + B('Guardar') + '. También se crean desde una venta o presupuesto.',
+    'Lápiz para editar, ojo para la cuenta corriente, WhatsApp para escribirle.'],
+  campos:[['Tipo','Consumidor o Mayorista. Define la lista de precios por defecto.','Sí'],['Nombre / Razón social','','Sí'],['Celular (WhatsApp)','Con código de área: 387 474-9807. No se puede repetir.','No'],['Email','','No'],
+    ['Tipo y N° de documento','DNI, CUIT o CUIL.','No'],['Condición IVA','Consumidor final por defecto.','Sí'],['Lista de precios','Solo el dueño. Vacío = según el tipo.','No'],['Dirección / Localidad','','No'],
+    ['Límite de crédito','Solo el dueño. 0 = sin límite.','No'],['Notas','','No']],
+  ojo:['El operador puede crear clientes y corregir sus datos de contacto; tipo, lista, límite y baja los cambia el dueño.'] },
+
+{ id:'maestros', g:'Maestros', t:'Proveedores, categorías y demás tablas', shot:'p_categorias', cap:'Pantalla de Categorías: todas las tablas maestras funcionan igual.',
+  para:'Las tablas que alimentan los buscadores y listas desplegables. Todas funcionan igual: ' + B('+ Nuevo') + ', lápiz para editar, círculo tachado para dar de baja y flecha verde para reactivar. Las altas y cambios las hace el dueño.',
+  extra:`<div class="blk"><h2>Qué tiene cada una</h2><div class="tw"><table><thead><tr><th>Pantalla</th><th>Campos</th><th>Para qué</th></tr></thead><tbody>
+  <tr><td>Proveedores <span class="chip d">dueño</span></td><td>Razón social*, CUIT, Condición IVA, Teléfono, Email, Dirección, Plazo de pago (días), Notas</td><td>Compras y pagos. El libro abre su cuenta corriente.</td></tr>
+  <tr><td>Categorías</td><td>Nombre*, Orden en el catálogo</td><td>Rubros del catálogo. Orden 1 sale primero.</td></tr>
+  <tr><td>Listas de precios</td><td>Código* (solo al crear), Nombre*, Margen %*, Redondear a múltiplos de $, Redondear el precio final con IVA</td><td>Precio = costo × (1 + margen), redondeado. Al cambiar margen o redondeo se recalculan todos los precios. El reloj muestra el historial de márgenes. Público y Mayorista no se pueden desactivar.</td></tr>
+  <tr><td>Ofertas</td><td>Producto*, Lista*, Precio de oferta NETO*, Desde*, Hasta*</td><td>Precio especial por fechas. Muestra si está programada, vigente o terminó.</td></tr>
+  <tr><td>Descuentos por monto <span class="chip d">dueño</span></td><td>Lista*, Monto neto desde*, Descuento %*, Vigente desde, Vigente hasta</td><td>Descuento automático en el catálogo según el total. Ej: 5% desde $100.000 neto.</td></tr>
+  <tr><td>Tipos de gasto</td><td>Nombre*</td><td>Grupos: Servicios, Sueldos, Impuestos…</td></tr>
+  <tr><td>Conceptos de gasto</td><td>Tipo de gasto*, Concepto*</td><td>Lo que se elige al cargar un gasto: Luz, Internet…</td></tr>
+  <tr><td>Medios de pago <span class="chip d">dueño</span></td><td>Nombre*, Tipo*, Comisión %, Cuenta donde acredita</td><td>La comisión se registra sola como gasto. Efectivo, Cheque y Cuenta corriente son del sistema: solo se les cambia nombre, comisión o cuenta.</td></tr>
+  <tr><td>Cuentas bancarias <span class="chip d">dueño</span></td><td>Nombre*, Tipo* (Banco, Billetera, Caja fuerte), Banco / empresa, CBU / Alias</td><td>Donde acreditan transferencias y QR, y de donde salen los pagos.</td></tr>
+  </tbody></table></div><div class="shotcap">* obligatorio</div></div>`,
+  ojo:['Dar de baja no borra: el registro deja de aparecer en las listas para elegir, pero su historia queda.'] },
+
+{ id:'reportes', g:'Reportes', t:'Reportes', shot:'80_resultados', cap:'Estado de resultados del mes.',
+  para:'Dos reportes: el estado de resultados (solo dueño) y las ventas agrupadas.',
+  pasos:['<b>Estado de resultados</b>: elegí Desde y Hasta. Muestra, sin IVA: ventas brutas, descuentos, recargos, notas de crédito y débito, <b>ventas netas</b>, costo de la mercadería vendida, mermas, <b>margen bruto</b>, cada tipo de gasto y el <b>resultado</b> (ganancia o pérdida), con el % de cada línea sobre las ventas. ' + B('PDF','s') + ' lo descarga.',
+    '<b>Ventas por producto</b>: elegí el período y <b>Agrupar por</b> Producto, Categoría, Cliente, Lista o Día. Muestra cantidad, neto y total; el dueño también ve costo, ganancia y margen %.'] },
+
+{ id:'sistema', g:'Sistema', t:'Usuarios, empresa y contraseña', shot:'p_usuarios', cap:'Usuarios del sistema.',
+  para:'Quién entra al sistema, los datos de la empresa que salen en los PDF y en el catálogo, y tu contraseña.',
+  pasos:['<b>Usuarios</b> (dueño): ' + B('+ Nuevo') + ' → Usuario (sin espacios, ej. <code>caja1</code>), Nombre, Rol y Contraseña (mínimo 8). Para cambiar la clave de alguien o darlo de baja, lápiz → Nueva contraseña o Estado Inactivo.',
+    '<b>Datos de la empresa</b> (dueño): razón social, nombre de fantasía, CUIT, condición IVA, dirección, horarios, <b>WhatsApp para pedidos</b> (a donde llegan los pedidos del catálogo), email, redes, vencimiento de pedidos web (horas), máximo de pedidos por celular por día, validez de presupuestos (días) y la leyenda de precios del catálogo. ' + B('Guardar') + '.',
+    '<b>Mi contraseña</b> (todos): contraseña actual, la nueva dos veces y ' + B('Cambiar') + '.'],
+  ojo:['No podés quitarte el rol de dueño ni desactivarte a vos mismo.','Las contraseñas se guardan encriptadas: nadie, ni el sistema, puede leerlas. Si alguien la olvida, el dueño le pone una nueva.'] },
+
+{ id:'catalogo', g:'Catálogo web', t:'Catálogo para clientes', shot:'05_carrito', cap:'Carrito con el formulario de envío del pedido.',
+  para:'La tienda web que reemplaza a Tiendanube. El cliente arma el pedido y lo manda por WhatsApp; el pedido queda guardado en el panel.',
+  pasos:[`Dirección: <a href="${CATALOGO}" target="_blank">${CATALOGO}</a>`,
+    'El cliente elige categoría o busca, ajusta la cantidad con − y + y toca ' + B('Agregar') + '.',
+    'Toca ' + B('MI PEDIDO','y') + ' (abajo a la derecha): ve los productos, cambia cantidades o los saca. Si hay descuento por monto, le avisa cuánto le falta para obtenerlo.',
+    'Completa <b>Nombre y apellido</b>, <b>Celular</b> y si quiere un <b>Comentario</b>, y toca ' + B('Enviar pedido') + '.',
+    'El pedido se guarda con su número y se abre WhatsApp con el detalle completo: cada producto con código, cantidad, precio unitario y subtotal, el total, nombre, celular y comentario. El cliente toca enviar.',
+    'Vos lo ves en el panel en <b>Pedidos web</b> para confirmarlo.'],
+  extra:`<div class="blk"><h2>Mayoristas</h2><a class="shot" data-z="img/07_catalogo_mayorista.jpg"><img src="img/07_catalogo_mayorista.jpg" alt="Catálogo mayorista" loading="lazy"></a><div class="shotcap">Con el usuario mayorista los precios se ven netos + IVA.</div>
+  <ol class="pasos" style="margin-top:12px"><li><div>Botón ${B('Mayoristas','s')} arriba a la derecha (en el celular, el segundo ícono al lado del buscador).</div></li>
+  <li><div>Usuario y contraseña de mayorista (los crea el dueño en Usuarios con rol Mayorista).</div></li>
+  <li><div>Los precios pasan a la lista Mayorista, netos + IVA. El pedido funciona igual y el WhatsApp sale con neto, IVA y total.</div></li></ol>
+  <p style="margin:12px 0 0">El botón ${B('Lista','s')} descarga la lista de precios en Excel.</p></div>`,
+  ojo:['El precio queda reservado 48 h hasta que lo confirmes.','Cada celular puede hacer un máximo de pedidos por día (se configura en Datos de la empresa).'] },
+
+{ id:'problemas', g:'Ayuda', t:'Problemas frecuentes',
+  para:'Qué significa cada aviso rojo común y cómo seguir.',
+  faq:[
+    ['No puedo vender de contado','La caja está cerrada. Andá a Caja → Abrir caja.'],
+    ['“Sin stock” al agregar un producto','No alcanza el disponible (stock menos pedidos web abiertos). Revisá en Productos o cargá la compra.'],
+    ['“Lo cargado no coincide con el total”','En la ventana de cobro la suma de los medios tiene que dar exacto. Mirá el número de FALTA.'],
+    ['Me equivoqué en una venta','No se edita. Hacé una nota de crédito (devuelve o bonifica) y, si hace falta, una venta nueva.'],
+    ['Me equivoqué en una compra','Si fue error de carga, anulala y cargala de nuevo. Si el proveedor devolvió o bonificó, nota de crédito del proveedor.'],
+    ['Un producto dice “sin precio”','Le falta el costo. Editalo y cargá el Costo neto.'],
+    ['No me deja poner descuento','Los descuentos y precios especiales los autoriza el dueño: entrá con su usuario.'],
+    ['“Ya hay un cliente con ese celular”','El cliente ya existe: buscalo por el celular.'],
+    ['Supera el límite de crédito','El cliente debe más de lo permitido. Cobrá primero o pedile al dueño que suba el límite.'],
+    ['Olvidé la contraseña','El dueño entra a Usuarios, lápiz, y te pone una nueva.'],
+    ['El mayorista no puede entrar al panel','Es correcto: el mayorista solo usa el catálogo.']] }
+];
+
+/* ---------- estado ---------- */
+let ROL = 'd';
+try { ROL = localStorage.getItem('pb_rol') || 'd'; } catch (e) {}
+const visibles = () => S.filter(s => ROL === 'd' || !s.d);
+const plano = s => (s.t + ' ' + s.para + ' ' + (s.pasos || []).join(' ') + ' ' + (s.campos || []).flat().join(' ') + ' ' + (s.botones || []).flat().join(' ') + ' ' + (s.ojo || []).join(' ') + ' ' + (s.extra || '') + ' ' + (s.faq || []).flat().join(' ') + ' ' + (s.lista || []).map(x => x[1]).join(' ')).replace(/<[^>]+>/g, ' ');
+const norm = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+function navPintar() {
+  const q = norm(document.getElementById('q').value.trim());
+  const vs = visibles(); let html = '', g = '', n = 0;
+  for (const s of vs) {
+    const hit = q && norm(plano(s)).includes(q);
+    if (q && !hit) continue; n++;
+    if (s.g !== g) { g = s.g; html += `<div class="grp">${g}</div>`; }
+    html += `<a href="#${s.id}" data-id="${s.id}" class="${s.id === actual ? 'act' : ''}">${s.t}${s.d ? '<span class="d">DUEÑO</span>' : ''}</a>`;
+  }
+  document.getElementById('nav').innerHTML = html;
+  document.getElementById('sinres').hidden = n > 0;
+}
+
+let actual = 'empezar';
+function ir(id) {
+  const vs = visibles(); let i = vs.findIndex(s => s.id === id); if (i < 0) i = 0;
+  const s = vs[i]; actual = s.id;
+  const q = document.getElementById('q').value.trim();
+  const fila = c => `<tr><td>${c[0]}</td><td>${c[1]}</td><td class="o ${c[2] === 'No' ? 'no' : 'si'}">${c[2]}</td></tr>`;
+  let h = `<div class="blk"><div class="ruta">${s.g}${s.d ? '<span class="chip d">Solo dueño</span>' : ''}</div><h1>${s.t}</h1></div><p class="lead">${s.para}</p>`;
+  if (s.shot) h += `<div class="blk"><a class="shot" data-z="img/${s.shot}.jpg"><img src="img/${s.shot}.jpg" alt="${s.t}" loading="lazy"></a><div class="shotcap">${s.cap || ''} Tocá la imagen para agrandarla. Los datos son de prueba.</div></div>`;
+  if (s.check) {
+    let hechos = {}; try { hechos = JSON.parse(localStorage.getItem('pb_check') || '{}'); } catch (e) {}
+    h += `<div class="blk"><h2>Checklist</h2><div class="progreso"><i id="bar"></i></div><div class="check" style="margin-top:12px">${s.lista.map(x => `<label><input type="checkbox" id="ck_${x[0]}" data-k="${x[0]}" ${hechos[x[0]] ? 'checked' : ''}><span>${x[1]} <a href="#${x[0] === 'conceptos' || x[0] === 'cuentas' || x[0] === 'medios' || x[0] === 'listas' || x[0] === 'categorias' || x[0] === 'proveedores' ? 'maestros' : x[0] === 'empresa' || x[0] === 'usuarios' ? 'sistema' : x[0]}">ver</a></span></label>`).join('')}</div></div>`;
+  }
+  if (s.pasos) h += `<div class="blk"><h2>Paso a paso</h2><ol class="pasos">${s.pasos.map(p => `<li><div>${p}</div></li>`).join('')}</ol></div>`;
+  if (s.campos) h += `<div class="blk"><h2>Campo por campo</h2><div class="tw"><table><thead><tr><th>Campo</th><th>Qué poner</th><th>Obligatorio</th></tr></thead><tbody>${s.campos.map(fila).join('')}</tbody></table></div></div>`;
+  if (s.extra) h += s.extra;
+  if (s.botones) h += `<div class="blk"><h2>Botones de la grilla</h2><div class="tw"><table><thead><tr><th>Botón</th><th>Qué hace</th></tr></thead><tbody>${s.botones.map(b => `<tr><td>${b[0]}</td><td>${b[1]}</td></tr>`).join('')}</tbody></table></div></div>`;
+  if (s.faq) h += `<div class="blk"><div class="tw"><table><thead><tr><th>Qué pasa</th><th>Qué hacer</th></tr></thead><tbody>${s.faq.map(b => `<tr><td style="white-space:normal">${b[0]}</td><td>${b[1]}</td></tr>`).join('')}</tbody></table></div></div>`;
+  if (s.ojo) h += N('ojo', 'Tené en cuenta', `<ul>${s.ojo.map(o => `<li>${o}</li>`).join('')}</ul>`);
+  const ant = vs[i - 1], sig = vs[i + 1];
+  h += `<div class="pie">${ant ? `<a href="#${ant.id}"><small>Anterior</small><b>${ant.t}</b></a>` : '<span></span>'}${sig ? `<a class="sig" href="#${sig.id}"><small>Siguiente</small><b>${sig.t}</b></a>` : ''}</div>`;
+  const c = document.getElementById('cont'); c.innerHTML = h;
+  if (q) marcar(c, q);
+  if (s.check) { const upd = () => { const all = [...c.querySelectorAll('.check input')]; const k = {}; all.forEach(x => k[x.dataset.k] = x.checked); try { localStorage.setItem('pb_check', JSON.stringify(k)); } catch (e) {} document.getElementById('bar').style.width = Math.round(all.filter(x => x.checked).length * 100 / all.length) + '%'; }; c.querySelectorAll('.check input').forEach(x => x.onchange = upd); upd(); }
+  navPintar(); document.body.classList.remove('menu'); window.scrollTo(0, 0);
+}
+function marcar(root, q) {
+  const n = norm(q); if (n.length < 3) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const ts = [];
+  while (w.nextNode()) ts.push(w.currentNode);
+  for (const t of ts) { const i = norm(t.nodeValue).indexOf(n); if (i < 0 || t.parentNode.closest('mark')) continue; const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + q.length); const m = document.createElement('mark'); try { r.surroundContents(m); } catch (e) {} }
+}
+
+/* ---------- eventos ---------- */
+function rol(r) { ROL = r; try { localStorage.setItem('pb_rol', r); } catch (e) {} document.getElementById('r-d').setAttribute('aria-pressed', r === 'd'); document.getElementById('r-o').setAttribute('aria-pressed', r === 'o'); ir(actual); }
+document.getElementById('r-d').onclick = () => rol('d');
+document.getElementById('r-o').onclick = () => rol('o');
+document.getElementById('q').oninput = () => { navPintar(); const q = norm(document.getElementById('q').value.trim()); if (q && !norm(plano(S.find(s => s.id === actual))).includes(q)) { const f = visibles().find(s => norm(plano(s)).includes(q)); if (f) { location.hash = f.id; return; } } ir(actual); };
+document.getElementById('abrir').onclick = () => document.body.classList.toggle('menu');
+document.addEventListener('click', e => {
+  const z = e.target.closest('[data-z]'); if (z) { e.preventDefault(); const d = document.createElement('div'); d.className = 'zoom'; d.innerHTML = `<img src="${z.dataset.z}" alt="">`; d.onclick = () => d.remove(); document.body.appendChild(d); return; }
+  if (document.body.classList.contains('menu') && !e.target.closest('.side') && !e.target.closest('#abrir')) document.body.classList.remove('menu');
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { document.querySelectorAll('.zoom').forEach(z => z.remove()); document.body.classList.remove('menu'); } });
+window.addEventListener('hashchange', () => ir(location.hash.slice(1)));
+rol(ROL); ir(location.hash.slice(1) || 'empezar');
+</script>
+</body></html>
