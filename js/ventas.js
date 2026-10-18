@@ -10,7 +10,7 @@ PAGINAS.inicio = async () => {
   const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   $('ini').innerHTML = `
   <div class="grid-4 mb3">${kpi('Ventas de hoy', fmt(r.ventas_hoy), r.ventas_hoy_cant + ' comprobantes', 'r')}${kpi('Ventas del mes', fmt(r.ventas_mes), 'netas de notas de crédito', 'g')}${kpi('Cobrado hoy', fmt(r.cobrado_hoy), 'recibos')}${kpi('Clientes deben', fmt(r.deuda_clientes), 'cuenta corriente', 'w')}</div>
-  <div class="grid-4 mb3">${kpi('Caja', r.caja ? 'ABIERTA' : 'CERRADA', r.caja ? 'Efectivo ' + fmt(r.caja.efectivo) : 'Abrila para vender de contado', r.caja ? 'g' : 'r')}${kpi('Pedidos web abiertos', r.pedidos_abiertos, 'esperando confirmación', 'b')}${kpi('Presupuestos vigentes', r.presupuestos_vigentes, r.presupuestos_por_vencer + ' vencen en 2 días', 'w')}${ES_DUENO ? kpi('Debemos a proveedores', fmt(r.deuda_proveedores), '', 'r') : kpi('Bajo stock mínimo', r.bajo_minimo.length, 'productos', 'w')}</div>
+  <div class="grid-4 mb3">${kpi('Caja', r.caja ? 'ABIERTA' : 'CERRADA', r.caja ? 'Efectivo ' + fmt(r.caja.efectivo) : 'Abrila para vender de contado', r.caja ? 'g' : 'r')}${kpi('Pedidos web abiertos', r.pedidos_abiertos, 'esperando confirmación', 'b')}${kpi('Presupuestos pendientes', r.presupuestos_vigentes, r.presupuestos_por_vencer + ' vencen en 2 días', 'w')}${ES_DUENO ? kpi('Debemos a proveedores', fmt(r.deuda_proveedores), '', 'r') : kpi('Bajo stock mínimo', r.bajo_minimo.length, 'productos', 'w')}</div>
   <div class="grid-2">
     <div class="panel"><div class="ph"><span class="pt"><i class="fas fa-chart-column"></i> Ventas últimos 7 días</span></div><div class="pb"><div style="display:flex;align-items:flex-end;gap:10px;height:180px">${r.ventas_7_dias.map(d => { const h = Math.round(Number(d.total) / max * 150); const dt = new Date(d.dia + 'T12:00:00'); return `<div style="flex:1;text-align:center"><div class="mono" style="font-size:10px;color:var(--dim)">${Number(d.total) ? fmt(d.total).replace('$ ', '') : ''}</div><div style="height:${Math.max(h, 2)}px;background:linear-gradient(180deg,var(--amarillo),var(--rojo));border-radius:5px 5px 0 0;margin-top:3px"></div><div style="font-size:11px;margin-top:4px">${dias[dt.getDay()]} ${dt.getDate()}</div></div>`; }).join('')}</div></div></div>
     <div class="panel"><div class="ph"><span class="pt"><i class="fas fa-bell"></i> Avisos</span></div><div class="pb">
@@ -31,7 +31,7 @@ async function editorDoc(modo, id) {
   ED.modo = modo; ED.id = id || null; ED.det = null; ED.lineaEdit = null;
   const esV = modo === 'venta';
   pagina({ titulo: esV ? (id ? 'Venta en carga' : 'Nueva venta') : (id ? 'Presupuesto' : 'Nuevo presupuesto'), icono: esV ? 'receipt' : 'file-signature',
-    sub: esV ? 'Paso 1: encabezado · Paso 2: productos · Paso 3: confirmar' : 'Encabezado, productos y envío al cliente',
+    sub: esV ? 'Paso 1: encabezado · Paso 2: productos · Paso 3: confirmar' : 'Paso 1: encabezado · Paso 2: productos · Paso 3: grabar',
     botones: `<button class="btn btn-s" onclick="ir('${esV ? 'ventas' : 'presupuestos'}')"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span><span id="ed_est"></span></div><div class="pb" id="ed_hdr"></div></div>
       <div class="panel mb3" id="ed_lin_p"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span><span class="ss" id="ed_lista_txt"></span></div><div class="pb" id="ed_lin"></div></div>
@@ -42,16 +42,19 @@ async function editorRecargar() {
   ED.det = ED.modo === 'venta' ? await rpc('borrador_detalle', { p_id: ED.id }) : await rpc('presupuesto_detalle', { p_id: ED.id });
   editorPintarHdr(); editorPintarLineas();
 }
-function editorEditable() { const d = ED.det; if (!d) return true; return ED.modo === 'venta' ? d.estado === 'borrador' : ['borrador', 'enviado'].includes(d.estado); }
+function editorEditable() { const d = ED.det; if (!d) return true; return d.estado === 'borrador'; }
+const EST_PRE = { borrador: 'En carga', enviado: 'Pendiente', aceptado: 'Aceptado', rechazado: 'Rechazado', vencido: 'Vencido' };
+function badgePre(e) { return badgeEstado(EST_PRE[e] || e); }
 function editorPintarHdr() {
   const d = ED.det || {}; const esV = ED.modo === 'venta'; const ed = editorEditable();
-  $('ed_est').innerHTML = d.numero ? `<b class="mono">${esc(d.numero)}</b> ${badgeEstado(d.estado)}` : (d.estado ? badgeEstado(d.estado) : '<span class="badge bw">sin guardar</span>');
+  const bdg = e => esV ? badgeEstado(e) : badgePre(e);
+  $('ed_est').innerHTML = d.numero ? `<b class="mono">${esc(d.numero)}</b> ${bdg(d.estado)}` : (d.estado ? bdg(d.estado) : '<span class="badge bw">sin guardar</span>');
   const listas = (M.listas || []).map(l => `<option value="${l.id}" ${l.id === d.lista_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
   $('ed_hdr').innerHTML = `<div class="fr4">
     <div class="fg" style="grid-column:span 2"><label class="fl req">Cliente</label><div class="flex gap2"><div id="ed_cli_w" class="f1"></div>${ed ? '<button class="btn btn-s" title="Nuevo cliente" onclick="editorClienteNuevo()"><i class="fas fa-user-plus"></i></button>' : ''}</div></div>
     <div class="fg"><label class="fl">Lista de precios</label><select id="ed_lista" class="fs" ${ed ? '' : 'disabled'}><option value="">La del cliente</option>${listas}</select></div>
     ${esV ? `<div class="fg"><label class="fl">Condición</label><select id="ed_cond" class="fs" ${ed ? '' : 'disabled'}><option value="contado" ${d.condicion !== 'cuenta_corriente' ? 'selected' : ''}>Contado</option><option value="cuenta_corriente" ${d.condicion === 'cuenta_corriente' ? 'selected' : ''}>Cuenta corriente</option></select></div>`
-          : `<div class="fg"><label class="fl">Válido hasta</label><input type="date" id="ed_val" class="fi" value="${d.valido_hasta || hoy((M.empresa || {}).validez_presupuesto_dias || 7)}" ${ed ? '' : 'disabled'}></div>`}
+          : `<div class="fg"><label class="fl">Validez</label><div class="fi" style="background:#f6f1ee">${!d.estado || d.estado === 'borrador' ? ((M.empresa || {}).validez_presupuesto_dias || 2) + ' días desde que se graba' : 'Vence el ' + fmtD(d.valido_hasta)}</div></div>`}
   </div><div class="fr4">
     <div class="fg"><label class="fl">Descuento general %</label><input id="ed_desc" type="number" step="0.01" min="0" max="99" class="fi mono" value="${d.descuento_pct || 0}" ${ed && ES_DUENO ? '' : 'disabled'} title="${ES_DUENO ? '' : 'Lo autoriza el dueño'}"></div>
     <div class="fg"><label class="fl">Motivo del descuento / precio especial</label><input id="ed_mot" class="fi" value="${esc(d.descuento_motivo || '')}" ${ed ? '' : 'disabled'}></div>
@@ -71,7 +74,7 @@ async function editorGuardarHdr() {
   const cli = Number($('ed_cli').dataset.id || 0); if (!cli) return toast('Elegí el cliente.', 'r');
   const p = { id: ED.id, cliente_id: cli, lista_id: $('ed_lista').value ? Number($('ed_lista').value) : null, descuento_pct: numIn('ed_desc') || 0, descuento_motivo: val('ed_mot') || null, nota: val('ed_nota') || null };
   if (ED.modo === 'venta') { p.condicion = $('ed_cond').value; p.recargo_neto = numIn('ed_rec') || 0; p.envio_neto = numIn('ed_env') || 0; p.factura_externa = val('ed_fact') || null; ED.id = await rpc('borrador_guardar', { p }); }
-  else { p.valido_hasta = $('ed_val').value || null; ED.id = await rpc('presupuesto_guardar', { p }); }
+  else { ED.id = await rpc('presupuesto_guardar', { p }); }
   history.replaceState(null, '', '#' + (ED.modo === 'venta' ? 'ventas' : 'presupuestos'));
   toast('Encabezado guardado', 'g'); await editorRecargar();
   setTimeout(() => $('ed_prod') && $('ed_prod').focus(), 80);
@@ -112,9 +115,12 @@ function editorPintarLineas() {
     else if (d.comprobante_id) acc = `<button class="btn btn-b" onclick="verComprobante(${d.comprobante_id})"><i class="fas fa-eye"></i> Ver comprobante emitido</button>`;
   } else {
     const ok = items.length > 0;
-    acc = `<button class="btn btn-pdf" onclick="presupuestoPdf(${d.id})" ${ok ? '' : 'disabled'}><i class="fas fa-file-pdf"></i> PDF</button><button class="btn btn-wa" onclick="presupuestoWa(${d.id})" ${ok ? '' : 'disabled'}><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button>`;
-    if (['borrador', 'enviado'].includes(d.estado)) acc += `<button class="btn btn-p btn-xl" onclick="presupuestoConvertir(${d.id})" ${ok ? '' : 'disabled'}><i class="fas fa-cash-register"></i> Convertir en venta</button><button class="btn btn-d" onclick="presupuestoRechazar(${d.id})"><i class="fas fa-ban"></i> Rechazado</button>`;
-    acc += `<button class="btn btn-s" onclick="presupuestoDuplicar(${d.id})"><i class="fas fa-copy"></i> Duplicar</button>`;
+    if (d.estado === 'borrador') acc = `<button class="btn btn-p btn-xl" onclick="presupuestoGrabar(${d.id})" ${ok ? '' : 'disabled'}><i class="fas fa-floppy-disk"></i> Grabar presupuesto</button><span class="ss">${ok ? 'Al grabarlo queda pendiente: lo mandás al cliente y, cuando confirma, lo convertís en venta.' : 'Cargá al menos un producto para grabarlo.'}</span>`;
+    else {
+      acc = `<button class="btn btn-pdf" onclick="presupuestoPdf(${d.id})"><i class="fas fa-file-pdf"></i> PDF</button>`;
+      if (d.estado === 'enviado') acc += `<button class="btn btn-wa" onclick="presupuestoWa(${d.id})"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button><button class="btn btn-p btn-xl" onclick="presupuestoConvertir(${d.id})"><i class="fas fa-cash-register"></i> Cliente confirmó: convertir en venta</button><button class="btn btn-d" onclick="presupuestoRechazar(${d.id})"><i class="fas fa-ban"></i> Rechazado</button>`;
+      acc += `<button class="btn btn-s" onclick="presupuestoDuplicar(${d.id})"><i class="fas fa-copy"></i> Duplicar</button>`;
+    }
     if (d.venta) acc += `<button class="btn btn-b" onclick="verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta ${esc(d.venta.numero)}</button>`;
   }
   $('ed_acc').innerHTML = acc;
@@ -253,16 +259,16 @@ async function ndNueva(clienteId, origenId) {
 PAGINAS.presupuestos = async () => {
   pagina({ titulo: 'Presupuestos', icono: 'file-signature', sub: 'Cotizaciones a clientes · respetan su precio mientras están vigentes',
     botones: btnExcel(`exportarExcel('g_pre','Presupuestos')`) + btnPdf(`exportarPdf('g_pre','Listado de presupuestos',filtrosTexto())`) + btnNuevo('presupuestoNuevo()', 'Nuevo presupuesto'),
-    cuerpo: `<div class="grid-4 mb3" id="pre_k"></div><div class="panel">${barraFiltros([{ k: 'desde', t: 'desde', v: hoy(-60) }, { k: 'hasta', t: 'hasta', v: hoy() }, { k: 'cliente_id', t: 'cliente', l: 'Cliente' }, { k: 'estado', t: 'sel', l: 'Estado', op: [['borrador', 'Borrador'], ['enviado', 'Enviado'], ['aceptado', 'Aceptado'], ['rechazado', 'Rechazado'], ['vencido', 'Vencido']] }, { k: 'texto', t: 'texto', ph: 'N° o cliente' }], presupuestosCargar)}<div id="pre_g"></div></div>` });
+    cuerpo: `<div class="grid-4 mb3" id="pre_k"></div><div class="panel">${barraFiltros([{ k: 'desde', t: 'desde', v: hoy(-60) }, { k: 'hasta', t: 'hasta', v: hoy() }, { k: 'cliente_id', t: 'cliente', l: 'Cliente' }, { k: 'estado', t: 'sel', l: 'Estado', op: [['enviado', 'Pendiente'], ['borrador', 'En carga'], ['aceptado', 'Aceptado'], ['rechazado', 'Rechazado'], ['vencido', 'Vencido']], v: 'enviado' }, { k: 'texto', t: 'texto', ph: 'N° o cliente' }], presupuestosCargar)}<div id="pre_g"></div></div>` });
   await presupuestosCargar();
 };
 async function presupuestosCargar() {
   const rows = await rpc('listado_presupuestos', { f: leerFiltros() }); PAG.pres = rows;
   const c = e => rows.filter(r => r.estado === e);
   const emit = rows.filter(r => r.estado !== 'borrador').length;
-  $('pre_k').innerHTML = kpi('Vigentes', c('borrador').length + c('enviado').length, fmt([...c('borrador'), ...c('enviado')].reduce((a, r) => a + Number(r.total), 0)), 'b') + kpi('Aceptados', c('aceptado').length, fmt(c('aceptado').reduce((a, r) => a + Number(r.total), 0)), 'g') + kpi('Rechazados / vencidos', c('rechazado').length + c('vencido').length, '', 'r') + kpi('Efectividad', emit ? Math.round(c('aceptado').length * 100 / emit) + '%' : '—', 'aceptados sobre enviados', 'w');
-  $('pre_g').innerHTML = grilla('g_pre', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'N°', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>`, xf: r => r.numero }, { t: 'Cliente', k: 'cliente' }, { t: 'Lista', k: 'lista' }, { t: 'Válido hasta', k: 'valido_hasta', f: 'd' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: 'e' }, { t: 'Venta', k: 'venta' }], rows,
-    { acciones: r => `<button class="btn btn-xs btn-s" title="Ver / editar" onclick="editorDoc('presupuesto',${r.id})"><i class="fas fa-${['borrador', 'enviado'].includes(r.estado) ? 'pen' : 'eye'}"></i></button><button class="btn btn-xs btn-pdf" title="PDF" onclick="presupuestoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>${r.celular ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="presupuestoWa(${r.id})"><i class="fab fa-whatsapp"></i></button>` : ''}${['borrador', 'enviado'].includes(r.estado) ? `<button class="btn btn-xs btn-g" title="Convertir en venta" onclick="presupuestoConvertir(${r.id})"><i class="fas fa-cash-register"></i></button>` : ''}<button class="btn btn-xs btn-b" title="Duplicar" onclick="presupuestoDuplicar(${r.id})"><i class="fas fa-copy"></i></button>` });
+  $('pre_k').innerHTML = kpi('Pendientes', c('enviado').length, fmt(c('enviado').reduce((a, r) => a + Number(r.total), 0)) + (c('borrador').length ? ' · ' + c('borrador').length + ' en carga' : ''), 'b') + kpi('Aceptados', c('aceptado').length, fmt(c('aceptado').reduce((a, r) => a + Number(r.total), 0)), 'g') + kpi('Rechazados / vencidos', c('rechazado').length + c('vencido').length, '', 'r') + kpi('Efectividad', emit ? Math.round(c('aceptado').length * 100 / emit) + '%' : '—', 'aceptados sobre enviados', 'w');
+  $('pre_g').innerHTML = grilla('g_pre', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'N°', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>`, xf: r => r.numero }, { t: 'Cliente', k: 'cliente' }, { t: 'Lista', k: 'lista' }, { t: 'Válido hasta', k: 'valido_hasta', f: 'd' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: r => badgePre(r.estado), xf: r => EST_PRE[r.estado] || r.estado }, { t: 'Venta', k: 'venta' }], rows,
+    { acciones: r => `<button class="btn btn-xs btn-s" title="${r.estado === 'borrador' ? 'Seguir cargando' : 'Ver'}" onclick="editorDoc('presupuesto',${r.id})"><i class="fas fa-${r.estado === 'borrador' ? 'pen' : 'eye'}"></i></button>${r.estado !== 'borrador' ? `<button class="btn btn-xs btn-pdf" title="PDF" onclick="presupuestoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>` : ''}${r.celular && r.estado === 'enviado' ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="presupuestoWa(${r.id})"><i class="fab fa-whatsapp"></i></button>` : ''}${r.estado === 'enviado' ? `<button class="btn btn-xs btn-g" title="Cliente confirmó: convertir en venta" onclick="presupuestoConvertir(${r.id})"><i class="fas fa-cash-register"></i></button>` : ''}<button class="btn btn-xs btn-b" title="Duplicar" onclick="presupuestoDuplicar(${r.id})"><i class="fas fa-copy"></i></button>` });
 }
 async function presupuestoNuevo() { await editorDoc('presupuesto', null); }
 async function presupuestoPdf(id) {
@@ -282,8 +288,10 @@ async function presupuestoWa(id) {
   const link = location.origin + location.pathname.replace(/index\.html$/, '').replace(/\/?$/, '/') + 'presupuesto.html?t=' + d.token;
   const txt = `Hola ${d.cliente.nombre}! Te paso el presupuesto ${d.numero} de Pirotecnia Boom por ${fmt(d.total)}, válido hasta el ${fmtD(d.valido_hasta)}.\n\nPodés verlo y descargarlo acá: ${link}\n\n¡Cualquier consulta escribinos!`;
   waAbrir(d.cliente.celular, txt);
-  if (d.estado === 'borrador') { await rpc('presupuesto_estado', { p_id: id, p_estado: 'enviado' }); toast('Marcado como enviado', 'g'); }
-  if (PAG.id === 'presupuestos') { if (ED.id === id && $('ed_hdr')) editorRecargar(); else presupuestosCargar(); }
+}
+async function presupuestoGrabar(id) {
+  await rpc('presupuesto_estado', { p_id: id, p_estado: 'enviado' });
+  await editorRecargar(); toast('Presupuesto ' + ED.det.numero + ' grabado · vence el ' + fmtD(ED.det.valido_hasta), 'g', 6000);
 }
 async function presupuestoRechazar(id) { const m = await pedirTexto('Presupuesto rechazado', 'Motivo (opcional)', { obligatorio: false }); if (m === null) return; await rpc('presupuesto_estado', { p_id: id, p_estado: 'rechazado', p_motivo: m }); toast('Presupuesto rechazado', 'g'); ir('presupuestos'); }
 async function presupuestoDuplicar(id) { const n = await rpc('presupuesto_duplicar', { p_id: id }); toast('Presupuesto duplicado con precios actuales', 'g'); await editorDoc('presupuesto', n); }
