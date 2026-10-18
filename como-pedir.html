@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cómo pedir · Pirotecnia Boom</title>
+<meta name="description" content="Cómo hacer tu pedido en el catálogo de Pirotecnia Boom, paso a paso.">
+<link rel="icon" href="https://ema-data-analytics.github.io/pirotecniaboom-panel/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Una columna pensada para el celular: cada paso = texto + una maqueta del catálogo con productos reales. */
+:root{--rojo:#e31e24;--amarillo:#fecc00;--vino:#4a0a0d;--bg:#fff8f3;--panel:#ffffff;--fg:#2a1517;--dim:#7a6466;--line:#f0dcd3;--wa:#1faa53;
+  --f:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 var(--f)}
+.in{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{background:radial-gradient(120% 140% at 15% 0%,#ff4a3d 0%,var(--rojo) 35%,var(--vino) 100%);color:#fff;padding-top:env(safe-area-inset-top,0px)}
+header .in{padding-block:26px 30px;display:flex;flex-direction:column;gap:14px}
+.logo{background:#fff;border-radius:14px;padding:6px 10px;width:max-content}
+.logo img{display:block;height:58px;width:auto}
+h1{margin:0;font-size:34px;line-height:1.08;font-weight:900;letter-spacing:-.02em;text-wrap:balance}
+h1 span{color:var(--amarillo)}
+header p{margin:0;font-size:17px;max-width:46ch;opacity:.95}
+.cta{display:inline-flex;align-items:center;gap:8px;background:var(--amarillo);color:var(--vino);font-weight:800;text-decoration:none;padding:13px 20px;border-radius:12px;width:max-content;font-size:16px}
+.cta:hover{filter:brightness(1.05)}
+.resumen{display:flex;flex-wrap:wrap;gap:8px}
+.resumen span{background:#ffffff26;border:1px solid #ffffff40;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600}
+main .in{padding-block:26px 40px;display:flex;flex-direction:column;gap:22px}
+.paso{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:18px;align-items:center}
+.paso .n{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--rojo)}
+.paso h2{margin:2px 0 6px;font-size:22px;line-height:1.2;text-wrap:balance}
+.paso p{margin:0 0 6px}
+.paso ul{margin:4px 0 0;padding-left:18px}
+.paso li{margin:3px 0}
+b.k{background:var(--rojo);color:#fff;border-radius:6px;padding:0 7px;font-size:14px;white-space:nowrap}
+b.y{background:var(--amarillo);color:var(--vino);border-radius:6px;padding:0 7px;font-size:14px;white-space:nowrap}
+/* maquetas */
+.tel{background:#f6efe9;border:6px solid #2a1517;border-radius:22px;padding:10px;font-size:12px;display:flex;flex-direction:column;gap:8px;max-width:100%}
+.barra{background:linear-gradient(90deg,var(--vino),var(--rojo));color:#fff;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.busq{background:#fff;color:#999;border-radius:8px;padding:5px 9px;font-size:11px}
+.chips{display:flex;gap:5px;overflow:hidden}
+.chips i{font-style:normal;background:#ffffff2a;border-radius:999px;padding:2px 8px;white-space:nowrap;font-size:10.5px;font-weight:600}
+.chips i.on{background:var(--amarillo);color:var(--vino)}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.card{background:#fff;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+.card img{display:block;width:100%;aspect-ratio:1;object-fit:cover;background:#2a1517}
+.card>div{padding:5px 6px;display:flex;flex-direction:column;gap:3px}
+.card b{font-size:10.5px;line-height:1.2}
+.card s{text-decoration:none;color:var(--rojo);font-weight:800;font-size:12px}
+.qty{display:flex;gap:4px;align-items:center}
+.qty i{font-style:normal;border:1px solid var(--line);border-radius:5px;padding:0 5px;font-size:10px}
+.qty em{font-style:normal;margin-left:auto;background:var(--rojo);color:#fff;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700}
+.glow{outline:3px solid var(--amarillo);outline-offset:1px;border-radius:6px}
+.fab{align-self:flex-end;background:var(--rojo);color:#fff;font-weight:800;border-radius:999px;padding:6px 12px;font-size:11px}
+.fab u{text-decoration:none;background:var(--amarillo);color:var(--vino);border-radius:999px;padding:0 6px;margin-left:4px}
+.linea{display:flex;gap:7px;align-items:center;background:#fff;border-radius:8px;padding:6px;border:1px solid var(--line)}
+.linea img{width:36px;height:36px;border-radius:6px;object-fit:cover}
+.linea div{flex:1;min-width:0}
+.linea b{display:block;font-size:10.5px}
+.tot{display:flex;justify-content:space-between;font-weight:800;font-size:13px;padding:2px 4px}
+.campo{background:#fff;border:1px solid var(--line);border-radius:7px;padding:5px 8px;color:#555;font-size:11px}
+.lab{font-size:10px;font-weight:700;color:var(--vino)}
+.btnr{background:var(--rojo);color:#fff;text-align:center;font-weight:800;border-radius:8px;padding:7px;font-size:12px}
+.wa{background:#e5ddd5;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.wa .top{background:#075e54;color:#fff;border-radius:8px;padding:6px 8px;font-weight:700;font-size:11px}
+.burb{background:#dcf8c6;border-radius:8px 8px 2px 8px;padding:7px 8px;font-size:10.5px;line-height:1.4;align-self:flex-end;max-width:95%;white-space:pre-line;color:#111}
+.enviar{align-self:flex-end;background:var(--wa);color:#fff;border-radius:999px;padding:5px 11px;font-weight:800;font-size:11px}
+.ok{background:#e9f8ee;border:1px solid #bfe9cc;color:#14632f;border-radius:9px;padding:8px;font-size:11.5px}
+.nota{border-radius:14px;padding:14px 16px;background:#fff4cf;color:#6b4a00;font-size:15px}
+.nota b{color:var(--vino)}
+.faq{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:6px 18px}
+.faq details{border-top:1px solid var(--line);padding:12px 0}
+.faq details:first-of-type{border-top:0}
+.faq summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px}
+.faq summary::after{content:"+";color:var(--rojo);font-weight:900}
+.faq details[open] summary::after{content:"−"}
+.faq p{margin:8px 0 0;color:var(--fg)}
+h3{margin:6px 0 0;font-size:22px}
+footer{background:var(--vino);color:#f5e6e3;padding-bottom:env(safe-area-inset-bottom,0px)}
+footer .in{padding-block:24px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+footer small{opacity:.8}
+a:focus-visible{outline:3px solid var(--amarillo);outline-offset:2px}
+@media (max-width:640px){
+  .paso{grid-template-columns:minmax(0,1fr)}
+  .paso .tel{max-width:300px;justify-self:center;width:100%}
+  h1{font-size:29px}
+}
+</style>
+</head>
+<body>
+<header><div class="in">
+  <div class="logo"><img src="https://ema-data-analytics.github.io/pirotecniaboom-panel/img/logo_sm.png" alt="Pirotecnia Boom"></div>
+  <h1>Cómo hacer tu pedido <span>en 5 pasos</span></h1>
+  <p>Elegís los productos en el catálogo, mandás el pedido por WhatsApp y nosotros te confirmamos. No pagás nada en la página.</p>
+  <div class="resumen"><span>Sin registrarte</span><span>Precio reservado 48 h</span><span>Pago y envío por WhatsApp</span></div>
+  <a class="cta" href="https://ema-data-analytics.github.io/pirotecniaboom-panel/catalogo.html">Ir al catálogo →</a>
+</div></header>
+
+<main><div class="in">
+
+<section class="paso">
+  <div><div class="n">Paso 1</div><h2>Buscá lo que querés</h2>
+    <p>Entrá al catálogo y tocá una <b>categoría</b> (Infantil, Candelas, Tortas…) o escribí en el <b>buscador</b> el nombre o el código del producto.</p>
+    <ul><li>Con <b>Ordenar</b> lo ves por menor o mayor precio, o por nombre.</li><li>Debajo de cada producto ves su código y su precio.</li></ul></div>
+  <div class="tel"><div class="barra"><div class="busq">🔍 Buscar productos…</div><div class="chips"><i>Todo</i><i>Infantil</i><i>Candelas</i><i class="on">Tortas chicas</i><i>Cañas</i></div></div>
+    <div class="cards"><div class="card"><img src="https://ounzsqhxzdluqkcszkes.supabase.co/storage/v1/object/public/productos/p/133/1792350740592_xnyml.webp" alt=""><div><b>Torta Mandala 7 Tiros</b><s>$ 15.000</s></div></div>
+    <div class="card"><img src="https://ounzsqhxzdluqkcszkes.supabase.co/storage/v1/object/public/productos/p/136/1792350744772_2smid.webp" alt=""><div><b>Torta Meteoro 36 Tiros</b><s>$ 48.500</s></div></div></div></div>
+</section>
+
+<section class="paso">
+  <div><div class="n">Paso 2</div><h2>Elegí la cantidad y tocá <b class="k">Agregar</b></h2>
+    <p>Con <b>−</b> y <b>+</b> ponés cuántas unidades querés y tocás <b>Agregar</b>. El botón cambia a ✓ y el producto queda en tu pedido.</p>
+    <p>Seguí agregando todo lo que necesites: el número del botón <b class="k">MI PEDIDO</b> te muestra cuántos productos llevás.</p></div>
+  <div class="tel"><div class="cards"><div class="card"><img src="https://ounzsqhxzdluqkcszkes.supabase.co/storage/v1/object/public/productos/p/80/1792350507675_pah2v.webp" alt=""><div><b>Caña Mega Color 55Cm</b><s>$ 8.000</s><div class="qty"><i>−</i><b class="glow">&nbsp;3&nbsp;</b><i>+</i><em class="glow">Agregar</em></div></div></div>
+    <div class="card"><img src="https://ounzsqhxzdluqkcszkes.supabase.co/storage/v1/object/public/productos/p/27/1792350638257_150lh.webp" alt=""><div><b>Piedritas Cracker</b><s>$ 1.500</s><div class="qty"><i>−</i><b>&nbsp;2&nbsp;</b><i>+</i><em>✓</em></div></div></div></div>
+    <div class="fab">MI PEDIDO<u>2</u></div></div>
+</section>
+
+<section class="paso">
+  <div><div class="n">Paso 3</div><h2>Revisá tu pedido</h2>
+    <p>Tocá <b class="k">MI PEDIDO</b> abajo a la derecha. Ves cada producto con su precio y el total.</p>
+    <ul><li>Cambiá cantidades con − y +.</li><li>El tacho saca un producto.</li><li>Si hay descuento por monto, te avisa cuánto te falta para conseguirlo.</li></ul></div>
+  <div class="tel"><div class="linea"><img src="https://ounzsqhxzdluqkcszkes.supabase.co/storage/v1/object/public/productos/p/80/1792350507675_pah2v.webp" alt=""><div><b>Caña Mega Color 55Cm</b>$ 8.000 c/u</div><div class="qty"><i>−</i>3<i>+</i></div></div>
+    <div class="linea"><img src="https://ounzsqhxzdluqkcszkes.supabase.co/storage/v1/object/public/productos/p/27/1792350638257_150lh.webp" alt=""><div><b>Piedritas Cracker</b>$ 1.500 c/u</div><div class="qty"><i>−</i>2<i>+</i></div></div>
+    <div class="tot"><span>Total</span><span>$ 27.000</span></div></div>
+</section>
+
+<section class="paso">
+  <div><div class="n">Paso 4</div><h2>Completá tus datos y tocá <b class="k">Enviar pedido</b></h2>
+    <p>Debajo del total escribí:</p>
+    <ul><li><b>Nombre y apellido</b>.</li><li><b>Celular</b> con WhatsApp, con código de área (ej. 387 412-3456).</li><li><b>Comentario</b> si querés: horario, si retirás o te lo enviamos, etc.</li></ul>
+    <p>Al tocar <b>Enviar pedido</b>, el pedido queda registrado con su número.</p></div>
+  <div class="tel"><div class="tot"><span>Total</span><span>$ 27.000</span></div>
+    <div class="lab">Nombre y apellido *</div><div class="campo">María Gómez</div>
+    <div class="lab">Celular (WhatsApp) *</div><div class="campo">387 412-3456</div>
+    <div class="lab">Comentario</div><div class="campo">Retiro el sábado a la tarde</div>
+    <div class="btnr glow">Enviar pedido</div></div>
+</section>
+
+<section class="paso">
+  <div><div class="n">Paso 5</div><h2>Mandá el mensaje de WhatsApp</h2>
+    <p>Se abre WhatsApp con el pedido ya escrito: productos, cantidades, precios, total y tus datos. <b>Solo tocá enviar.</b></p>
+    <p>Nosotros te respondemos para confirmar stock, forma de pago y entrega o envío.</p>
+    <p>Si WhatsApp no se abrió solo, tocá el botón verde <b>Avisar por WhatsApp</b> que aparece en la página.</p></div>
+  <div class="wa"><div class="top">Pirotecnia Boom</div>
+    <div class="burb">Hola! Hice el pedido *P-000123* en la web.
+
+*Detalle:*
+• 3 x Caña Mega Color 55Cm (PA4200)
+   $ 8.000 c/u = *$ 24.000*
+• 2 x Piedritas Cracker (PA0600)
+   $ 1.500 c/u = *$ 3.000*
+
+*TOTAL: $ 27.000*
+
+Nombre: María Gómez
+Celular: 387 412-3456
+Comentario: Retiro el sábado a la tarde</div>
+    <div class="enviar">Enviar ➤</div></div>
+</section>
+
+<div class="nota"><b>Importante:</b> el pedido no se paga en la página. El precio queda <b>reservado 48 horas</b> hasta que lo confirmemos por WhatsApp. Si no lo confirmamos en ese plazo, el pedido vence y podés hacerlo de nuevo.</div>
+
+<h3>Preguntas frecuentes</h3>
+<div class="faq">
+  <details><summary>¿Tengo que crear una cuenta?</summary><p>No. Solo ponés tu nombre y tu celular al enviar el pedido.</p></details>
+  <details><summary>¿Los precios incluyen IVA?</summary><p>Sí. Los precios del catálogo son finales, con IVA incluido para consumidor final, en efectivo o transferencia.</p></details>
+  <details><summary>¿Cómo pago?</summary><p>Lo arreglamos por WhatsApp cuando te confirmamos el pedido: efectivo, transferencia u otro medio.</p></details>
+  <details><summary>¿Hacen envíos?</summary><p>El envío o el retiro se coordina por WhatsApp. Contanos en el comentario cómo preferís recibirlo.</p></details>
+  <details><summary>Me equivoqué en el pedido</summary><p>Avisanos por WhatsApp y lo corregimos antes de confirmarlo. También podés hacer un pedido nuevo.</p></details>
+  <details><summary>¿Puedo descargar la lista de precios?</summary><p>Sí. En el catálogo, el botón <b>Lista</b> (arriba) descarga todos los productos con su precio en Excel.</p></details>
+  <details><summary>Soy mayorista, ¿cómo veo mis precios?</summary><p>Tocá <b>Mayoristas</b> arriba a la derecha (en el celular es el segundo ícono, al lado del buscador) e ingresá con el usuario y la contraseña que te damos. Ves los precios por mayor más IVA y pedís igual que en estos pasos.</p></details>
+  <details><summary>¿Quién puede comprar?</summary><p>Venta exclusiva a mayores de 18 años. Precios sujetos a stock.</p></details>
+</div>
+
+</div></main>
+
+<footer><div class="in">
+  <b>¿Listo para pedir?</b>
+  <a class="cta" href="https://ema-data-analytics.github.io/pirotecniaboom-panel/catalogo.html">Ir al catálogo →</a>
+  <small>Pirotecnia Boom · Salta</small>
+</div></footer>
+</body>
+</html>
