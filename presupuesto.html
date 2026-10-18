@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Presupuesto · Pirotecnia Boom</title>
+<link rel="icon" href="img/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--rojo:#e31e24;--vino:#4a0a0d;--amarillo:#fecc00;--dim:#6f625c;--line:#eadfda}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Arial,sans-serif;background:#f5f2f0;color:#24130f;padding:16px}
+.hoja{max-width:820px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.08);overflow:hidden}
+.cab{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;border-bottom:4px solid var(--amarillo);flex-wrap:wrap}
+.cab img{width:180px;max-width:45vw}
+.tit{text-align:right}.tit h1{color:var(--rojo);font-size:22px}.tit div{font-size:13px;color:var(--dim)}
+.cuerpo{padding:18px 22px}
+.est{display:inline-block;padding:3px 10px;border-radius:5px;font-size:12px;font-weight:800;text-transform:uppercase;margin-top:4px}
+.ok{background:#dcfce7;color:#15803d}.no{background:#fee2e2;color:#b91c1c}.esp{background:#fff3c4;color:#8a6500}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:14px}
+th{background:var(--vino);color:#fff;text-align:left;padding:8px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:8px;border-bottom:1px solid var(--line)}.r{text-align:right;white-space:nowrap}
+.tot{margin-left:auto;margin-top:14px;max-width:320px;background:#fff8d6;border:1px solid #f5d76e;border-radius:10px;padding:10px 14px}
+.tot div{display:flex;justify-content:space-between;padding:2px 0}.tot .g{font-size:20px;font-weight:800;color:var(--vino);border-top:1px solid #f0d36a;margin-top:4px;padding-top:6px}
+.nota{font-size:13px;color:var(--dim);margin-top:14px;line-height:1.5}
+.acc{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{border:none;border-radius:8px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.b1{background:var(--rojo);color:#fff}.b2{background:#25d366;color:#fff}
+.err{padding:40px;text-align:center;color:var(--dim)}
+@media print{body{background:#fff;padding:0}.hoja{box-shadow:none}.acc{display:none}}
+@media (max-width:560px){.tit{text-align:left}th:nth-child(1),td:nth-child(1){display:none}}
+</style>
+</head>
+<body>
+<div class="hoja" id="h"><div class="err">Cargando presupuesto…</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+const sb = window.supabase.createClient(LOCAL ? location.origin : 'https://ounzsqhxzdluqkcszkes.supabase.co', 'sb_publishable_g5SGDg6taIq-O8-skchu0w_Zk1Ze1_W', { auth: { persistSession: false } });
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = n => '$ ' + nf.format(Number(n || 0));
+const fd = d => { const s = String(d || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y, m, x] = s.split('-'); return x + '/' + m + '/' + y; } return new Date(d).toLocaleDateString('es-AR'); };
+(async () => {
+  const t = new URLSearchParams(location.search).get('t');
+  const h = document.getElementById('h');
+  if (!t) { h.innerHTML = '<div class="err">Link inválido.</div>'; return; }
+  const { data: d, error } = await sb.rpc('ver_presupuesto', { p_token: t });
+  if (error || !d) { h.innerHTML = '<div class="err">No encontramos este presupuesto. Pedilo de nuevo por WhatsApp.</div>'; return; }
+  const ri = d.discrimina_iva; const e = d.empresa || {};
+  const est = { aceptado: ['ok', 'Aceptado'], rechazado: ['no', 'Rechazado'], vencido: ['no', 'Vencido'] }[d.estado] || ['esp', 'Vigente'];
+  const wa = String(e.whatsapp || '').replace(/\D/g, '');
+  h.innerHTML = `<div class="cab"><img src="img/logo.png" alt="Pirotecnia Boom"><div class="tit"><h1>PRESUPUESTO</h1><div><b>${esc(d.numero)}</b> · ${fd(d.fecha)}</div><div>Válido hasta el <b>${fd(d.valido_hasta)}</b></div><span class="est ${est[0]}">${est[1]}</span></div></div>
+  <div class="cuerpo"><div><b>Cliente:</b> ${esc(d.cliente.nombre)}</div>
+  <table><thead><tr><th>Código</th><th>Producto</th><th class="r">Cant.</th><th class="r">Precio</th><th class="r">Importe</th></tr></thead><tbody>
+  ${d.items.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.producto)}${Number(i.descuento_pct) ? ` <small>(-${nf.format(i.descuento_pct)}%)</small>` : ''}</td><td class="r">${Number(i.cantidad).toLocaleString('es-AR')}</td><td class="r">${fmt(ri ? i.precio_neto_unit : i.precio_final_unit)}</td><td class="r">${fmt(ri ? i.subtotal_neto : i.total)}</td></tr>`).join('')}
+  </tbody></table>
+  <div class="tot">${ri ? `<div><span>Neto</span><b>${fmt(Number(d.subtotal_neto) - Number(d.descuento_neto))}</b></div><div><span>IVA</span><b>${fmt(d.iva)}</b></div>` : ''}<div class="g"><span>TOTAL</span><span>${fmt(d.total)}</span></div></div>
+  <div class="nota">${d.nota ? esc(d.nota) + '<br>' : ''}${ri ? 'Precios netos más IVA.' : 'Precios con IVA incluido.'} Precios sujetos a disponibilidad de stock.<br>${esc(e.razon_social || 'Pirotecnia Boom')}${e.direccion ? ' · ' + esc(e.direccion) : ''}${e.horarios ? ' · ' + esc(e.horarios) : ''}</div>
+  <div class="acc"><button class="btn b1" onclick="print()">⬇ Descargar / imprimir</button>${wa ? `<a class="btn b2" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola! Quiero confirmar el presupuesto ' + d.numero + ' por ' + fmt(d.total))}" target="_blank">WhatsApp: confirmar</a>` : ''}</div></div>`;
+  document.title = 'Presupuesto ' + d.numero + ' · Pirotecnia Boom';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+/* Pirotecnia Boom · Maestros (ABM de todas las tablas), productos, usuarios, empresa */
+'use strict';
+
+/* ---------- formulario genérico ---------- */
+// campos: [{k, l, t:'text'|'num'|'sel'|'bool'|'date'|'area'|'proveedor'|'producto', op:()=>[[v,l]], req, ayuda, soloNuevo, dueno, ancho:2}]
+function formHtml(campos, v = {}, pref = 'fm') {
+  const visibles = campos.filter(c => (!c.dueno || ES_DUENO) && (!c.soloNuevo || !v.id) && !c.oculto);
+  return '<div class="fr">' + visibles.map(c => {
+    const id = pref + '_' + c.k; const x = v[c.k];
+    const lab = `<label class="fl ${c.req ? 'req' : ''}">${c.l}</label>`;
+    let inp;
+    if (c.t === 'sel') inp = `<select id="${id}" class="fs">${c.vacio !== false ? `<option value="">${c.vacio || 'Elegí…'}</option>` : ''}${(typeof c.op === 'function' ? c.op() : c.op).map(o => `<option value="${esc(o[0])}" ${String(x ?? c.def ?? '') === String(o[0]) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
+    else if (c.t === 'bool') return `<div class="fg" style="${c.ancho ? 'grid-column:1/-1' : ''}"><label class="chk"><input type="checkbox" id="${id}" ${(x ?? c.def) ? 'checked' : ''}> ${c.l}</label>${c.ayuda ? `<div class="ss">${c.ayuda}</div>` : ''}</div>`;
+    else if (c.t === 'area') inp = `<textarea id="${id}" class="ft">${esc(x ?? '')}</textarea>`;
+    else if (c.t === 'num') inp = `<input id="${id}" type="number" step="${c.step || 'any'}" class="fi mono" value="${x ?? c.def ?? ''}">`;
+    else if (c.t === 'date') inp = `<input id="${id}" type="date" class="fi" value="${x ? String(x).slice(0, 10) : (c.def || '')}">`;
+    else if (['proveedor', 'producto', 'cliente', 'concepto'].includes(c.t)) inp = `<div id="${id}_w"></div>`;
+    else inp = `<input id="${id}" class="fi" value="${esc(x ?? c.def ?? '')}" ${c.ph ? `placeholder="${esc(c.ph)}"` : ''}>`;
+    return `<div class="fg" style="${c.ancho ? 'grid-column:1/-1' : ''}">${lab}${inp}${c.ayuda ? `<div class="ss">${c.ayuda}</div>` : ''}</div>`;
+  }).join('') + '</div>';
+}
+function formMontarBuscadores(campos, v = {}, pref = 'fm') {
+  campos.filter(c => ['proveedor', 'producto', 'cliente', 'concepto'].includes(c.t) && (!c.dueno || ES_DUENO)).forEach(c => {
+    const vv = v[c.k] ? { id: v[c.k], label: v[c.labelK || c.k.replace('_id', '')] || ('#' + v[c.k]) } : null;
+    buscador(pref + '_' + c.k + '_w', { tipo: c.t, id: pref + '_' + c.k, valor: vv, neto: true });
+  });
+}
+function formLeer(campos, v = {}, pref = 'fm') {
+  const p = {}; if (v.id) p.id = v.id;
+  for (const c of campos) {
+    if ((c.dueno && !ES_DUENO) || (c.soloNuevo && v.id) || c.oculto) continue;
+    const e = $(pref + '_' + c.k); if (!e) continue;
+    let x;
+    if (c.t === 'bool') x = e.checked;
+    else if (['proveedor', 'producto', 'cliente', 'concepto'].includes(c.t)) x = e.dataset.id ? Number(e.dataset.id) : null;
+    else if (c.t === 'num') x = e.value === '' ? null : Number(e.value);
+    else x = e.value.trim() === '' ? null : e.value.trim();
+    if (c.req && (x === null || x === '')) throw new Error('Completá: ' + c.l);
+    p[c.k] = x;
+  }
+  return p;
+}
+function modalForm({ titulo, campos, v = {}, guardar, cls = 'md-lg', intro = '' }) {
+  const pref = 'fm' + uid();
+  const o = showModal(modalHdr(titulo) + `<div class="mb2">${intro}${formHtml(campos, v, pref)}</div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cancelar</button><button class="btn btn-p" id="${pref}_ok"><i class="fas fa-floppy-disk"></i> Guardar</button></div>`, cls);
+  formMontarBuscadores(campos, v, pref);
+  $(pref + '_ok').onclick = async () => {
+    let p; try { p = formLeer(campos, v, pref); } catch (e) { return toast(e.message, 'r'); }
+    $(pref + '_ok').disabled = true;
+    try { await guardar(p); o.remove(); } catch (e) { if (!e.mostrado) toast(traducirError(e), 'r'); $(pref + '_ok').disabled = false; }
+  };
+  return o;
+}
+function verFicha(titulo, filas, cls = 'md-lg', extra = '') {
+  showModal(modalHdr(titulo) + `<div class="mb2"><div class="kv">${filas.filter(f => f && f[1] !== undefined).map(f => `<b>${f[0]}</b><span>${f[1] ?? ''}</span>`).join('')}</div>${extra}</div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, cls);
+}
+
+/* ---------- ABM genérico ---------- */
+const OPC = {
+  estado2: [['activo', 'Activo'], ['inactivo', 'Inactivo']],
+  estadoA: [['activa', 'Activa'], ['inactiva', 'Inactiva']],
+  listas: () => (M.listas || []).map(l => [l.id, l.nombre]),
+  condIva: () => (M.condiciones_iva || []).map(c => [c.id, c.nombre]),
+  tiposGasto: () => (M.tipos_gasto || []).map(c => [c.id, c.nombre]),
+  cuentas: () => (M.cuentas || []).map(c => [c.id, c.nombre]),
+  categorias: () => (M.categorias || []).map(c => [c.id, c.nombre]),
+  unidades: () => (M.unidades || []).map(c => [c.id, c.nombre]),
+  alicuotas: () => (M.alicuotas || []).map(c => [c.id, c.nombre]),
+  tipoMedio: [['efectivo', 'Efectivo'], ['transferencia', 'Transferencia'], ['tarjeta_debito', 'Tarjeta de débito'], ['tarjeta_credito', 'Tarjeta de crédito'], ['billetera', 'Billetera virtual / QR'], ['debito_automatico', 'Débito automático'], ['otro', 'Otro']],
+};
+const ABM = {
+  categorias: { titulo: 'Categorías', icono: 'tags', sub: 'Rubros del catálogo', est: ['activa', 'inactiva'],
+    cols: [{ t: 'Nombre', k: 'nombre' }, { t: 'Orden', k: 'orden', f: 'n', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' }],
+    campos: [{ k: 'nombre', l: 'Nombre', req: 1 }, { k: 'orden', l: 'Orden en el catálogo', t: 'num', def: 0 }],
+    filtrar: r => !/^Conceptos internos/.test(r.nombre) },
+  proveedores: { titulo: 'Proveedores', icono: 'truck', sub: 'Proveedores de mercadería y servicios', est: ['activo', 'inactivo'],
+    cols: [{ t: 'Razón social', k: 'razon_social' }, { t: 'CUIT', k: 'cuit' }, { t: 'Condición IVA', k: 'condicion_iva' }, { t: 'Teléfono', k: 'telefono' }, { t: 'Email', k: 'email' }, { t: 'Saldo', k: 'saldo', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: 'e' }],
+    campos: [{ k: 'razon_social', l: 'Razón social', req: 1 }, { k: 'cuit', l: 'CUIT', ph: '30-12345678-9' }, { k: 'condicion_iva_id', l: 'Condición IVA', t: 'sel', op: OPC.condIva }, { k: 'telefono', l: 'Teléfono' }, { k: 'email', l: 'Email' }, { k: 'direccion', l: 'Dirección' }, { k: 'plazo_pago_dias', l: 'Plazo de pago (días)', t: 'num', def: 0 }, { k: 'notas', l: 'Notas', t: 'area', ancho: 1 }],
+    extraAcc: r => `<button class="btn btn-xs btn-b" title="Cuenta corriente" onclick="irCtaProv(${r.id})"><i class="fas fa-book"></i></button>` },
+  tiposgasto: { tabla: 'tipos_gasto', titulo: 'Tipos de gasto', icono: 'folder-tree', sub: 'Grupos de gastos', est: ['activo', 'inactivo'],
+    cols: [{ t: 'Nombre', k: 'nombre' }, { t: 'Estado', k: 'estado', f: 'e' }], campos: [{ k: 'nombre', l: 'Nombre', req: 1 }] },
+  conceptos: { tabla: 'conceptos_gasto', titulo: 'Conceptos de gasto', icono: 'list-check', sub: 'Conceptos dentro de cada tipo de gasto', est: ['activo', 'inactivo'],
+    cols: [{ t: 'Tipo', k: 'tipo_gasto' }, { t: 'Concepto', k: 'nombre' }, { t: 'Estado', k: 'estado', f: 'e' }],
+    campos: [{ k: 'tipo_gasto_id', l: 'Tipo de gasto', t: 'sel', op: OPC.tiposGasto, req: 1 }, { k: 'nombre', l: 'Concepto', req: 1 }] },
+  medios: { tabla: 'medios_pago', titulo: 'Medios de pago', icono: 'credit-card', sub: 'Cómo pagan los clientes y cómo se paga', est: ['activo', 'inactivo'],
+    cols: [{ t: 'Nombre', k: 'nombre' }, { t: 'Tipo', k: 'tipo' }, { t: 'Comisión', k: 'comision_pct', f: 'p', cls: 'tr' }, { t: 'Acredita en', k: 'cuenta' }, { t: 'Estado', k: 'estado', f: 'e' }],
+    campos: [{ k: 'nombre', l: 'Nombre', req: 1 }, { k: 'tipo', l: 'Tipo', t: 'sel', op: OPC.tipoMedio, req: 1 }, { k: 'comision_pct', l: 'Comisión %', t: 'num', def: 0, ayuda: 'Se registra sola como gasto en cada cobro.' }, { k: 'cuenta_id', l: 'Cuenta donde acredita', t: 'sel', op: OPC.cuentas, vacio: 'Ninguna' }],
+    filtrar: r => r.id !== 8 },
+  cuentas: { tabla: 'cuentas_fondos', titulo: 'Cuentas bancarias y billeteras', icono: 'piggy-bank', sub: 'Bancos, Mercado Pago, caja fuerte', est: ['activa', 'inactiva'],
+    cols: [{ t: 'Nombre', k: 'nombre' }, { t: 'Tipo', k: 'tipo' }, { t: 'Banco', k: 'banco' }, { t: 'CBU / Alias', k: 'cbu_alias' }, { t: 'Saldo', k: 'saldo', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: 'e' }],
+    campos: [{ k: 'nombre', l: 'Nombre', req: 1 }, { k: 'tipo', l: 'Tipo', t: 'sel', op: [['banco', 'Banco'], ['billetera', 'Billetera virtual'], ['caja_fuerte', 'Caja fuerte']], req: 1 }, { k: 'banco', l: 'Banco / empresa' }, { k: 'cbu_alias', l: 'CBU / Alias' }] },
+  descuentos: { tabla: 'descuentos_monto', titulo: 'Descuentos por monto', icono: 'tag', sub: 'Descuento automático según el total del pedido', est: ['activo', 'anulado'],
+    cols: [{ t: 'Lista', k: 'lista' }, { t: 'Desde (neto)', k: 'monto_desde', f: 'm', cls: 'tr' }, { t: 'Descuento', k: 'porcentaje', f: 'p', cls: 'tr' }, { t: 'Vigente desde', k: 'vigente_desde', f: 'd' }, { t: 'Hasta', k: 'vigente_hasta', f: 'd' }, { t: 'Estado', k: 'estado', f: 'e' }],
+    campos: [{ k: 'lista_id', l: 'Lista', t: 'sel', op: OPC.listas, req: 1 }, { k: 'monto_desde', l: 'Monto neto desde', t: 'num', req: 1 }, { k: 'porcentaje', l: 'Descuento %', t: 'num', req: 1 }, { k: 'vigente_desde', l: 'Vigente desde', t: 'date', def: hoy() }, { k: 'vigente_hasta', l: 'Vigente hasta (vacío = sin fin)', t: 'date' }] },
+};
+async function abmPagina(clave) {
+  const cfg = ABM[clave]; const tabla = cfg.tabla || clave;
+  pagina({ titulo: cfg.titulo, icono: cfg.icono, sub: cfg.sub,
+    botones: btnExcel(`exportarExcel('g_abm','${cfg.titulo}')`) + btnPdf(`exportarPdf('g_abm','${cfg.titulo}')`) + (ES_DUENO ? btnNuevo(`abmEditar('${clave}')`) : ''),
+    cuerpo: `<div class="panel">${barraFiltros([{ k: 'texto', t: 'texto' }, { k: 'estado', t: 'sel', l: 'Estado', op: cfg.est.map(e => [e, e[0].toUpperCase() + e.slice(1)]), v: cfg.est[0] }], () => abmPintar(clave))}<div id="abm_g"></div></div>` });
+  PAG.abm = await rpc('abm_listar', { p_tabla: tabla });
+  abmPintar(clave);
+}
+function abmPintar(clave) {
+  const cfg = ABM[clave]; const f = leerFiltros(); const n = norm(f.texto || '');
+  const rows = (PAG.abm || []).filter(r => (!cfg.filtrar || cfg.filtrar(r)) && (!f.estado || r.estado === f.estado) && (!n || norm(JSON.stringify(r)).includes(n)));
+  $('abm_g').innerHTML = grilla('g_abm', cfg.cols.filter(c => c.k !== 'saldo' || ES_DUENO), rows, { claseFila: r => r.estado === cfg.est[1] ? 'anulado' : '',
+    acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="abmVer('${clave}',${r.id})"><i class="fas fa-eye"></i></button>`
+      + (ES_DUENO ? `<button class="btn btn-xs btn-b" title="Editar" onclick="abmEditar('${clave}',${r.id})"><i class="fas fa-pen"></i></button>`
+      + `<button class="btn btn-xs ${r.estado === cfg.est[0] ? 'btn-d' : 'btn-g'}" title="${r.estado === cfg.est[0] ? 'Dar de baja' : 'Reactivar'}" onclick="abmEstado('${clave}',${r.id})"><i class="fas fa-${r.estado === cfg.est[0] ? 'ban' : 'rotate-left'}"></i></button>` : '')
+      + (cfg.extraAcc ? cfg.extraAcc(r) : '') });
+}
+function abmVer(clave, id) {
+  const cfg = ABM[clave]; const r = PAG.abm.find(x => x.id === id); if (!r) return;
+  verFicha(cfg.titulo, cfg.cols.map(c => [c.t, celda(c, r)]).concat(cfg.campos.filter(c => !cfg.cols.some(k => k.k === c.k) && c.t !== 'sel').map(c => [c.l, esc(r[c.k] ?? '')])));
+}
+function abmEditar(clave, id) {
+  const cfg = ABM[clave]; const tabla = cfg.tabla || clave; const r = id ? PAG.abm.find(x => x.id === id) : {};
+  modalForm({ titulo: (id ? 'Editar · ' : 'Nuevo · ') + cfg.titulo, campos: cfg.campos, v: r || {}, guardar: async p => {
+    await rpc('abm_guardar', { p_tabla: tabla, p });
+    toast('Guardado', 'g'); await cargarMaestros(); PAG.abm = await rpc('abm_listar', { p_tabla: tabla }); abmPintar(clave);
+  } });
+}
+async function abmEstado(clave, id) {
+  const cfg = ABM[clave]; const tabla = cfg.tabla || clave; const r = PAG.abm.find(x => x.id === id);
+  const nuevo = r.estado === cfg.est[0] ? cfg.est[1] : cfg.est[0];
+  if (!await confirmar(`¿${nuevo === cfg.est[0] ? 'Reactivar' : 'Dar de baja'} <b>${esc(r.nombre || r.razon_social || r.lista || '')}</b>? No se borra: queda ${nuevo}.`)) return;
+  await rpc('abm_guardar', { p_tabla: tabla, p: { id, estado: nuevo } });
+  toast('Listo', 'g'); await cargarMaestros(); PAG.abm = await rpc('abm_listar', { p_tabla: tabla }); abmPintar(clave);
+}
+['categorias', 'proveedores', 'tiposgasto', 'conceptos', 'medios', 'cuentas', 'descuentos'].forEach(k => PAGINAS[k] = () => abmPagina(k));
+
+/* ---------- Clientes ---------- */
+const CAMPOS_CLIENTE = [
+  { k: 'tipo', l: 'Tipo', t: 'sel', op: [['consumidor', 'Consumidor'], ['mayorista', 'Mayorista']], vacio: false, req: 1 },
+  { k: 'nombre', l: 'Nombre / Razón social', req: 1 },
+  { k: 'celular', l: 'Celular (WhatsApp)', ph: '387 474-9807' },
+  { k: 'email', l: 'Email' },
+  { k: 'documento_tipo', l: 'Tipo de documento', t: 'sel', op: [['DNI', 'DNI'], ['CUIT', 'CUIT'], ['CUIL', 'CUIL']], vacio: '—' },
+  { k: 'documento_nro', l: 'N° documento' },
+  { k: 'condicion_iva_id', l: 'Condición IVA', t: 'sel', op: OPC.condIva, vacio: false, def: 3 },
+  { k: 'lista_id', l: 'Lista de precios', t: 'sel', op: OPC.listas, vacio: 'Según el tipo', dueno: 1 },
+  { k: 'direccion', l: 'Dirección' }, { k: 'localidad', l: 'Localidad' },
+  { k: 'limite_credito', l: 'Límite de crédito (0 = sin límite)', t: 'num', def: 0, dueno: 1 },
+  { k: 'notas', l: 'Notas', t: 'area', ancho: 1 }];
+PAGINAS.clientes = async () => {
+  pagina({ titulo: 'Clientes', icono: 'users', sub: 'Consumidores y mayoristas',
+    botones: btnExcel(`exportarExcel('g_cli','Clientes')`) + btnPdf(`exportarPdf('g_cli','Clientes')`) + btnNuevo('clienteEditar()'),
+    cuerpo: `<div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Nombre, celular o documento' }, { k: 'tipo', t: 'sel', l: 'Tipo', op: [['consumidor', 'Consumidor'], ['mayorista', 'Mayorista']] }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'deuda', t: 'chk', l: 'Solo con deuda' }], clientesPintar)}<div id="cli_g"></div></div>` });
+  await cargarClientes(true); clientesPintar();
+};
+function clientesPintar() {
+  const f = leerFiltros(); const n = norm(f.texto || '');
+  const rows = CLIENTES.filter(c => (!f.tipo || c.tipo === f.tipo) && (!f.estado || c.estado === f.estado) && (!f.deuda || c.deuda > 0) && (!n || norm(c.nombre + ' ' + (c.celular || '') + ' ' + (c.documento_nro || '')).includes(n)));
+  $('cli_g').innerHTML = grilla('g_cli', [{ t: 'Nombre', k: 'nombre', f: r => `<b>${esc(r.nombre)}</b>` , xf: r => r.nombre }, { t: 'Tipo', k: 'tipo' }, { t: 'Celular', k: 'celular' }, { t: 'Documento', k: 'documento_nro', f: r => esc([r.documento_tipo, r.documento_nro].filter(Boolean).join(' ')), xf: r => [r.documento_tipo, r.documento_nro].filter(Boolean).join(' ') }, { t: 'Lista', k: 'lista' }, { t: 'Límite', k: 'limite_credito', f: 'm', cls: 'tr' }, { t: 'Deuda', k: 'deuda', f: 'm', cls: 'tr', sum: 1 }, { t: 'A favor', k: 'a_favor', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: 'e' }], rows,
+    { claseFila: r => r.estado !== 'activo' ? 'anulado' : '', acciones: r => `<button class="btn btn-xs btn-s" title="Ver cuenta corriente" onclick="irCtaCli(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-xs btn-b" title="Editar" onclick="clienteEditar(${r.id})"><i class="fas fa-pen"></i></button>${r.celular ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="waAbrir('${r.celular}','Hola ${esc(r.nombre).replace(/'/g, '')}!')"><i class="fab fa-whatsapp"></i></button>` : ''}${ES_DUENO ? `<button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="clienteEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : ''}` });
+}
+function clienteEditar(id, alGuardar) {
+  const r = id ? CLIENTES.find(x => x.id === id) : { tipo: 'consumidor', condicion_iva_id: 3 };
+  modalForm({ titulo: id ? 'Editar cliente' : 'Nuevo cliente', campos: CAMPOS_CLIENTE, v: r, guardar: async p => {
+    if (p.lista_id) p.lista_id = Number(p.lista_id); if (p.condicion_iva_id) p.condicion_iva_id = Number(p.condicion_iva_id);
+    const nid = await rpc('guardar_cliente', { p }); toast('Cliente guardado', 'g'); await cargarClientes(true);
+    if (alGuardar) alGuardar(CLIENTES.find(c => c.id === nid)); else if (PAG.id === 'clientes') clientesPintar();
+  } });
+}
+async function clienteEstado(id) {
+  const r = CLIENTES.find(x => x.id === id); const nuevo = r.estado === 'activo' ? 'inactivo' : 'activo';
+  if (!await confirmar(`¿${nuevo === 'activo' ? 'Reactivar' : 'Dar de baja'} a <b>${esc(r.nombre)}</b>? No se borra.`)) return;
+  await rpc('guardar_cliente', { p: { ...r, estado: nuevo } }); await cargarClientes(true); clientesPintar();
+}
+
+/* ---------- Productos y precios ---------- */
+const CAMPOS_PRODUCTO = [
+  { k: 'codigo', l: 'Código', req: 1 }, { k: 'nombre', l: 'Nombre', req: 1 },
+  { k: 'categoria_id', l: 'Categoría', t: 'sel', op: OPC.categorias, req: 1 },
+  { k: 'costo', l: 'Costo neto del proveedor (sin IVA)', t: 'num', dueno: 1, ayuda: 'Con el costo y el margen de cada lista se calculan los precios solos.' },
+  { k: 'alicuota_iva_id', l: 'IVA', t: 'sel', op: OPC.alicuotas, vacio: false, def: 1 },
+  { k: 'unidad_id', l: 'Unidad de venta', t: 'sel', op: OPC.unidades, vacio: false, def: 1 },
+  { k: 'bulto', l: 'Unidades por bulto', t: 'num' },
+  { k: 'proveedor_principal_id', l: 'Proveedor principal', t: 'proveedor', labelK: 'proveedor' },
+  { k: 'stock_minimo', l: 'Stock mínimo (aviso)', t: 'num', def: 0 },
+  { k: 'codigo_barras', l: 'Código de barras' },
+  { k: 'uso', l: 'Uso', t: 'sel', op: [['libre', 'Venta libre'], ['profesional', 'Uso profesional']], vacio: false },
+  { k: 'edad_minima', l: 'Edad mínima', t: 'num' },
+  { k: 'descripcion', l: 'Descripción (catálogo)', t: 'area', ancho: 1 },
+  { k: 'controla_stock', l: 'Controla stock', t: 'bool', def: true }, { k: 'controla_vencimiento', l: 'Pide lote y vencimiento al comprar', t: 'bool' },
+  { k: 'es_nuevo', l: 'Marcar como NUEVO', t: 'bool' }, { k: 'destacado', l: 'Destacado en el catálogo', t: 'bool' },
+  { k: 'es_outlet', l: 'Outlet', t: 'bool' }, { k: 'envio_por_correo', l: 'Se puede enviar por correo', t: 'bool' },
+  { k: 'fotos_txt', l: 'Fotos (una dirección por línea; la primera es la principal)', t: 'area', ancho: 1, dueno: 1 }];
+PAGINAS.productos = async () => {
+  pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
+    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? btnNuevo('productoEditar()') : ''),
+    cuerpo: `<div class="grid-4 mb3" id="prod_k"></div><div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Código o nombre' }, { k: 'cat', t: 'sel', l: 'Categoría', op: OPC.categorias() }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'bajo', t: 'chk', l: 'Bajo mínimo' }, { k: 'sinstock', t: 'chk', l: 'Sin stock' }], productosPintar)}<div id="prod_g"></div></div>` });
+  PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+};
+function productosPintar() {
+  const f = leerFiltros(); const n = norm(f.texto || '');
+  const rows = PAG.prods.filter(p => (!f.cat || p.categoria_id === Number(f.cat)) && (!f.estado || p.estado === f.estado) && (!f.bajo || (p.controla_stock && p.stock <= p.stock_minimo && p.stock_minimo > 0)) && (!f.sinstock || (p.controla_stock && p.disponible <= 0)) && (!n || norm(p.codigo + ' ' + p.nombre).includes(n)))
+    .map(p => ({ ...p, pub: p.precios?.PUBLICO?.final, may: p.precios?.MAYORISTA?.neto }));
+  const act = PAG.prods.filter(p => p.estado === 'activo');
+  $('prod_k').innerHTML = kpi('Productos activos', act.length) + kpi('Sin stock', act.filter(p => p.controla_stock && p.disponible <= 0).length, '', 'r') + kpi('Bajo mínimo', act.filter(p => p.controla_stock && p.stock_minimo > 0 && p.stock <= p.stock_minimo).length, '', 'w')
+    + (ES_DUENO ? kpi('Stock valorizado (costo)', fmt(act.reduce((s, p) => s + Math.max(0, p.stock) * Number(p.costo_promedio || 0), 0)), '', 'b') : kpi('Sin precio', act.filter(p => p.pub == null).length));
+  const cols = [{ t: '', k: 'foto', f: r => r.fotos && r.fotos[0] ? `<img src="${esc(r.fotos[0])}" style="width:34px;height:34px;object-fit:cover;border-radius:5px" loading="lazy">` : '', x: false }, { t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre', f: r => `<b>${esc(r.nombre)}</b>${r.es_nuevo ? ' <span class="badge ba">nuevo</span>' : ''}${r.destacado ? ' <span class="badge br">dest.</span>' : ''}`, xf: r => r.nombre }, { t: 'Categoría', k: 'categoria' },
+    { t: 'Stock', k: 'stock', f: r => r.controla_stock ? `<span class="${r.stock <= 0 ? 'td' : r.stock <= r.stock_minimo ? 'tw2' : ''}">${fmtN(r.stock)}</span>` : '—', xf: r => r.controla_stock ? Number(r.stock) : '', cls: 'tr' },
+    { t: 'Disponible', k: 'disponible', f: r => r.controla_stock ? fmtN(r.disponible) : '—', xf: r => r.controla_stock ? Number(r.disponible) : '', cls: 'tr' }];
+  if (ES_DUENO) cols.push({ t: 'Costo neto', k: 'costo', f: 'm', cls: 'tr' });
+  cols.push({ t: 'Público (final)', k: 'pub', f: r => r.pub == null ? '<span class="td">sin precio</span>' : fmt(r.pub), xf: r => r.pub ?? '', cls: 'tr' }, { t: 'Mayorista (neto)', k: 'may', f: r => r.may == null ? '—' : fmt(r.may), xf: r => r.may ?? '', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' });
+  $('prod_g').innerHTML = grilla('g_prod', cols, rows, { claseFila: r => r.estado !== 'activo' ? 'anulado' : '',
+    acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="productoVer(${r.id})"><i class="fas fa-eye"></i></button>` + (ES_DUENO ? `<button class="btn btn-xs btn-b" title="Editar" onclick="productoEditar(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="productoEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : '') });
+}
+function productoEditar(id) {
+  const r0 = id ? PAG.prods.find(x => x.id === id) : { controla_stock: true, uso: 'libre' };
+  const r = { ...r0, fotos_txt: (r0.fotos || []).join('\n') };
+  modalForm({ titulo: id ? 'Editar producto' : 'Nuevo producto', campos: CAMPOS_PRODUCTO, v: r, cls: 'md-xl', guardar: async p => {
+    ['categoria_id', 'alicuota_iva_id', 'unidad_id'].forEach(k => { if (p[k] != null) p[k] = Number(p[k]); });
+    if (!id && p.costo == null) throw new Error('Indicá el costo neto: sin costo el producto no tiene precio.');
+    const fotos = (p.fotos_txt || '').split('\n').map(x => x.trim()).filter(Boolean); delete p.fotos_txt;
+    const nid = await rpc('guardar_producto', { p });
+    if (ES_DUENO && (fotos.length || (r0.fotos || []).length)) await rpc('guardar_fotos_producto', { p_producto: nid, p_urls: fotos });
+    toast('Producto guardado. Precios recalculados.', 'g');
+    PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+  } });
+}
+async function productoEstado(id) {
+  const r = PAG.prods.find(x => x.id === id); const nuevo = r.estado === 'activo' ? 'inactivo' : 'activo';
+  if (!await confirmar(`¿${nuevo === 'activo' ? 'Reactivar' : 'Dar de baja'} <b>${esc(r.nombre)}</b>? Deja de aparecer en el catálogo y en las ventas. No se borra.`)) return;
+  await rpc('guardar_producto', { p: { id, estado: nuevo } }); PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+}
+async function productoVer(id) {
+  const r = PAG.prods.find(x => x.id === id);
+  const mov = await rpc('movimientos_producto', { p_producto: id, p_desde: hoy(-365), p_hasta: hoy() });
+  const h = ES_DUENO ? await rpc('producto_historial', { p_producto: id }) : null;
+  const precios = Object.entries(r.precios || {}).map(([k, v]) => `<tr><td>${esc((M.listas.find(l => l.codigo === k) || {}).nombre || k)}</td><td class="tr mono">${fmt(v.neto)}</td><td class="tr mono">${fmt(v.final)}</td></tr>`).join('');
+  showModal(modalHdr(esc(r.codigo + ' · ' + r.nombre)) + `<div class="mb2">
+    <div class="grid-4 mb3">${kpi('Stock', fmtN(r.stock))}${kpi('Disponible', fmtN(r.disponible), 'descontando pedidos abiertos')}${ES_DUENO ? kpi('Costo neto', fmt(r.costo)) + kpi('Costo promedio', fmt(r.costo_promedio)) : ''}</div>
+    <div class="panel mb3"><div class="ph"><span class="pt">Precios vigentes</span></div><table><thead><tr><th>Lista</th><th class="tr">Neto</th><th class="tr">Final con IVA</th></tr></thead><tbody>${precios || '<tr><td colspan="3" class="vacio">Sin precio: falta costo o margen de la lista</td></tr>'}</tbody></table></div>
+    ${h ? `<div class="panel mb3"><div class="ph"><span class="pt">Historial de costos</span></div>${grilla('g_hc', [{ t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: 'dt' }, { t: 'Costo neto', k: 'costo', f: 'm', cls: 'tr' }, { t: 'Origen', k: 'origen' }, { t: 'Proveedor', k: 'proveedor' }], h.costos)}</div>` : ''}
+    <div class="panel"><div class="ph"><span class="pt">Movimientos de stock (12 meses)</span><span class="badge ba">Saldo anterior ${fmtN(mov.saldo_anterior)}</span></div>${grilla('g_mv', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'Tipo', k: 'tipo' }, { t: 'Documento', k: 'documento' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'Saldo', k: 'saldo', f: 'n', cls: 'tr' }], mov.movimientos.slice().reverse())}</div>
+  </div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
+}
+
+/* ---------- Listas de precios ---------- */
+PAGINAS.listas = async () => {
+  pagina({ titulo: 'Listas de precios', icono: 'list-ol', sub: 'Cada lista tiene su margen sobre el costo; los precios se recalculan solos',
+    botones: btnExcel(`exportarExcel('g_lis','Listas de precios')`) + btnPdf(`exportarPdf('g_lis','Listas de precios')`) + (ES_DUENO ? btnNuevo('listaEditar()') : ''),
+    cuerpo: `<div class="alert al-i">El precio de cada producto = costo × (1 + margen de la lista), redondeado. En la lista <b>Público</b> el redondeo se hace sobre el precio final con IVA (lo que ve el cliente).</div><div class="panel" id="lis_g"></div>` });
+  PAG.listas = await rpc('listado_listas'); listasPintar();
+};
+function listasPintar() {
+  $('lis_g').innerHTML = grilla('g_lis', [{ t: 'Código', k: 'codigo' }, { t: 'Nombre', k: 'nombre' }, ...(ES_DUENO ? [{ t: 'Margen', k: 'margen', f: 'p', cls: 'tr' }, { t: 'Vigente desde', k: 'margen_desde', f: 'dt' }] : []), { t: 'Redondeo', k: 'redondeo', f: 'm', cls: 'tr' }, { t: 'Redondea final', k: 'redondeo_sobre_final', f: r => r.redondeo_sobre_final ? 'Sí' : 'No' }, { t: 'Productos con precio', k: 'productos_con_precio', f: 'n', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' }], PAG.listas,
+    { acciones: r => ES_DUENO ? `<button class="btn btn-xs btn-s" title="Historial de márgenes" onclick="listaHist(${r.id})"><i class="fas fa-clock-rotate-left"></i></button><button class="btn btn-xs btn-b" title="Editar" onclick="listaEditar(${r.id})"><i class="fas fa-pen"></i></button>` : '' });
+}
+function listaEditar(id) {
+  const r = id ? PAG.listas.find(x => x.id === id) : { redondeo: 1, estado: 'activa' };
+  const fijas = ['PUBLICO', 'MAYORISTA'].includes(r.codigo);
+  modalForm({ titulo: id ? 'Editar lista' : 'Nueva lista', v: r, intro: '<div class="alert al-w">Al cambiar el margen o el redondeo se recalculan todos los precios de la lista. El historial queda guardado.</div>',
+    campos: [{ k: 'codigo', l: 'Código', req: 1, soloNuevo: 1, ph: 'GREMIO' }, { k: 'nombre', l: 'Nombre', req: 1 }, { k: 'margen', l: 'Margen % sobre el costo', t: 'num', req: 1 }, { k: 'redondeo', l: 'Redondear a múltiplos de $', t: 'num', def: 1 },
+      { k: 'redondeo_sobre_final', l: 'Redondear el precio final con IVA (consumidor)', t: 'bool' }, ...(fijas ? [] : [{ k: 'estado', l: 'Estado', t: 'sel', op: OPC.estadoA, vacio: false }])],
+    guardar: async p => { await rpc('guardar_lista_precio', { p }); toast('Lista guardada y precios recalculados', 'g'); await cargarMaestros(); PAG.listas = await rpc('listado_listas'); listasPintar(); } });
+}
+function listaHist(id) {
+  const r = PAG.listas.find(x => x.id === id);
+  showModal(modalHdr('Historial de márgenes · ' + esc(r.nombre)) + `<div class="mb2">${grilla('g_lh', [{ t: 'Margen', k: 'margen', f: 'p', cls: 'tr' }, { t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: 'dt' }], r.historial || [])}</div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`);
+}
+
+/* ---------- Ofertas ---------- */
+PAGINAS.ofertas = async () => {
+  pagina({ titulo: 'Ofertas', icono: 'percent', sub: 'Precio especial por producto y lista entre dos fechas',
+    botones: btnExcel(`exportarExcel('g_of','Ofertas')`) + btnPdf(`exportarPdf('g_of','Ofertas')`) + (ES_DUENO ? btnNuevo('ofertaEditar()') : ''),
+    cuerpo: `<div class="panel">${barraFiltros([{ k: 'texto', t: 'texto' }, { k: 'estado', t: 'sel', l: 'Estado', op: [['activa', 'Activa'], ['anulada', 'Anulada']], v: 'activa' }], ofertasPintar)}<div id="of_g"></div></div>` });
+  PAG.ofs = await rpc('abm_listar', { p_tabla: 'ofertas' }); ofertasPintar();
+};
+function ofertasPintar() {
+  const f = leerFiltros(); const n = norm(f.texto || ''); const ahora = new Date();
+  const rows = PAG.ofs.filter(o => (!f.estado || o.estado === f.estado) && (!n || norm(o.producto + o.codigo + o.lista).includes(n)));
+  $('of_g').innerHTML = grilla('g_of', [{ t: 'Producto', k: 'producto' }, { t: 'Lista', k: 'lista' }, { t: 'Precio lista (neto)', k: 'precio_lista', f: 'm', cls: 'tr' }, { t: 'Oferta (neto)', k: 'precio_neto_oferta', f: 'm', cls: 'tr' }, { t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: 'dt' },
+    { t: 'Vigencia', k: 'vig', f: r => r.estado !== 'activa' ? '' : new Date(r.hasta) < ahora ? '<span class="badge bm">terminó</span>' : new Date(r.desde) > ahora ? '<span class="badge bb">programada</span>' : '<span class="badge bg">vigente</span>' }, { t: 'Estado', k: 'estado', f: 'e' }], rows,
+    { claseFila: r => r.estado !== 'activa' ? 'anulado' : '', acciones: r => ES_DUENO && r.estado === 'activa' ? `<button class="btn btn-xs btn-b" onclick="ofertaEditar(${r.id})" title="Editar"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-d" title="Anular" onclick="ofertaAnular(${r.id})"><i class="fas fa-ban"></i></button>` : '' });
+}
+function ofertaEditar(id) {
+  const r = id ? PAG.ofs.find(x => x.id === id) : { desde: hoy() + 'T00:00', hasta: hoy(7) + 'T23:59' };
+  const v = { ...r, desde: String(r.desde || '').slice(0, 10), hasta: String(r.hasta || '').slice(0, 10) };
+  modalForm({ titulo: id ? 'Editar oferta' : 'Nueva oferta', v, campos: [{ k: 'producto_id', l: 'Producto', t: 'producto', req: 1, labelK: 'producto' }, { k: 'lista_id', l: 'Lista', t: 'sel', op: OPC.listas, req: 1 }, { k: 'precio_neto_oferta', l: 'Precio de oferta NETO (sin IVA)', t: 'num', req: 1, ayuda: 'Para el público el catálogo muestra este precio + IVA.' }, { k: 'desde', l: 'Desde', t: 'date', req: 1 }, { k: 'hasta', l: 'Hasta', t: 'date', req: 1 }],
+    guardar: async p => { p.lista_id = Number(p.lista_id); p.desde = p.desde + 'T00:00:00-03:00'; p.hasta = p.hasta + 'T23:59:59-03:00'; await rpc('abm_guardar', { p_tabla: 'ofertas', p }); toast('Oferta guardada', 'g'); PAG.ofs = await rpc('abm_listar', { p_tabla: 'ofertas' }); ofertasPintar(); } });
+}
+async function ofertaAnular(id) { if (!await confirmar('¿Anular la oferta? Queda registrada como anulada.', { peligro: true, ok: 'Anular' })) return; await rpc('abm_guardar', { p_tabla: 'ofertas', p: { id, estado: 'anulada' } }); PAG.ofs = await rpc('abm_listar', { p_tabla: 'ofertas' }); ofertasPintar(); }
+
+/* ---------- Usuarios ---------- */
+PAGINAS.usuarios = async () => {
+  pagina({ titulo: 'Usuarios', icono: 'user-shield', sub: 'Quién entra al sistema y con qué permisos', botones: btnNuevo('usuarioEditar()'),
+    cuerpo: `<div class="alert al-i"><b>Dueño:</b> ve y hace todo (costos, compras, bancos, anulaciones, notas de crédito). <b>Operador:</b> vende, presupuesta, cobra, maneja caja y gastos de contado; no ve costos ni compras. <b>Mayorista:</b> usuario genérico del catálogo mayorista.</div><div class="panel" id="usr_g"></div>` });
+  PAG.usrs = await rpc('usuarios_listar'); usuariosPintar();
+};
+function usuariosPintar() {
+  $('usr_g').innerHTML = grilla('g_usr', [{ t: 'Usuario', k: 'usuario', f: r => `<b>${esc(r.usuario)}</b>${r.es_yo ? ' <span class="badge ba">vos</span>' : ''}` }, { t: 'Nombre', k: 'nombre' }, { t: 'Rol', k: 'rol', f: r => ({ dueno: 'Dueño', operador: 'Operador', mayorista: 'Mayorista' }[r.rol]) }, { t: 'Último ingreso', k: 'ultimo_ingreso', f: 'dt' }, { t: 'Estado', k: 'estado', f: 'e' }], PAG.usrs,
+    { claseFila: r => r.estado !== 'activo' ? 'anulado' : '', acciones: r => `<button class="btn btn-xs btn-b" title="Editar / cambiar contraseña" onclick="usuarioEditar('${r.id}')"><i class="fas fa-pen"></i></button>` });
+}
+function usuarioEditar(id) {
+  const r = id ? PAG.usrs.find(x => x.id === id) : { rol: 'operador', estado: 'activo' };
+  modalForm({ titulo: id ? 'Editar usuario · ' + esc(r.usuario) : 'Nuevo usuario', v: r, cls: '',
+    campos: [{ k: 'usuario', l: 'Usuario (para ingresar)', req: 1, soloNuevo: 1, ayuda: 'Sin espacios. Ej: caja1, maria' }, { k: 'nombre', l: 'Nombre', req: 1 }, { k: 'rol', l: 'Rol', t: 'sel', op: [['dueno', 'Dueño'], ['operador', 'Operador'], ['mayorista', 'Mayorista']], vacio: false },
+      { k: 'clave', l: id ? 'Nueva contraseña (dejar vacío para no cambiar)' : 'Contraseña', req: !id, ayuda: 'Mínimo 8 caracteres. Se guarda encriptada.' }, ...(id ? [{ k: 'estado', l: 'Estado', t: 'sel', op: OPC.estado2, vacio: false }] : [])],
+    guardar: async p => { await rpc('usuario_guardar', { p }); toast('Usuario guardado', 'g'); PAG.usrs = await rpc('usuarios_listar'); usuariosPintar(); } });
+}
+
+/* ---------- Empresa y contraseña ---------- */
+PAGINAS.empresa = async () => {
+  const e = (await rpc('abm_listar', { p_tabla: 'config_empresa' }))[0] || {};
+  const campos = [{ k: 'razon_social', l: 'Razón social' }, { k: 'nombre_fantasia', l: 'Nombre de fantasía', req: 1 }, { k: 'cuit', l: 'CUIT' }, { k: 'condicion_iva_id', l: 'Condición IVA', t: 'sel', op: OPC.condIva }, { k: 'direccion', l: 'Dirección' }, { k: 'horarios', l: 'Horarios' },
+    { k: 'whatsapp_pedidos', l: 'WhatsApp para pedidos', ph: '+5493874749807' }, { k: 'email_pedidos', l: 'Email' }, { k: 'instagram', l: 'Instagram' }, { k: 'facebook', l: 'Facebook' }, { k: 'tiktok', l: 'TikTok' },
+    { k: 'plazo_pedido_horas', l: 'Vencimiento de pedidos web (horas)', t: 'num' }, { k: 'tope_pedidos_dia', l: 'Máximo de pedidos por celular por día', t: 'num' }, { k: 'validez_presupuesto_dias', l: 'Validez de presupuestos (días)', t: 'num' }, { k: 'leyenda_precios', l: 'Leyenda de precios (catálogo)', t: 'area', ancho: 1 }];
+  pagina({ titulo: 'Datos de la empresa', icono: 'building', sub: 'Aparecen en los PDF y en el catálogo',
+    cuerpo: `<div class="panel pb">${formHtml(campos, e, 'emp')}<div class="flex gap2 mt3"><button class="btn btn-p" id="emp_ok"><i class="fas fa-floppy-disk"></i> Guardar</button></div></div>` });
+  $('emp_ok').onclick = async () => { let p; try { p = formLeer(campos, {}, 'emp'); } catch (x) { return toast(x.message, 'r'); } if (p.condicion_iva_id) p.condicion_iva_id = Number(p.condicion_iva_id); await rpc('abm_guardar', { p_tabla: 'config_empresa', p }); await cargarMaestros(); toast('Datos guardados', 'g'); };
+};
+PAGINAS.miclave = async () => {
+  pagina({ titulo: 'Mi contraseña', icono: 'key', sub: 'Cambiá tu contraseña de ingreso',
+    cuerpo: `<div class="panel pb" style="max-width:460px"><div class="fg"><label class="fl req">Contraseña actual</label><input id="mc_a" type="password" class="fi"></div><div class="fg"><label class="fl req">Nueva contraseña (mínimo 8)</label><input id="mc_n" type="password" class="fi"></div><div class="fg"><label class="fl req">Repetí la nueva</label><input id="mc_r" type="password" class="fi"></div><button class="btn btn-p" id="mc_ok"><i class="fas fa-key"></i> Cambiar</button></div>` });
+  $('mc_ok').onclick = async () => { if ($('mc_n').value !== $('mc_r').value) return toast('Las contraseñas nuevas no coinciden.', 'r'); await rpc('cambiar_mi_clave', { p_actual: $('mc_a').value, p_nueva: $('mc_n').value }); toast('Contraseña cambiada', 'g'); ['mc_a', 'mc_n', 'mc_r'].forEach(i => $(i).value = ''); };
+};

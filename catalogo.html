@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pirotecnia Boom · Catálogo</title>
+<meta name="description" content="Catálogo de Pirotecnia Boom. Armá tu pedido y envialo por WhatsApp.">
+<link rel="icon" href="img/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--rojo:#e31e24;--rojo2:#c4161c;--vino:#4a0a0d;--amarillo:#fecc00;--bg:#f7f3f1;--dim:#6f625c;--line:#eadfda}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,Arial,sans-serif;background:var(--bg);color:#24130f}
+header{background:linear-gradient(90deg,var(--vino),var(--rojo));position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.top{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:8px 14px}
+.top .logo{background:#fff;border-radius:10px;padding:3px 8px;display:flex}
+.top .logo img{height:46px}
+.busq{flex:1;position:relative}.busq input{width:100%;border:none;border-radius:22px;padding:10px 14px 10px 38px;font-size:14px;outline:none}
+.busq i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#999}
+.tb{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
+.tb:hover{background:rgba(255,255,255,.25)}
+.cats{max-width:1240px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;padding:4px 14px 10px;scrollbar-width:none}
+.cat{background:rgba(255,255,255,.12);color:#fff;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid transparent}
+.cat.on{background:var(--amarillo);color:var(--vino)}
+.banda{background:var(--amarillo);color:var(--vino);text-align:center;font-size:13px;font-weight:700;padding:7px 10px}
+main{max-width:1240px;margin:0 auto;padding:16px 14px 100px}
+.barra{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;color:var(--dim)}
+.barra select{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff}
+h2{font-size:17px;color:var(--vino);margin:14px 0 10px;border-left:4px solid var(--rojo);padding-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(74,10,13,.07);display:flex;flex-direction:column;position:relative}
+.ph{aspect-ratio:1/1;background:#fff8e0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover}.ph img.nofoto{width:60%;height:auto;object-fit:contain;opacity:.35}
+.bd{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px}
+.bd span{font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;text-transform:uppercase}
+.b-of{background:var(--rojo);color:#fff}.b-nu{background:var(--amarillo);color:var(--vino)}.b-ou{background:#1e6fb4;color:#fff}.b-ss{background:#555;color:#fff}
+.info{padding:10px;display:flex;flex-direction:column;gap:4px;flex:1}
+.nom{font-size:14px;font-weight:700;line-height:1.25}.cod{font-size:11px;color:var(--dim)}
+.pr{font-size:18px;font-weight:800;color:var(--rojo)}.pr small{font-size:11px;color:var(--dim);font-weight:600}
+.ant{font-size:12px;color:var(--dim);text-decoration:line-through}
+.add{margin-top:auto;display:flex;gap:6px;align-items:center}
+.qty{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.qty button{border:none;background:#f6efec;width:28px;height:32px;font-size:16px;cursor:pointer}
+.qty input{width:38px;border:none;text-align:center;font-weight:700;height:32px}
+.bt{border:none;border-radius:8px;padding:8px 12px;font-weight:800;cursor:pointer;font-size:13px}
+.bt-r{background:var(--rojo);color:#fff;flex:1}.bt-r:hover{background:var(--rojo2)}.bt-r:disabled{background:#bbb;cursor:not-allowed}
+.bt-w{background:#25d366;color:#fff}.bt-s{background:#f1e9e5;color:var(--vino)}
+.fab{position:fixed;right:16px;bottom:16px;background:var(--rojo);color:#fff;border:none;border-radius:30px;padding:14px 18px;font-weight:800;font-size:15px;box-shadow:0 6px 20px rgba(227,30,36,.45);cursor:pointer;z-index:30;display:flex;gap:8px;align-items:center}
+.fab .n{background:var(--amarillo);color:var(--vino);border-radius:12px;padding:1px 8px;font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none}.ov.on{display:block}
+.drawer{position:fixed;top:0;right:0;height:100%;width:420px;max-width:100%;background:#fff;z-index:50;transform:translateX(105%);transition:transform .2s;display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.dh{background:var(--vino);color:#fff;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:800}
+.dh button{background:none;border:none;color:#fff;font-size:22px;cursor:pointer}
+.db{flex:1;overflow-y:auto;padding:12px 16px}
+.it{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.it img{width:48px;height:48px;object-fit:cover;border-radius:8px;background:#fff8e0}
+.it .t{flex:1;font-size:13px}.it .t b{display:block}
+.df{border-top:1px solid var(--line);padding:12px 16px;background:#fffaf0}
+.tot{display:flex;justify-content:space-between;font-size:14px;padding:2px 0}.tot.g{font-size:20px;font-weight:800;color:var(--vino)}
+.fi{width:100%;border:1px solid #d9ccc6;border-radius:8px;padding:9px 10px;font-size:14px;margin-top:6px}
+label{font-size:12px;font-weight:700;color:var(--vino);display:block;margin-top:8px}
+.msg{padding:9px 12px;border-radius:8px;font-size:13px;margin:8px 0}.m-r{background:#fee2e2;color:#b91c1c}.m-g{background:#dcfce7;color:#15803d}.m-w{background:#fff3c4;color:#7a5a00}
+.mod{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:60;display:none;align-items:center;justify-content:center;padding:14px}.mod.on{display:flex}
+.mod>div{background:#fff;border-radius:14px;max-width:420px;width:100%;padding:20px}
+footer{background:var(--vino);color:#f3dcd3;font-size:13px;padding:18px 14px;text-align:center;line-height:1.7}
+footer a{color:var(--amarillo)}
+.vacio{text-align:center;color:var(--dim);padding:40px}
+@media (max-width:640px){.top{flex-wrap:wrap}.top .logo img{height:38px}.busq{order:3;flex-basis:100%}.grid{grid-template-columns:repeat(2,1fr);gap:8px}.pr{font-size:16px}.tb span{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <a class="logo" href="catalogo.html"><img src="img/logo.png" alt="Pirotecnia Boom"></a>
+    <div class="busq"><i class="fas fa-search"></i><input id="q" placeholder="Buscar productos…" autocomplete="off"></div>
+    <button class="tb" id="b-xls" title="Descargar lista de precios"><i class="fas fa-file-excel"></i><span>Lista</span></button>
+    <button class="tb" id="b-may"><i class="fas fa-store"></i><span id="may-t">Mayoristas</span></button>
+  </div>
+  <div class="cats" id="cats"></div>
+</header>
+<div class="banda" id="banda"></div>
+<main><div class="barra"><span id="cuenta"></span><select id="orden"><option value="cat">Ordenar por categoría</option><option value="menor">Menor precio</option><option value="mayor">Mayor precio</option><option value="nombre">Nombre</option></select></div><div id="lista"><div class="vacio">Cargando productos…</div></div></main>
+<footer id="pie"></footer>
+<button class="fab" id="fab"><i class="fas fa-cart-shopping"></i> Mi pedido <span class="n" id="fab-n">0</span></button>
+<div class="ov" id="ov"></div>
+<aside class="drawer" id="dr">
+  <div class="dh"><span><i class="fas fa-cart-shopping"></i> Mi pedido</span><button id="dr-x">&times;</button></div>
+  <div class="db" id="dr-b"></div>
+  <div class="df" id="dr-f"></div>
+</aside>
+<div class="mod" id="mod-may"><div>
+  <h3 style="color:var(--vino);margin-bottom:6px">Ingreso mayoristas</h3><div style="font-size:13px;color:var(--dim)">Con el usuario de mayoristas ves los precios por mayor (más IVA).</div>
+  <div id="may-err"></div>
+  <label>Usuario</label><input class="fi" id="m-u" autocomplete="username"><label>Contraseña</label><input class="fi" id="m-p" type="password" autocomplete="current-password">
+  <div style="display:flex;gap:8px;margin-top:14px"><button class="bt bt-s" id="m-c">Cancelar</button><button class="bt bt-r" id="m-ok">Ingresar</button></div>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+'use strict';
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+const sb = window.supabase.createClient(LOCAL ? location.origin : 'https://ounzsqhxzdluqkcszkes.supabase.co', 'sb_publishable_g5SGDg6taIq-O8-skchu0w_Zk1Ze1_W', { auth: { persistSession: true, storageKey: 'pb_tienda' } });
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nf = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+const fmt = n => '$ ' + nf.format(Number(n || 0));
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+let PROD = [], T = {}, CAT = '', CARRO = {};
+try { CARRO = JSON.parse(localStorage.getItem('pb_carro') || '{}'); } catch (e) { CARRO = {}; }
+const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
+
+async function cargar() {
+  const [{ data: t }, { data: p, error }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo')]);
+  if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
+  T = t || {}; PROD = p || [];
+  for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
+  const may = T.mayorista;
+  $('may-t').textContent = may ? 'Salir mayorista' : 'Mayoristas';
+  $('banda').innerHTML = (may ? '<i class="fas fa-store"></i> Precios mayoristas: netos más IVA · ' : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
+  const cats = [...new Map(PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria)).map(x => [x.categoria, 1])).keys()];
+  $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
+  document.querySelectorAll('.cat').forEach(c => c.onclick = () => { CAT = c.dataset.c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x === c)); pintar(); });
+  $('pie').innerHTML = `<b>${esc(T.nombre)}</b>${T.direccion ? ' · ' + esc(T.direccion) : ''}${T.horarios ? '<br>' + esc(T.horarios) : ''}${T.whatsapp ? `<br>WhatsApp: <a href="https://wa.me/${String(T.whatsapp).replace(/\D/g, '')}" target="_blank">${esc(T.whatsapp)}</a>` : ''}${T.instagram ? ` · <a href="https://instagram.com/${esc(String(T.instagram).replace('@', ''))}" target="_blank">Instagram</a>` : ''}<br><small>Venta exclusiva a mayores de 18 años. Precios sujetos a stock.</small>`;
+  pintar(); pintarCarro();
+}
+function foto(p) { return p.fotos && p.fotos[0] ? `<img src="${esc(p.fotos[0])}" alt="${esc(p.nombre)}" loading="lazy">` : '<img class="nofoto" src="img/logo.png" alt="">'; }
+function pintar() {
+  const q = norm($('q').value); const o = $('orden').value;
+  let l = PROD.filter(p => (!CAT || (CAT === '__of' ? p.es_oferta : p.categoria === CAT)) && (!q || norm(p.nombre + ' ' + p.codigo + ' ' + p.categoria + ' ' + (p.descripcion || '')).includes(q)));
+  if (o === 'menor') l.sort((a, b) => a.precio - b.precio); else if (o === 'mayor') l.sort((a, b) => b.precio - a.precio); else if (o === 'nombre') l.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  else l.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria) || (b.destacado - a.destacado) || a.nombre.localeCompare(b.nombre));
+  $('cuenta').textContent = l.length + ' productos';
+  if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
+  const card = p => `<div class="card"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
+    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}${p.bulto ? ' · bulto x' + p.bulto : ''}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}${p.muestra_iva_aparte ? ' <small>+ IVA</small>' : ''}</div>
+    <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${CARRO[p.producto_id] || 1}" inputmode="numeric"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
+  if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
+  else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
+}
+$('lista').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.dataset.m || b.dataset.p || b.dataset.a; const inp = $('c' + id);
+  if (b.dataset.m) inp.value = Math.max(1, Number(inp.value || 1) - 1);
+  if (b.dataset.p) inp.value = Number(inp.value || 0) + 1;
+  if (b.dataset.a) { const n = Math.max(1, Math.floor(Number(inp.value) || 1)); CARRO[id] = n; guardar(); b.textContent = '✓'; pintarCarro(); toastFab(); }
+};
+function toastFab() { $('fab').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 300 }); }
+function totales() {
+  let neto = 0, fin = 0;
+  for (const [id, q] of Object.entries(CARRO)) { const p = PROD.find(x => x.producto_id == id); if (!p) continue; neto += q * Number(p.precio_neto); fin += q * Number(p.precio_neto) * (1 + Number(p.iva_pct) / 100); }
+  const d = (T.descuentos || []).filter(x => neto >= Number(x.desde)).pop();
+  const pct = d ? Number(d.porcentaje) : 0;
+  return { neto, fin, pct, total: fin * (1 - pct / 100), cant: Object.values(CARRO).reduce((a, b) => a + b, 0) };
+}
+function pintarCarro() {
+  const t = totales(); $('fab-n').textContent = Object.keys(CARRO).length;
+  const its = Object.entries(CARRO).map(([id, q]) => { const p = PROD.find(x => x.producto_id == id); return p ? `<div class="it">${p.fotos && p.fotos[0] ? `<img src="${esc(p.fotos[0])}">` : '<img src="img/logo.png" style="object-fit:contain">'}<div class="t"><b>${esc(p.nombre)}</b>${fmt(p.precio)}${p.muestra_iva_aparte ? ' + IVA' : ''} c/u</div><div class="qty"><button onclick="cambiar(${id},-1)">−</button><input value="${q}" onchange="fijar(${id},this.value)"><button onclick="cambiar(${id},1)">+</button></div><button class="bt bt-s" onclick="cambiar(${id},-9999)" title="Quitar"><i class="fas fa-trash"></i></button></div>` : ''; }).join('');
+  $('dr-b').innerHTML = its || '<div class="vacio">Tu pedido está vacío.<br>Agregá productos del catálogo.</div>';
+  const sig = (T.descuentos || []).find(x => t.neto < Number(x.desde));
+  $('dr-f').innerHTML = !its ? '' : `${T.mayorista ? `<div class="tot"><span>Neto</span><b>${fmt(t.neto)}</b></div>` : ''}${t.pct ? `<div class="tot"><span>Descuento ${nf.format(t.pct)}%</span><b>- ${fmt(t.fin - t.total)}</b></div>` : ''}<div class="tot g"><span>Total${T.mayorista ? ' con IVA' : ''}</span><span>${fmt(t.total)}</span></div>
+    ${sig ? `<div class="msg m-w">Sumá ${fmt(Number(sig.desde) - t.neto)} ${T.mayorista ? 'netos ' : ''}más y obtenés ${nf.format(sig.porcentaje)}% OFF</div>` : ''}
+    <div id="dr-err"></div><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"><label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional">
+    <button class="bt bt-r" style="width:100%;margin-top:12px;padding:13px" id="p-ok"><i class="fab fa-whatsapp"></i> Enviar pedido</button><div style="font-size:11px;color:var(--dim);margin-top:6px">El precio queda reservado por ${T.plazo_horas || 48} h hasta que lo confirmemos por WhatsApp. Envío y forma de pago se coordinan por WhatsApp.</div>`;
+  if (its) $('p-ok').onclick = enviar;
+}
+function cambiar(id, d) { const n = (CARRO[id] || 0) + d; if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); pintar(); }
+function fijar(id, v) { const n = Math.floor(Number(v) || 0); if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); }
+async function enviar() {
+  const nom = $('p-n').value.trim(), cel = $('p-c').value.trim(); const err = $('dr-err');
+  if (!nom || !cel) { err.innerHTML = '<div class="msg m-r">Completá nombre y celular.</div>'; return; }
+  $('p-ok').disabled = true;
+  const items = Object.entries(CARRO).map(([id, q]) => ({ producto_id: Number(id), cantidad: q }));
+  const { data, error } = await sb.rpc('crear_pedido', { p_nombre: nom, p_celular: cel, p_items: items, p_nota: $('p-o').value.trim() || null });
+  $('p-ok').disabled = false;
+  if (error) { err.innerHTML = `<div class="msg m-r">${esc(error.message)}</div>`; return; }
+  const r = data[0]; const lineas = items.map(i => { const p = PROD.find(x => x.producto_id == i.producto_id); return `• ${i.cantidad} x ${p ? p.nombre : i.producto_id}`; }).join('\n');
+  const txt = `Hola! Hice el pedido *${r.numero}* en la web.\n\n${lineas}\n\nTotal: ${fmt(r.total)}\nA nombre de: ${nom}`;
+  const wa = 'https://wa.me/' + String(T.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(txt);
+  CARRO = {}; guardar(); pintar();
+  $('fab-n').textContent = 0;
+  $('dr-b').innerHTML = `<div class="msg m-g" style="font-size:15px"><b>¡Pedido ${esc(r.numero)} registrado!</b><br>Total: <b>${fmt(r.total)}</b><br>Ahora avisanos por WhatsApp para confirmarlo.</div>${(r.cambios || []).map(c => `<div class="msg m-w">${esc(c)}</div>`).join('')}<a class="bt bt-w" style="display:block;text-align:center;padding:14px;text-decoration:none;margin-top:10px" href="${wa}" target="_blank" id="p-wa"><i class="fab fa-whatsapp"></i> Avisar por WhatsApp</a>`;
+  $('dr-f').innerHTML = '';
+  window.open(wa, '_blank');
+}
+function abrirCarro(v) { $('dr').classList.toggle('on', v); $('ov').classList.toggle('on', v); $('fab').style.display = v ? 'none' : ''; }
+$('fab').onclick = () => { pintarCarro(); abrirCarro(true); }; $('dr-x').onclick = () => abrirCarro(false); $('ov').onclick = () => abrirCarro(false);
+$('q').oninput = pintar; $('orden').onchange = pintar;
+$('b-may').onclick = async () => { if (T.mayorista) { await sb.auth.signOut(); cargar(); } else { $('mod-may').classList.add('on'); $('m-u').focus(); } };
+$('m-c').onclick = () => $('mod-may').classList.remove('on');
+$('m-ok').onclick = async () => {
+  const u = $('m-u').value.trim(); const email = u.includes('@') ? u : norm(u).replace(/[^a-z0-9._-]/g, '') + '@pirotecniaboom.local';
+  const { error } = await sb.auth.signInWithPassword({ email, password: $('m-p').value });
+  if (error) { $('may-err').innerHTML = '<div class="msg m-r">Usuario o contraseña incorrectos.</div>'; return; }
+  $('mod-may').classList.remove('on'); $('may-err').innerHTML = ''; await cargar();
+  if (!T.mayorista) { await sb.auth.signOut(); alert('Ese usuario no es de mayoristas.'); cargar(); }
+};
+$('b-xls').onclick = () => {
+  const filas = PROD.slice().sort((a, b) => a.categoria_orden - b.categoria_orden || a.nombre.localeCompare(b.nombre)).map(p => [p.categoria, p.codigo, p.nombre, Number(p.precio), p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);
+  const ws = XLSX.utils.aoa_to_sheet([['Categoría', 'Código', 'Producto', T.mayorista ? 'Precio neto (+IVA)' : 'Precio final', 'Oferta', 'Stock'], ...filas]);
+  ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 40 }, { wch: 16 }, { wch: 8 }, { wch: 10 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lista de precios'); XLSX.writeFile(wb, 'Lista_Pirotecnia_Boom.xlsx');
+};
+cargar();
+</script>
+</body>
+</html>
