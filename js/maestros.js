@@ -11,6 +11,7 @@ function formHtml(campos, v = {}, pref = 'fm') {
     let inp;
     if (c.t === 'sel') inp = `<select id="${id}" class="fs">${c.vacio !== false ? `<option value="">${c.vacio || 'Elegí…'}</option>` : ''}${(typeof c.op === 'function' ? c.op() : c.op).map(o => `<option value="${esc(o[0])}" ${String(x ?? c.def ?? '') === String(o[0]) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
     else if (c.t === 'bool') return `<div class="fg" style="${c.ancho ? 'grid-column:1/-1' : ''}"><label class="chk"><input type="checkbox" id="${id}" ${(x ?? c.def) ? 'checked' : ''}> ${c.l}</label>${c.ayuda ? `<div class="ss">${c.ayuda}</div>` : ''}</div>`;
+    else if (c.t === 'fotos') return `<div class="fg" style="grid-column:1/-1"><label class="fl">${c.l}</label><div id="${id}" class="fotos-w"></div>${c.ayuda ? `<div class="ss">${c.ayuda}</div>` : ''}</div>`;
     else if (c.t === 'area') inp = `<textarea id="${id}" class="ft">${esc(x ?? '')}</textarea>`;
     else if (c.t === 'num') inp = `<input id="${id}" type="number" step="${c.step || 'any'}" class="fi mono" value="${x ?? c.def ?? ''}">`;
     else if (c.t === 'date') inp = `<input id="${id}" type="date" class="fi" value="${x ? String(x).slice(0, 10) : (c.def || '')}">`;
@@ -28,7 +29,7 @@ function formMontarBuscadores(campos, v = {}, pref = 'fm') {
 function formLeer(campos, v = {}, pref = 'fm') {
   const p = {}; if (v.id) p.id = v.id;
   for (const c of campos) {
-    if ((c.dueno && !ES_DUENO) || (c.soloNuevo && v.id) || c.oculto) continue;
+    if ((c.dueno && !ES_DUENO) || (c.soloNuevo && v.id) || c.oculto || c.t === 'fotos') continue;
     const e = $(pref + '_' + c.k); if (!e) continue;
     let x;
     if (c.t === 'bool') x = e.checked;
@@ -186,7 +187,43 @@ const CAMPOS_PRODUCTO = [
   { k: 'controla_stock', l: 'Controla stock', t: 'bool', def: true }, { k: 'controla_vencimiento', l: 'Pide lote y vencimiento al comprar', t: 'bool' },
   { k: 'es_nuevo', l: 'Marcar como NUEVO', t: 'bool' }, { k: 'destacado', l: 'Destacado en el catálogo', t: 'bool' },
   { k: 'es_outlet', l: 'Outlet', t: 'bool' }, { k: 'envio_por_correo', l: 'Se puede enviar por correo', t: 'bool' },
-  { k: 'fotos_txt', l: 'Fotos (una dirección por línea; la primera es la principal)', t: 'area', ancho: 1, dueno: 1 }];
+  { k: 'fotos', l: 'Fotos', t: 'fotos', dueno: 1, ayuda: 'Tocá “Subir fotos” para elegirlas del celular o la computadora (o sacarlas con la cámara). La primera es la que se ve en el catálogo: usá la estrella para elegirla. Se guardan al tocar Guardar.' }];
+
+/* ---------- Fotos del producto: se achican en el navegador y se guardan en Supabase ---------- */
+async function fotoComprimir(file, max = 1200) {
+  const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => mal(new Error('No se pudo leer la imagen ' + (file.name || ''))); i.src = URL.createObjectURL(file); });
+  const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(img.src);
+  let b = await new Promise(r => c.toBlob(r, 'image/webp', 0.82));
+  if (!b || b.type !== 'image/webp') b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+  return b;
+}
+async function fotoSubir(productoId, blob) {
+  const ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+  const ruta = `p/${productoId}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}.${ext}`;
+  const { error } = await sb.storage.from('productos').upload(ruta, blob, { contentType: blob.type, upsert: false, cacheControl: '31536000' });
+  if (error) throw new Error('No se pudo subir la foto: ' + error.message);
+  return sb.storage.from('productos').getPublicUrl(ruta).data.publicUrl;
+}
+function fotosWidget(cont, urls) {
+  const W = { items: (urls || []).map(u => ({ url: u })) };
+  const pintar = () => {
+    cont.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start">${W.items.map((f, i) => `<div style="width:104px;border:2px solid ${i === 0 ? 'var(--rojo)' : '#d6c9c3'};border-radius:8px;overflow:hidden;background:#fff">
+        <img src="${esc(f.url || f.prev)}" style="display:block;width:100%;height:96px;object-fit:cover">
+        <div style="display:flex;justify-content:space-between;padding:3px">${i === 0 ? '<span class="badge br" title="Foto principal">principal</span>' : `<button type="button" class="btn btn-xs btn-y" data-a="pri" data-i="${i}" title="Hacer principal"><i class="fas fa-star"></i></button>`}<button type="button" class="btn btn-xs btn-d" data-a="del" data-i="${i}" title="Quitar"><i class="fas fa-times"></i></button></div>
+        ${f.file ? '<div class="ss" style="text-align:center;padding-bottom:3px">nueva</div>' : ''}</div>`).join('')}
+      <label class="btn btn-s" style="height:96px;width:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center"><i class="fas fa-camera" style="font-size:20px"></i>Subir fotos<input type="file" accept="image/*" multiple hidden></label></div>`;
+    cont.querySelector('input[type=file]').onchange = e => { for (const f of e.target.files) { if (!f.type.startsWith('image/')) continue; W.items.push({ file: f, prev: URL.createObjectURL(f) }); } pintar(); };
+    cont.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const i = Number(b.dataset.i); if (b.dataset.a === 'del') W.items.splice(i, 1); else W.items.unshift(W.items.splice(i, 1)[0]); pintar(); });
+  };
+  W.cambio = () => JSON.stringify(W.items.map(f => f.url || 'nuevo')) !== JSON.stringify(urls || []);
+  W.urls = async productoId => { const out = []; let n = 0; const nuevas = W.items.filter(f => f.file).length;
+    for (const f of W.items) { if (f.url) { out.push(f.url); continue; } n++; toast(`Subiendo foto ${n} de ${nuevas}…`, 'b', 2500); out.push(await fotoSubir(productoId, await fotoComprimir(f.file))); }
+    return out; };
+  pintar(); return W;
+}
 PAGINAS.productos = async () => {
   pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
     botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? btnNuevo('productoEditar()') : ''),
@@ -210,16 +247,16 @@ function productosPintar() {
 }
 function productoEditar(id) {
   const r0 = id ? PAG.prods.find(x => x.id === id) : { controla_stock: true, uso: 'libre' };
-  const r = { ...r0, fotos_txt: (r0.fotos || []).join('\n') };
-  modalForm({ titulo: id ? 'Editar producto' : 'Nuevo producto', campos: CAMPOS_PRODUCTO, v: r, cls: 'md-xl', guardar: async p => {
+  const r = { ...r0 }; let W = null;
+  const o = modalForm({ titulo: id ? 'Editar producto' : 'Nuevo producto', campos: CAMPOS_PRODUCTO, v: r, cls: 'md-xl', guardar: async p => {
     ['categoria_id', 'alicuota_iva_id', 'unidad_id'].forEach(k => { if (p[k] != null) p[k] = Number(p[k]); });
     if (!id && p.costo == null) throw new Error('Indicá el costo neto: sin costo el producto no tiene precio.');
-    const fotos = (p.fotos_txt || '').split('\n').map(x => x.trim()).filter(Boolean); delete p.fotos_txt;
     const nid = await rpc('guardar_producto', { p });
-    if (ES_DUENO && (fotos.length || (r0.fotos || []).length)) await rpc('guardar_fotos_producto', { p_producto: nid, p_urls: fotos });
+    if (W && W.cambio()) { const urls = await W.urls(nid); await rpc('guardar_fotos_producto', { p_producto: nid, p_urls: urls }); }
     toast('Producto guardado. Precios recalculados.', 'g');
     PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
   } });
+  const fw = o && o.querySelector('.fotos-w'); if (fw) W = fotosWidget(fw, r0.fotos || []);
 }
 async function productoEstado(id) {
   const r = PAG.prods.find(x => x.id === id); const nuevo = r.estado === 'activo' ? 'inactivo' : 'activo';
