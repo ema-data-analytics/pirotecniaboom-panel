@@ -175,8 +175,26 @@ async function enviar() {
   const { data, error } = await sb.rpc('crear_pedido', { p_nombre: nom, p_celular: cel, p_items: items, p_nota: $('p-o').value.trim() || null });
   $('p-ok').disabled = false;
   if (error) { err.innerHTML = `<div class="msg m-r">${esc(error.message)}</div>`; return; }
-  const r = data[0]; const lineas = items.map(i => { const p = PROD.find(x => x.producto_id == i.producto_id); return `• ${i.cantidad} x ${p ? p.nombre : i.producto_id}`; }).join('\n');
-  const txt = `Hola! Hice el pedido *${r.numero}* en la web.\n\n${lineas}\n\nTotal: ${fmt(r.total)}\nA nombre de: ${nom}`;
+  const r = data[0]; const nota = $('p-o').value.trim();
+  // Detalle con los precios que grabó la base (no los de la pantalla)
+  let det = null; try { const v = await sb.rpc('ver_pedido', { p_token: r.token }); if (!v.error) det = v.data; } catch (e) {}
+  const may = !!T.mayorista; let lineas = '', sub = 0;
+  if (det && det.items) {
+    lineas = det.items.map(i => {
+      const k = 1 + Number(i.iva_pct) / 100, q = Number(i.cantidad);
+      const pu = may ? Number(i.precio_neto_unit) : Math.round(Number(i.precio_neto_unit) * k * 100) / 100;
+      const st = may ? Number(i.subtotal_neto) : Math.round(Number(i.precio_neto_unit) * q * k * 100) / 100; sub += st;
+      return `• ${nf.format(q)} x ${i.nombre} (${i.codigo})\n   ${fmt(pu)}${may ? ' + IVA' : ''} c/u = *${fmt(st)}*`;
+    }).join('\n');
+  } else {
+    lineas = items.map(i => { const p = PROD.find(x => x.producto_id == i.producto_id); if (!p) return `• ${i.cantidad} x ${i.producto_id}`;
+      const pu = Number(p.precio); const st = pu * i.cantidad; sub += st;
+      return `• ${i.cantidad} x ${p.nombre} (${p.codigo})\n   ${fmt(pu)}${may ? ' + IVA' : ''} c/u = *${fmt(st)}*`; }).join('\n');
+  }
+  let tot = '';
+  if (may && det) tot = `Subtotal neto: ${fmt(Number(det.subtotal_neto))}\n${Number(det.descuento_neto) > 0 ? `Descuento: - ${fmt(Number(det.descuento_neto))}\n` : ''}IVA: ${fmt(Number(det.iva))}\n*TOTAL: ${fmt(Number(r.total))}*`;
+  else tot = `${Math.abs(sub - Number(r.total)) >= 1 ? `Subtotal: ${fmt(sub)}\nDescuento: - ${fmt(sub - Number(r.total))}\n` : ''}*TOTAL: ${fmt(Number(r.total))}*`;
+  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : ''}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom}\nCelular: ${cel}${nota ? `\nComentario: ${nota}` : ''}`;
   const wa = 'https://wa.me/' + String(T.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(txt);
   CARRO = {}; guardar(); pintar();
   $('fab-n').textContent = 0;
