@@ -73,7 +73,7 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
   <div class="flujo">
     <div class="p est"><b>En carga</b><span>Encabezado y productos. Se puede cambiar todo.</span></div><div class="fl">→</div>
     <div class="p"><b>Grabar presupuesto</b><span>Botón al pie. Recién ahí aparecen PDF, WhatsApp y Convertir.</span></div><div class="fl">→</div>
-    <div class="p est"><b>Pendiente</b><span>Ya no se edita. Validez 2 días desde que se graba. Se manda por PDF o WhatsApp.</span></div>
+    <div class="p est"><b>Pendiente</b><span>Ya no se editan los productos. Vence en la fecha elegida (mínimo 2 días) y se puede extender. Se manda por PDF o WhatsApp.</span></div>
   </div>
   <div class="ramas">
     <div class="flujo"><span class="r">El cliente confirma</span><div class="fl">→</div><div class="p"><b>Convertir en venta</b><span>Contado (cobro) o cuenta corriente, con los precios del presupuesto.</span></div><div class="fl">→</div><div class="p fin"><b>Aceptado</b><span>Queda unido a su venta.</span></div></div>
@@ -86,7 +86,7 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
     <tr><td>Convertir en venta</td><td class="si">Baja</td><td class="si">Si es contado</td><td class="si">Si es cta. cte.</td></tr></tbody></table></div>
   <h3>Reglas actuales</h3>
   <ul class="reg">
-    <li><code>P1</code><span>La validez es de <b>2 días corridos</b> desde que se graba: vence al terminar el segundo día (no son 48 horas al minuto). Se cambia en Datos de la empresa.</span></li>
+    <li><code>P1</code><span>El <b>vencimiento se elige</b> en el presupuesto: viene en 2 días y se puede dar más. Al grabar, nunca menos de 2 días. Un pendiente se puede extender. Son días corridos: vence al terminar el día elegido.</span></li>
     <li><code>P2</code><span>El presupuesto <b>no reserva stock</b>. Si al convertirlo no hay stock, el sistema no deja emitir la venta.</span></li>
     <li><code>P3</code><span>Mientras está pendiente <b>respeta su precio</b> aunque suba el costo.</span></li>
     <li><code>P4</code><span>Un presupuesto grabado <b>no se modifica</b>: se duplica y se graba uno nuevo.</span></li>
