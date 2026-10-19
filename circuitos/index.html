@@ -65,11 +65,11 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 </header>
 
 <nav>
-  <a href="#p"><b>P</b>Presupuesto</a><a href="#v"><b>V</b>Venta</a><a href="#w"><b>W</b>Pedido web</a><a href="#c"><b>C</b>Cobranza</a><a href="#k"><b>K</b>Compra</a><a href="#o"><b>O</b>Pago a proveedor</a><a href="#s"><b>S</b>Stock</a><a href="#j"><b>J</b>Caja</a><a href="#g"><b>G</b>Gastos</a><a href="#q"><b>Q</b>Cheques</a><a href="#r"><b>R</b>Precios</a>
+  <a href="#p"><b>P</b>Presupuesto</a><a href="#v"><b>V</b>Venta</a><a href="#w"><b>W</b>Pedido web</a><a href="#c"><b>C</b>Cobranza</a><a href="#k"><b>K</b>Compra</a><a href="#o"><b>O</b>Pago a proveedor</a><a href="#s"><b>S</b>Remitos y stock</a><a href="#j"><b>J</b>Caja</a><a href="#g"><b>G</b>Gastos</a><a href="#q"><b>Q</b>Cheques</a><a href="#r"><b>R</b>Precios</a>
 </nav>
 
 <section id="p">
-  <h2><span class="cod">P</span>Presupuesto <span class="nuevo">cambiado hoy</span></h2>
+  <h2><span class="cod">P</span>Presupuesto</h2>
   <div class="flujo">
     <div class="p est"><b>En carga</b><span>Encabezado y productos. Se puede cambiar todo.</span></div><div class="fl">→</div>
     <div class="p"><b>Grabar presupuesto</b><span>Botón al pie. Recién ahí aparecen PDF, WhatsApp y Convertir.</span></div><div class="fl">→</div>
@@ -163,18 +163,18 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 </section>
 
 <section id="k">
-  <h2><span class="cod">K</span>Compra a proveedor <small>solo dueño</small></h2>
-  <div class="flujo">
-    <div class="p"><b>Encabezado</b><span>Proveedor, letra, punto de venta, número, fecha, condición.</span></div><div class="fl">→</div>
-    <div class="p"><b>Productos</b><span>Cantidad y costo neto de la factura. Bonificación, flete, percepciones.</span></div><div class="fl">→</div>
-    <div class="p fin"><b>Registrar compra</b><span>Suma stock y actualiza el costo.</span></div><div class="fl">→</div>
-    <div class="p"><b>Precios recalculados</b><span>Todas las listas, solos.</span></div>
+  <h2><span class="cod">K</span>Compra a proveedor <small>solo dueño</small> <span class="nuevo">nuevo: con remitos</span></h2>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Llega la mercadería con factura</span><div class="fl">→</div><div class="p"><b>Cargar la factura</b><span>Proveedor, número, productos y costo.</span></div><div class="fl">→</div><div class="p fin"><b>Registrar compra</b><span>Suma stock, actualiza el costo y <b>genera su remito sola</b>.</span></div></div>
+    <div class="flujo"><span class="r">Llega sin factura</span><div class="fl">→</div><div class="p"><b>Remito de proveedor</b><span>Circuito S. Al autorizarlo entra al stock.</span></div><div class="fl">→</div><div class="p est"><b>Sin facturar</b><span>Espera su factura.</span></div><div class="fl">→</div><div class="p"><b>Cargar la factura</b><span>Al elegir el proveedor aparecen sus remitos: tildás y los productos se cargan solos.</span></div><div class="fl">→</div><div class="p fin"><b>Facturado</b><span>No suma stock dos veces.</span></div></div>
   </div>
+  <h3>Después de registrar</h3>
   <div class="ramas">
     <div class="flujo"><span class="r">Contado</span><div class="fl">→</div><div class="p"><b>Pago en el momento</b></div></div>
     <div class="flujo"><span class="r">Cuenta corriente</span><div class="fl">→</div><div class="p"><b>Deuda con el proveedor</b><span>Se paga con el circuito O.</span></div></div>
     <div class="flujo"><span class="r">Devolución o bonificación del proveedor</span><div class="fl">→</div><div class="p"><b>NC / ND del proveedor</b><span>Con devolución, sale del stock.</span></div></div>
-    <div class="flujo"><span class="r">Error de carga</span><div class="fl">→</div><div class="p malo"><b>Anular compra</b><span>Saca el stock y vuelve el costo anterior.</span></div></div>
+    <div class="flujo"><span class="r">Error de carga</span><div class="fl">→</div><div class="p malo"><b>Anular compra</b><span>Saca el stock y vuelve el costo anterior. Sus remitos vuelven a “sin facturar”.</span></div></div>
+    <div class="flujo"><span class="r">Para el contador</span><div class="fl">→</div><div class="p"><b>Libro IVA Compras</b><span>Reportes. Excel o PDF del período.</span></div></div>
   </div>
   <h3>Reglas actuales</h3>
   <ul class="reg">
@@ -182,6 +182,9 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
     <li><code>K2</code><span>La ganancia se calcula con el <b>costo promedio</b> del stock.</span></li>
     <li><code>K3</code><span>No se puede anular una compra si esa mercadería <b>ya se vendió</b> o si la factura <b>tiene pagos</b>.</span></li>
     <li><code>K4</code><span>Productos con vencimiento piden <b>lote y fecha</b> al comprar.</span></li>
+    <li><code>K5</code><span>El <b>costo se actualiza con la factura</b>, no con el remito: el remito entra al costo de ese momento y la factura lo corrige con el costo real.</span></li>
+    <li><code>K6</code><span>Si la factura <b>no coincide</b> con los remitos tildados, el sistema muestra la diferencia y pregunta. Si confirmás, <b>el stock queda como dice la factura</b>.</span></li>
+    <li><code>K7</code><span>Solo se pueden facturar remitos <b>autorizados</b> y del <b>mismo proveedor</b>.</span></li>
   </ul>
 </section>
 
@@ -201,16 +204,31 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 </section>
 
 <section id="s">
-  <h2><span class="cod">S</span>Stock</h2>
+  <h2><span class="cod">S</span>Remitos y stock <span class="nuevo">nuevo</span></h2>
+  <div class="flujo">
+    <div class="p"><b>Nuevo remito</b><span>Un toque: Llegó de un proveedor · Ingreso · Egreso.</span></div><div class="fl">→</div>
+    <div class="p"><b>Productos y cantidades</b><span>Siempre en positivo. Motivo en ingreso y egreso.</span></div><div class="fl">→</div>
+    <div class="p est"><b>Para autorizar</b><span>Si lo cargó el operador. No mueve stock todavía.</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Autorizado</b><span>El dueño lo autoriza: el stock se mueve.</span></div>
+  </div>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Lo carga el dueño</span><div class="fl">→</div><div class="p fin"><b>Grabar y autorizar</b><span>En un solo paso.</span></div></div>
+    <div class="flujo"><span class="r">Llegó de un proveedor</span><div class="fl">→</div><div class="p est"><b>Sin facturar</b><span>Hasta que se carga su factura (circuito K).</span></div></div>
+    <div class="flujo"><span class="r">Error</span><div class="fl">→</div><div class="p malo"><b>Anular</b><span>Solo dueño, con motivo. Si estaba autorizado, el stock vuelve atrás.</span></div></div>
+  </div>
+  <h3>Qué mueve el stock</h3>
   <div class="tw"><table><thead><tr><th>Entra</th><th>Sale</th><th>Queda reservado</th></tr></thead><tbody>
-    <tr><td style="white-space:normal">Compras · NC de venta con devolución · Ajuste de inventario inicial · Recuento +</td><td>Ventas · NC del proveedor con devolución · Merma, rotura, vencimiento · Recuento −</td><td>Pedidos web abiertos</td></tr></tbody></table></div>
+    <tr><td style="white-space:normal">Factura de compra · Remito de proveedor · Remito de ingreso (inventario inicial, recuento, devolución) · NC de venta con devolución</td><td>Ventas · Remito de egreso (merma, rotura, vencimiento, recuento, consumo) · NC del proveedor con devolución</td><td>Pedidos web abiertos</td></tr></tbody></table></div>
   <p style="margin:0"><b>Disponible = stock − reservado.</b> Es lo que se puede vender.</p>
   <h3>Reglas actuales</h3>
   <ul class="reg">
-    <li><code>S1</code><span>El stock <b>no se edita a mano</b>: cada cambio es un movimiento con motivo.</span></li>
-    <li><code>S2</code><span>Los ajustes los hace <b>solo el dueño</b>.</span></li>
-    <li><code>S3</code><span>El stock <b>no puede quedar negativo</b> (ver V1).</span></li>
+    <li><code>S1</code><span>El stock <b>no se edita a mano</b>: toda entrada o salida que no es venta ni compra es un <b>remito</b> con motivo.</span></li>
+    <li><code>S2</code><span>El operador <b>carga</b> remitos; el <b>dueño autoriza</b>. Recién autorizado se mueve el stock. El número amarillo del menú avisa cuántos esperan.</span></li>
+    <li><code>S3</code><span>El stock <b>no puede quedar negativo</b>: un egreso sin stock suficiente no se autoriza (ver V1).</span></li>
     <li><code>S4</code><span>Debajo del stock mínimo de un producto, avisa en Inicio.</span></li>
+    <li><code>S5</code><span>Con motivo <b>Otro</b> la nota es obligatoria.</span></li>
+    <li><code>S6</code><span>Un remito <b>facturado no se anula</b>: se anula la factura.</span></li>
+    <li><code>S7</code><span>Las mermas, roturas y vencidos van como <b>costo</b> en el estado de resultados.</span></li>
   </ul>
 </section>
 
@@ -275,4 +293,3 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 
 <footer>Respondé con los códigos que quieras cambiar. Lo que no menciones queda como está.</footer>
 </div>
-</body></html>
