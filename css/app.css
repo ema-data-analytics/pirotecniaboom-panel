@@ -174,3 +174,4 @@ tr.anulado td{opacity:.55;text-decoration:line-through}
   .content{padding:12px}.page-hdr{padding:10px 12px}
 }
 @media print{#sidebar,.page-hdr,.no-print{display:none!important}#main{overflow:visible}}
+td.mono{white-space:nowrap}
