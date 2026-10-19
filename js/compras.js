@@ -16,37 +16,51 @@ async function comprasCargar() {
 }
 const CP = {};
 async function compraNueva() {
-  CP.items = []; CP.edit = null;
+  CP.items = []; CP.edit = null; CP.rem = []; CP.remSel = new Set();
   pagina({ titulo: 'Nueva compra', icono: 'truck-ramp-box', sub: 'Factura del proveedor: suma stock y actualiza el costo', botones: `<button class="btn btn-s" onclick="ir('compras')"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span></div><div class="pb">
       <div class="fr4"><div class="fg" style="grid-column:span 2"><label class="fl req">Proveedor</label><div id="cp_pw"></div></div><div class="fg"><label class="fl">Fecha de la factura</label><input type="date" id="cp_fec" class="fi" value="${hoy()}"></div><div class="fg"><label class="fl">Condición</label><select id="cp_cond" class="fs"><option value="cuenta_corriente">Cuenta corriente (se paga después)</option><option value="contado">Contado (se paga ahora)</option></select></div></div>
       <div class="fr4"><div class="fg"><label class="fl">Letra</label><select id="cp_let" class="fs"><option>A</option><option>B</option><option>C</option><option>X</option></select></div><div class="fg"><label class="fl">Punto de venta</label><input id="cp_pv" type="number" class="fi mono" placeholder="0001"></div><div class="fg"><label class="fl req">Número</label><input id="cp_num" class="fi mono" placeholder="00001234"></div><div class="fg"><label class="chk" style="margin-top:18px"><input type="checkbox" id="cp_act" checked> Actualizar el costo de los productos</label></div></div>
       <div class="fr4"><div class="fg"><label class="fl">Bonificación (neto)</label><input id="cp_bon" type="number" step="0.01" class="fi mono" value="0"></div><div class="fg"><label class="fl">Flete (neto)</label><input id="cp_fle" type="number" step="0.01" class="fi mono" value="0"></div><div class="fg"><label class="fl">Percepción IVA</label><input id="cp_piva" type="number" step="0.01" class="fi mono" value="0"></div><div class="fg"><label class="fl">Percepción IIBB</label><input id="cp_piibb" type="number" step="0.01" class="fi mono" value="0"></div></div>
-      <div class="fr4"><div class="fg"><label class="fl">IVA que dice la factura (control)</label><input id="cp_ivainf" type="number" step="0.01" class="fi mono" placeholder="opcional"></div></div></div></div>
+      <div class="fr4"><div class="fg"><label class="fl">IVA que dice la factura (control)</label><input id="cp_ivainf" type="number" step="0.01" class="fi mono" placeholder="opcional"></div></div><div id="cp_rem"></div></div></div>
       <div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span></div><div class="pb">
       <div class="fr4 mb3" style="grid-template-columns:3fr 1fr 1fr 1fr auto;align-items:end"><div class="fg" style="margin:0"><label class="fl">Producto</label><div id="cp_prw"></div></div><div class="fg" style="margin:0"><label class="fl">Cantidad</label><input id="cp_q" type="number" step="any" class="fi mono" value="1"></div><div class="fg" style="margin:0"><label class="fl">Costo neto unit.</label><input id="cp_cu" type="number" step="0.01" class="fi mono"></div><div class="fg" style="margin:0" id="cp_lotew"><label class="fl">Lote / vence</label><div class="flex gap2"><input id="cp_lote" class="fi" placeholder="lote"><input id="cp_venc" type="date" class="fi"></div></div><button class="btn btn-p" id="cp_add"><i class="fas fa-plus"></i> Agregar</button></div>
       <div id="cp_g"></div></div></div>
       <div class="flex jb fw gap3"><div><button class="btn btn-p btn-xl" id="cp_ok"><i class="fas fa-check"></i> Registrar compra</button></div><div class="tot-box" id="cp_tot"></div></div>` });
   CP.prods = await rpc('abm_listar', { p_tabla: 'productos' });
-  buscador('cp_pw', { tipo: 'proveedor', id: 'cp_prov' });
+  buscador('cp_pw', { tipo: 'proveedor', id: 'cp_prov', onSelect: p => compraRemitos(p.id), onClear: () => compraRemitos(null) });
   buscador('cp_prw', { tipo: 'producto', id: 'cp_prod', neto: true, onSelect: p => { const x = CP.prods.find(q => q.id === p.id) || {}; $('cp_cu').value = x.costo ?? ''; $('cp_lotew').style.visibility = x.controla_vencimiento ? 'visible' : 'hidden'; $('cp_q').focus(); $('cp_q').select(); } });
   $('cp_lotew').style.visibility = 'hidden';
   ['cp_bon', 'cp_fle', 'cp_piva', 'cp_piibb'].forEach(i => $(i).oninput = compraTotales);
   $('cp_add').onclick = compraAgregar; $('cp_cu').onkeydown = e => { if (e.key === 'Enter') compraAgregar(); };
   $('cp_ok').onclick = compraRegistrar; compraPintar();
 }
+async function compraRemitos(prov) {
+  CP.remSel = new Set(); CP.items = CP.items.filter(i => !i.rem); CP.rem = prov ? await rpc('remitos_para_facturar', { p_proveedor: prov }) : [];
+  $('cp_rem').innerHTML = !CP.rem.length ? (prov ? '<div class="ss mt3">Este proveedor no tiene remitos sin facturar: la factura da entrada al stock y genera su remito sola.</div>' : '')
+    : `<div class="alert al-i mt3"><b>Remitos de este proveedor sin facturar.</b> Tildá los que corresponden a esta factura: sus productos se cargan solos y el stock no se suma dos veces.<div class="mt3" style="display:flex;flex-direction:column;gap:6px">${CP.rem.map(r => `<label class="chk"><input type="checkbox" class="cp-rem" data-id="${r.id}"> <b class="mono">${esc(r.numero)}</b> · ${fmtD(r.fecha)}${r.nro_proveedor ? ' · rem. ' + esc(r.nro_proveedor) : ''} · ${r.items.map(i => fmtN(i.cantidad) + ' ' + esc(i.producto)).join(', ')}</label>`).join('')}</div></div>`;
+  $('cp_rem').querySelectorAll('.cp-rem').forEach(c => c.onchange = () => { c.checked ? CP.remSel.add(Number(c.dataset.id)) : CP.remSel.delete(Number(c.dataset.id)); compraDesdeRemitos(); });
+  compraPintar();
+}
+function compraDesdeRemitos() {
+  const previos = Object.fromEntries(CP.items.filter(i => i.rem).map(i => [i.producto_id, i.costo_neto_unit]));
+  CP.items = CP.items.filter(i => !i.rem); const ag = {};
+  CP.rem.filter(r => CP.remSel.has(r.id)).forEach(r => r.items.forEach(i => { ag[i.producto_id] = ag[i.producto_id] || { producto_id: i.producto_id, codigo: i.codigo, nombre: i.producto, cantidad: 0 }; ag[i.producto_id].cantidad += Number(i.cantidad); }));
+  Object.values(ag).forEach(a => { const p = CP.prods.find(x => x.id === a.producto_id) || {}; CP.items.push({ ...a, iva: Number(p.iva_pct || 21), costo_neto_unit: previos[a.producto_id] ?? Number(p.costo || 0), rem: true }); });
+  compraPintar();
+}
 function compraAgregar() {
   const pid = Number($('cp_prod').dataset.id || 0); if (!pid) return toast('Elegí el producto.', 'r');
   const p = CP.prods.find(x => x.id === pid) || {}; const q = numIn('cp_q'); const cu = numIn('cp_cu');
   if (!q || q <= 0) return toast('Cantidad inválida.', 'r'); if (cu === null || cu < 0) return toast('Indicá el costo.', 'r');
   if (p.controla_vencimiento && (!val('cp_lote') || !val('cp_venc'))) return toast('Este producto pide lote y vencimiento.', 'r');
-  const it = { producto_id: pid, codigo: p.codigo, nombre: p.nombre, iva: Number(p.iva_pct || 21), cantidad: q, costo_neto_unit: cu, lote: val('cp_lote') || undefined, vencimiento: val('cp_venc') || undefined };
+  const it = { producto_id: pid, codigo: p.codigo, nombre: p.nombre, iva: Number(p.iva_pct || 21), cantidad: q, costo_neto_unit: cu, lote: val('cp_lote') || undefined, vencimiento: val('cp_venc') || undefined, rem: CP.edit !== null ? CP.items[CP.edit].rem : false };
   if (CP.edit !== null) CP.items[CP.edit] = it; else CP.items.push(it);
   CP.edit = null; $('cp_prod').fijar(null); $('cp_q').value = 1; $('cp_cu').value = ''; $('cp_lote').value = ''; $('cp_venc').value = '';
   compraPintar(); $('cp_prod').focus();
 }
 function compraPintar() {
-  $('cp_g').innerHTML = grilla('g_cpi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'Costo unit.', k: 'costo_neto_unit', f: 'm', cls: 'tr' }, { t: 'IVA', k: 'iva', f: 'p', cls: 'tr' }, { t: 'Lote', k: 'lote' }, { t: 'Subtotal neto', k: 'st', f: r => fmt(r.cantidad * r.costo_neto_unit), cls: 'tr' }], CP.items,
+  $('cp_g').innerHTML = grilla('g_cpi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre', f: r => esc(r.nombre) + (r.rem ? ' <span class="badge bb">del remito</span>' : '') }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'Costo unit.', k: 'costo_neto_unit', f: 'm', cls: 'tr' }, { t: 'IVA', k: 'iva', f: 'p', cls: 'tr' }, { t: 'Lote', k: 'lote' }, { t: 'Subtotal neto', k: 'st', f: r => fmt(r.cantidad * r.costo_neto_unit), cls: 'tr' }], CP.items,
     { vacio: 'Agregá los productos de la factura', acciones: (r, i) => `<button class="btn btn-xs btn-b" onclick="compraEditarLinea(${i})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-d" onclick="CP.items.splice(${i},1);compraPintar()"><i class="fas fa-trash"></i></button>` });
   compraTotales();
 }
@@ -64,10 +78,17 @@ async function compraRegistrar() {
   const perc = []; if (numIn('cp_piva')) perc.push({ tipo: 'PERC_IVA', importe: numIn('cp_piva') }); if (numIn('cp_piibb')) perc.push({ tipo: 'PERC_IIBB', importe: numIn('cp_piibb') });
   const p = { proveedor_id: prov, letra: $('cp_let').value, punto_venta: numIn('cp_pv'), numero: val('cp_num'), fecha: $('cp_fec').value, condicion: $('cp_cond').value, actualiza_costo: $('cp_act').checked,
     bonificacion_neto: numIn('cp_bon') || 0, flete_neto: numIn('cp_fle') || 0, iva_informado: numIn('cp_ivainf'), percepciones: perc,
-    items: CP.items.map(r => ({ producto_id: r.producto_id, cantidad: r.cantidad, costo_neto_unit: r.costo_neto_unit, lote: r.lote, vencimiento: r.vencimiento })) };
-  const fin = async r => { toast('Compra registrada por ' + fmt(r.total) + (r.pago ? ' · pago ' + r.pago : ''), 'g', 6000); await ir('compras'); verCompra(r.compra_id); };
-  if (p.condicion === 'contado') modalPagosProv({ total: CP.total, proveedor: prov, titulo: 'Pago de la compra', onConfirm: async pagos => fin(await rpc('registrar_compra', { p: { ...p, pagos } })) });
-  else { if (!await confirmar(`¿Registrar la compra por <b>${fmt(CP.total)}</b> en cuenta corriente?`)) return; fin(await rpc('registrar_compra', { p })); }
+    items: CP.items.map(r => ({ producto_id: r.producto_id, cantidad: r.cantidad, costo_neto_unit: r.costo_neto_unit, lote: r.lote, vencimiento: r.vencimiento })), remito_ids: [...CP.remSel] };
+  if (CP.items.some(i => !(Number(i.costo_neto_unit) > 0))) { if (!await confirmar('Hay productos con costo $ 0. ¿Registrar igual?')) return; }
+  if (CP.remSel.size) {
+    const rq = {}; CP.rem.filter(r => CP.remSel.has(r.id)).forEach(r => r.items.forEach(i => rq[i.producto_id] = (rq[i.producto_id] || 0) + Number(i.cantidad)));
+    const fq = {}; CP.items.forEach(i => fq[i.producto_id] = (fq[i.producto_id] || 0) + Number(i.cantidad));
+    const dif = [...new Set([...Object.keys(rq), ...Object.keys(fq)])].filter(k => Math.abs((rq[k] || 0) - (fq[k] || 0)) > 0.0001).map(k => { const it = CP.items.find(i => String(i.producto_id) === k) || {}; const nom = it.nombre || (CP.prods.find(x => String(x.id) === k) || {}).nombre || k; return `${esc(nom)}: remito ${fmtN(rq[k] || 0)} · factura ${fmtN(fq[k] || 0)}`; });
+    if (dif.length && !await confirmar(`<b>La factura no coincide con los remitos:</b><br>${dif.join('<br>')}<br><br>El stock va a quedar como dice la factura. ¿Registrar igual?`)) return;
+  }
+  const fin = async r => { toast('Compra registrada por ' + fmt(r.total) + (r.pago ? ' · pago ' + r.pago : '') + (r.remitos && r.remitos.length ? ' · remito ' + r.remitos.join(', ') : ''), 'g', 7000); await ir('compras'); verCompra(r.compra_id); };
+  if (p.condicion === 'contado') modalPagosProv({ total: CP.total, proveedor: prov, titulo: 'Pago de la compra', onConfirm: async pagos => fin(await rpc('registrar_compra_remitos', { p: { ...p, pagos } })) });
+  else { if (!await confirmar(`¿Registrar la compra por <b>${fmt(CP.total)}</b> en cuenta corriente?`)) return; fin(await rpc('registrar_compra_remitos', { p })); }
 }
 async function verCompra(id) {
   const d = await rpc('compra_detalle', { p_id: id });
@@ -104,8 +125,8 @@ async function notaCompra(id) {
   };
 }
 async function anularCompra(id) {
-  const m = await pedirTexto('Anular compra', 'Motivo', { ayuda: 'Solo para errores de carga. La compra queda anulada (no se borra): se saca del stock lo que entró y se restaura el costo anterior. Si el proveedor hizo una devolución real, cargá una nota de crédito.' }); if (!m) return;
-  await rpc('anular_compra', { p_compra: id, p_motivo: m }); toast('Compra anulada', 'g'); comprasCargar();
+  const m = await pedirTexto('Anular compra', 'Motivo', { ayuda: 'Solo para errores de carga. La compra queda anulada (no se borra): se saca del stock lo que entró y se restaura el costo anterior. Si venía de remitos, esos remitos vuelven a quedar sin facturar. Si el proveedor hizo una devolución real, cargá una nota de crédito.' }); if (!m) return;
+  await rpc('anular_compra_remitos', { p_compra: id, p_motivo: m }); toast('Compra anulada', 'g'); comprasCargar();
 }
 
 /* ================= PAGOS A PROVEEDORES ================= */

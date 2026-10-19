@@ -30,3 +30,18 @@ async function rventasCargar() {
   const f = leerFiltros(); const rows = await rpc('ventas_resumen', { p_desde: f.desde || iniMes(), p_hasta: f.hasta || hoy(), p_por: f.por || 'producto' });
   $('rv_g').innerHTML = grilla('g_rv', [{ t: { producto: 'Producto', categoria: 'Categoría', cliente: 'Cliente', lista: 'Lista', dia: 'Día' }[f.por || 'producto'], k: 'clave' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr', sum: 1 }, { t: 'Neto', k: 'neto', f: 'm', cls: 'tr', sum: 1 }, { t: 'Total con IVA', k: 'total', f: 'm', cls: 'tr', sum: 1 }, ...(ES_DUENO ? [{ t: 'Costo', k: 'costo', f: 'm', cls: 'tr', sum: 1 }, { t: 'Ganancia', k: 'ganancia', f: 'm', cls: 'tr', sum: 1 }, { t: 'Margen', k: 'margen_pct', f: 'p', cls: 'tr' }] : [])], rows);
 }
+PAGINAS.ivacompras = async () => {
+  pagina({ titulo: 'Libro IVA Compras', icono: 'book-open', sub: 'Facturas, notas de crédito y débito de proveedores del período (las NC restan)',
+    botones: btnExcel(`exportarExcel('g_ivc','Libro IVA Compras')`) + btnPdf(`exportarPdf('g_ivc','Libro IVA Compras',filtrosTexto(),true)`),
+    cuerpo: `<div class="grid-4 mb3" id="ivc_k"></div><div class="panel">${barraFiltros([{ k: 'desde', t: 'desde', v: iniMes() }, { k: 'hasta', t: 'hasta', v: hoy() }], ivaComprasCargar)}<div id="ivc_g"></div></div>` });
+  await ivaComprasCargar();
+};
+async function ivaComprasCargar() {
+  const f = leerFiltros(); const rows = await rpc('libro_iva_compras', { p_desde: f.desde || iniMes(), p_hasta: f.hasta || hoy() });
+  const s = k => rows.reduce((a, r) => a + Number(r[k] || 0), 0);
+  $('ivc_k').innerHTML = kpi('Neto gravado', fmt(s('neto_gravado')), rows.length + ' comprobantes', 'b') + kpi('IVA crédito fiscal', fmt(s('iva_21') + s('iva_10_5') + s('iva_27')), '21 %, 10,5 % y 27 %', 'g') + kpi('Percepciones', fmt(s('perc_iva') + s('perc_iibb')), 'IVA e IIBB', 'w') + kpi('Total', fmt(s('total')), '');
+  $('ivc_g').innerHTML = grilla('g_ivc', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'Tipo', k: 'tipo', f: r => esc(r.tipo + ' ' + (r.letra || '')), xf: r => r.tipo + ' ' + (r.letra || '') }, { t: 'Número', k: 'comprobante', cls: 'mono' }, { t: 'Proveedor', k: 'proveedor' }, { t: 'CUIT', k: 'cuit' }, { t: 'Cond. IVA', k: 'condicion_iva' },
+    { t: 'Neto gravado', k: 'neto_gravado', f: 'm', cls: 'tr', sum: 1 }, { t: 'No gravado', k: 'no_gravado', f: 'm', cls: 'tr', sum: 1 }, { t: 'IVA 21 %', k: 'iva_21', f: 'm', cls: 'tr', sum: 1 }, { t: 'IVA 10,5 %', k: 'iva_10_5', f: 'm', cls: 'tr', sum: 1 }, { t: 'IVA 27 %', k: 'iva_27', f: 'm', cls: 'tr', sum: 1 },
+    { t: 'Perc. IVA', k: 'perc_iva', f: 'm', cls: 'tr', sum: 1 }, { t: 'Perc. IIBB', k: 'perc_iibb', f: 'm', cls: 'tr', sum: 1 }, { t: 'Otros', k: 'otros', f: 'm', cls: 'tr', sum: 1 }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }], rows,
+    { vacio: 'No hay compras en el período', acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="verCompra(${r.id})"><i class="fas fa-eye"></i></button>` });
+}

@@ -188,32 +188,85 @@ function bancoOp(tipo) {
   };
 }
 
-/* ================= STOCK Y AJUSTES ================= */
+/* ================= REMITOS Y STOCK ================= */
+const REM_TIPO = { compra: 'Entrada de proveedor', ingreso: 'Ingreso', egreso: 'Egreso' };
+const REM_MOT = { compra: 'Compra', inventario_inicial: 'Inventario inicial', recuento: 'Recuento', merma: 'Merma', rotura: 'Rotura', vencimiento: 'Vencimiento', consumo: 'Consumo interno', devolucion: 'Devolución', otro: 'Otro' };
+const REM_EST = r => r.estado === 'pendiente' ? 'Para autorizar' : r.estado === 'anulado' ? 'Anulado' : r.tipo === 'compra' ? (r.compra_id ? 'Facturado' : 'Sin facturar') : 'Autorizado';
 PAGINAS.stock = async () => {
-  pagina({ titulo: 'Stock y ajustes', icono: 'boxes-stacked', sub: 'Inventario inicial, recuentos, mermas, roturas y vencidos',
-    botones: btnExcel(`exportarExcel('g_aj','Ajustes de stock')`) + btnPdf(`exportarPdf('g_aj','Ajustes de stock')`) + (ES_DUENO ? btnNuevo('ajusteNuevo()', 'Nuevo ajuste') : ''),
-    cuerpo: `<div class="alert al-i">El stock no se edita a mano: cada cambio es un movimiento con su motivo. Las compras suman, las ventas restan, las notas de crédito con devolución vuelven a sumar.</div><div class="panel">${barraFiltros([{ k: 'desde', t: 'desde', v: hoy(-90) }, { k: 'hasta', t: 'hasta', v: hoy() }, { k: 'tipo', t: 'sel', l: 'Tipo', op: [['inventario_inicial', 'Inventario inicial'], ['recuento', 'Recuento'], ['merma', 'Merma'], ['rotura', 'Rotura'], ['vencimiento', 'Vencimiento'], ['otro', 'Otro']] }], ajustesCargar)}<div id="aj_g"></div></div>
+  pagina({ titulo: 'Remitos y stock', icono: 'boxes-stacked', sub: 'Toda entrada o salida de mercadería es un remito: el dueño lo autoriza y recién ahí se mueve el stock',
+    botones: btnExcel(`exportarExcel('g_rem','Remitos')`) + btnPdf(`exportarPdf('g_rem','Remitos',filtrosTexto())`) + btnNuevo('remitoNuevo()', 'Nuevo remito'),
+    cuerpo: `<div class="grid-4 mb3" id="rem_k"></div><div class="panel">${barraFiltros([{ k: 'estado', t: 'sel', l: 'Estado', op: [['pendiente', 'Para autorizar'], ['sin_facturar', 'Sin facturar'], ['autorizado', 'Autorizado'], ['anulado', 'Anulado']] }, { k: 'tipo', t: 'sel', l: 'Tipo', op: [['compra', 'Entrada de proveedor'], ['ingreso', 'Ingreso'], ['egreso', 'Egreso']] }, { k: 'desde', t: 'desde', v: hoy(-90) }, { k: 'hasta', t: 'hasta', v: hoy() }, ...(ES_DUENO ? [{ k: 'proveedor_id', t: 'proveedor', l: 'Proveedor' }] : []), { k: 'texto', t: 'texto', ph: 'N°, remito proveedor, nota' }], remitosCargar)}<div id="rem_g"></div></div>
       <div class="panel mt4"><div class="ph"><span class="pt">Movimientos de un producto</span></div><div class="pb"><div class="fr"><div class="fg"><label class="fl">Producto</label><div id="kx_pw"></div></div></div><div id="kx_g"></div></div></div>` });
   buscador('kx_pw', { tipo: 'producto', id: 'kx_p', onSelect: async p => { const m = await rpc('movimientos_producto', { p_producto: p.id, p_desde: hoy(-365), p_hasta: hoy() }); $('kx_g').innerHTML = `<div class="flex gap3 mb3">${kpi('Saldo anterior', fmtN(m.saldo_anterior))}${kpi('Stock actual', fmtN(m.stock_actual), '', 'g')}</div>` + grilla('g_kx', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'Tipo', k: 'tipo' }, { t: 'Documento', k: 'documento' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'Saldo', k: 'saldo', f: 'n', cls: 'tr' }, ...(ES_DUENO ? [{ t: 'Costo unit.', k: 'costo_unit', f: 'm', cls: 'tr' }] : [])], m.movimientos.slice().reverse()); } });
-  await ajustesCargar();
+  await remitosCargar();
 };
-async function ajustesCargar() {
-  const rows = await rpc('listado_ajustes_stock', { f: leerFiltros() });
-  $('aj_g').innerHTML = grilla('g_aj', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'N°', k: 'numero' }, { t: 'Tipo', k: 'tipo' }, { t: 'Motivo', k: 'motivo' }, { t: 'Productos', k: 'productos' }, { t: 'Usuario', k: 'usuario' }, ...(ES_DUENO ? [{ t: 'Valor (costo)', k: 'valor', f: 'm', cls: 'tr', sum: 1 }] : [])], rows);
+async function remitosCargar() {
+  const rows = await rpc('listado_remitos', { f: leerFiltros() });
+  const todos = PAG.remK || (PAG.remK = await rpc('listado_remitos', { f: {} }));
+  $('rem_k').innerHTML = kpi('Para autorizar', todos.filter(r => r.estado === 'pendiente').length, ES_DUENO ? 'esperan tu autorización' : 'esperan al dueño', 'w') + kpi('Entradas sin facturar', todos.filter(r => r.tipo === 'compra' && r.estado === 'autorizado' && !r.compra_id).length, 'remitos de proveedor', 'b') + kpi('Remitos del período', rows.length, '') + kpi('Unidades', fmtN(rows.filter(r => r.estado !== 'anulado').reduce((a, r) => a + (r.tipo === 'egreso' ? -1 : 1) * Number(r.unidades), 0)), 'entradas − salidas', 'g');
+  $('rem_g').innerHTML = grilla('g_rem', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'N°', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>${r.automatico ? ' <span class="badge bm">automático</span>' : ''}`, xf: r => r.numero }, { t: 'Tipo', k: 'tipo', f: r => esc(REM_TIPO[r.tipo]), xf: r => REM_TIPO[r.tipo] }, { t: 'Motivo / proveedor', k: 'proveedor', f: r => esc(r.tipo === 'compra' ? (r.proveedor || '') + (r.nro_proveedor ? ' · rem. ' + r.nro_proveedor : '') : REM_MOT[r.motivo]), xf: r => r.tipo === 'compra' ? r.proveedor : REM_MOT[r.motivo] }, { t: 'Productos', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Unidades', k: 'unidades', f: 'n', cls: 'tr' }, { t: 'Cargó', k: 'cargo' }, { t: 'Factura', k: 'compra' }, { t: 'Estado', k: 'estado', f: r => badgeEstado(REM_EST(r)), xf: r => REM_EST(r) }], rows,
+    { claseFila: r => r.estado === 'anulado' ? 'anulado' : '', acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="remitoVer(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-xs btn-pdf" title="PDF" onclick="remitoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>${ES_DUENO && r.estado === 'pendiente' ? `<button class="btn btn-xs btn-g" title="Autorizar" onclick="remitoAutorizar(${r.id})"><i class="fas fa-check"></i></button>` : ''}${ES_DUENO && r.estado !== 'anulado' && !r.compra_id ? `<button class="btn btn-xs btn-d" title="Anular" onclick="remitoAnular(${r.id})"><i class="fas fa-ban"></i></button>` : ''}` });
 }
-function ajusteNuevo() {
-  const mid = 'aj' + uid(); let lins = [];
-  const o = showModal(modalHdr('Nuevo ajuste de stock') + `<div class="mb2"><div class="fr"><div class="fg"><label class="fl">Tipo</label><select id="${mid}_t" class="fs"><option value="inventario_inicial">Inventario inicial (entra)</option><option value="recuento">Recuento (+ o −)</option><option value="merma">Merma (sale)</option><option value="rotura">Rotura (sale)</option><option value="vencimiento">Vencimiento (sale)</option><option value="otro">Otro (+ o −)</option></select></div><div class="fg"><label class="fl req">Motivo</label><input id="${mid}_m" class="fi"></div></div>
-    <div class="fr3" style="grid-template-columns:3fr 1fr auto;align-items:end"><div class="fg" style="margin:0"><label class="fl">Producto</label><div id="${mid}_pw"></div></div><div class="fg" style="margin:0"><label class="fl">Cantidad</label><input id="${mid}_q" type="number" step="any" class="fi mono" placeholder="+ entra / − sale"></div><button class="btn btn-s" id="${mid}_a"><i class="fas fa-plus"></i></button></div><div class="ss mt3">En merma, rotura y vencimiento poné la cantidad en positivo: el sistema la descuenta.</div><div id="${mid}_l" class="mt3"></div></div>
-    <div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cancelar</button><button class="btn btn-p" id="${mid}_ok"><i class="fas fa-check"></i> Registrar ajuste</button></div>`, 'md-lg');
-  buscador(mid + '_pw', { tipo: 'producto', id: mid + '_p' });
-  const pintar = () => $(mid + '_l').innerHTML = grilla('g_ajl', [{ t: 'Producto', k: 'nombre' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr' }], lins, { vacio: 'Agregá productos', acciones: (r, i) => `<button class="btn btn-xs btn-d" onclick="this.closest('.mo')._q(${i})"><i class="fas fa-trash"></i></button>` });
+function remitoNuevo(tipo) {
+  const mid = 'rn' + uid(); let lins = [];
+  const mot = t => t === 'ingreso' ? [['inventario_inicial', 'Inventario inicial'], ['recuento', 'Recuento (sobrante)'], ['devolucion', 'Devolución de un cliente'], ['otro', 'Otro']] : [['merma', 'Merma'], ['rotura', 'Rotura'], ['vencimiento', 'Vencimiento'], ['recuento', 'Recuento (faltante)'], ['consumo', 'Consumo interno / muestra'], ['otro', 'Otro']];
+  const o = showModal(modalHdr('Nuevo remito') + `<div class="mb2">
+    <div class="fg"><label class="fl req">¿Qué pasó con la mercadería?</label><div class="flex gap2 fw" id="${mid}_t">
+      <button class="btn btn-s" data-t="compra"><i class="fas fa-truck"></i> Llegó de un proveedor</button><button class="btn btn-s" data-t="ingreso"><i class="fas fa-circle-down"></i> Ingreso (inventario, recuento…)</button><button class="btn btn-s" data-t="egreso"><i class="fas fa-circle-up"></i> Egreso (rotura, merma, vencido…)</button></div></div>
+    <div id="${mid}_cab"></div>
+    <div class="fr3 mt3" style="grid-template-columns:3fr 1fr auto;align-items:end"><div class="fg" style="margin:0"><label class="fl">Producto</label><div id="${mid}_pw"></div></div><div class="fg" style="margin:0"><label class="fl">Cantidad</label><input id="${mid}_q" type="number" min="0" step="any" class="fi mono"></div><button class="btn btn-s" id="${mid}_a"><i class="fas fa-plus"></i> Agregar</button></div>
+    <div id="${mid}_l" class="mt3"></div>
+    <div class="ss mt3">${ES_DUENO ? 'Al grabar queda autorizado y el stock se mueve en el momento.' : 'Al grabar queda <b>para autorizar</b>: el stock se mueve cuando el dueño lo autoriza.'}</div></div>
+    <div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cancelar</button><button class="btn btn-p" id="${mid}_ok"><i class="fas fa-floppy-disk"></i> ${ES_DUENO ? 'Grabar y autorizar' : 'Grabar remito'}</button></div>`, 'md-lg');
+  let T = null;
+  const elegirTipo = t => {
+    T = t; o.querySelectorAll(`#${mid}_t button`).forEach(b => b.className = 'btn ' + (b.dataset.t === t ? 'btn-p' : 'btn-s'));
+    $(mid + '_cab').innerHTML = t === 'compra' ? `<div class="fr3"><div class="fg"><label class="fl req">Proveedor</label><div id="${mid}_prw"></div></div><div class="fg"><label class="fl">N° de remito del proveedor</label><input id="${mid}_nr" class="fi" placeholder="Opcional"></div><div class="fg"><label class="fl">Fecha</label><input type="date" id="${mid}_f" class="fi" value="${hoy()}"></div></div>`
+      : `<div class="fr3"><div class="fg"><label class="fl req">Motivo</label><select id="${mid}_m" class="fs">${mot(t).map(m => `<option value="${m[0]}">${m[1]}</option>`).join('')}</select></div><div class="fg" style="grid-column:span 2"><label class="fl">Nota</label><input id="${mid}_n" class="fi" placeholder="Detalle (obligatorio si el motivo es Otro)"></div></div>`;
+    if (t === 'compra') buscador(mid + '_prw', { tipo: 'proveedor', id: mid + '_pr' });
+    else $(mid + '_cab').insertAdjacentHTML('beforeend', '');
+  };
+  o.querySelectorAll(`#${mid}_t button`).forEach(b => b.onclick = () => elegirTipo(b.dataset.t));
+  if (tipo) elegirTipo(tipo);
+  buscador(mid + '_pw', { tipo: 'producto', id: mid + '_p', onSelect: () => { $(mid + '_q').focus(); } });
+  const pintar = () => $(mid + '_l').innerHTML = grilla('g_rnl', [{ t: 'Producto', k: 'nombre' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr' }], lins, { vacio: 'Agregá los productos', acciones: (r, i) => `<button class="btn btn-xs btn-d" onclick="this.closest('.mo')._q(${i})"><i class="fas fa-trash"></i></button>` });
   o._q = i => { lins.splice(i, 1); pintar(); }; pintar();
-  $(mid + '_a').onclick = () => { const p = Number($(mid + '_p').dataset.id || 0); const q = numIn(mid + '_q'); if (!p || !q) return toast('Elegí producto y cantidad.', 'r'); lins.push({ producto_id: p, nombre: $(mid + '_p').value, cantidad: q }); $(mid + '_p').fijar(null); $(mid + '_q').value = ''; pintar(); $(mid + '_p').focus(); };
+  $(mid + '_a').onclick = () => { const p = Number($(mid + '_p').dataset.id || 0); const q = numIn(mid + '_q'); if (!p) return toast('Elegí el producto.', 'r'); if (!q || q <= 0) return toast('Poné la cantidad (siempre en positivo).', 'r'); const ex = lins.find(l => l.producto_id === p); if (ex) ex.cantidad += q; else lins.push({ producto_id: p, nombre: $(mid + '_p').value, cantidad: q }); $(mid + '_p').fijar(null); $(mid + '_q').value = ''; pintar(); $(mid + '_p').focus(); };
   $(mid + '_q').onkeydown = e => { if (e.key === 'Enter') $(mid + '_a').click(); };
   $(mid + '_ok').onclick = async () => {
-    if (!lins.length) return toast('Agregá productos.', 'r'); const t = $(mid + '_t').value; const sale = ['merma', 'rotura', 'vencimiento'].includes(t);
-    const it = lins.map(l => ({ producto_id: l.producto_id, cantidad: sale ? -Math.abs(l.cantidad) : (t === 'inventario_inicial' ? Math.abs(l.cantidad) : l.cantidad) }));
-    const n = await rpc('registrar_ajuste_stock', { p_tipo: t, p_motivo: val(mid + '_m'), p_items: it }); o.remove(); toast('Ajuste ' + n + ' registrado', 'g'); ajustesCargar();
+    if (!T) return toast('Elegí qué pasó con la mercadería.', 'r');
+    if (!lins.length && Number($(mid + '_p').dataset.id || 0) && numIn(mid + '_q')) $(mid + '_a').click();
+    if (!lins.length) return toast('Agregá al menos un producto.', 'r');
+    const p = { tipo: T, items: lins.map(l => ({ producto_id: l.producto_id, cantidad: l.cantidad })), autorizar: ES_DUENO };
+    if (T === 'compra') { p.proveedor_id = Number($(mid + '_pr').dataset.id || 0) || null; if (!p.proveedor_id) return toast('Elegí el proveedor.', 'r'); p.nro_proveedor = val(mid + '_nr') || null; p.fecha = $(mid + '_f').value || null; }
+    else { p.motivo = $(mid + '_m').value; p.nota = val(mid + '_n') || null; }
+    $(mid + '_ok').disabled = true;
+    try { const r = await rpc('remito_guardar', { p }); o.remove(); toast('Remito ' + r.numero + (r.estado === 'autorizado' ? ' autorizado: stock actualizado' : ' grabado: queda para autorizar'), 'g', 6000); PAG.remK = null; actualizarBadges(); if (PAG.id === 'stock') remitosCargar(); }
+    catch (e) { $(mid + '_ok').disabled = false; }
   };
+}
+async function remitoVer(id) {
+  const d = await rpc('remito_detalle', { p_id: id });
+  showModal(modalHdr('Remito ' + esc(d.numero) + ' · ' + esc(REM_TIPO[d.tipo])) + `<div class="mb2"><div class="grid-2 mb3"><div class="kv"><b>Fecha</b><span>${fmtD(d.fecha)}</span>${d.tipo === 'compra' ? `<b>Proveedor</b><span>${esc(d.proveedor)}</span><b>Remito del proveedor</b><span>${esc(d.nro_proveedor || '—')}</span>` : `<b>Motivo</b><span>${esc(REM_MOT[d.motivo])}</span>`}${d.nota ? `<b>Nota</b><span>${esc(d.nota)}</span>` : ''}</div>
+    <div class="kv"><b>Estado</b><span>${badgeEstado(REM_EST(d))}</span><b>Cargó</b><span>${esc(d.cargo || '')} · ${fmtDT(d.creado)}</span>${d.autorizado_at ? `<b>Autorizó</b><span>${esc(d.autorizo || '')} · ${fmtDT(d.autorizado_at)}</span>` : ''}${d.compra ? `<b>Factura</b><span>${esc(d.compra)}</span>` : ''}${d.motivo_anulacion ? `<b>Anulación</b><span>${esc(d.motivo_anulacion)}</span>` : ''}</div></div>
+    ${grilla('g_rvi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr', sum: 1 }, { t: 'Stock actual', k: 'stock', f: 'n', cls: 'tr' }], d.items)}</div>
+    <div class="mf"><button class="btn btn-pdf" onclick="remitoPdf(${d.id})"><i class="fas fa-file-pdf"></i> PDF</button>${ES_DUENO && d.estado === 'pendiente' ? `<button class="btn btn-g" onclick="closeModal(this);remitoAutorizar(${d.id})"><i class="fas fa-check"></i> Autorizar</button>` : ''}<button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
+}
+async function remitoPdf(id) {
+  const d = await rpc('remito_detalle', { p_id: id });
+  const doc = pdfDocumento({ titulo: 'REMITO · ' + REM_TIPO[d.tipo].toUpperCase(), numero: d.numero + (d.estado === 'anulado' ? ' (ANULADO)' : ''), fecha: fmtD(d.fecha), sub: 'Documento interno de stock',
+    receptor: { titulo: d.tipo === 'compra' ? 'Proveedor' : 'Motivo', lineas: d.tipo === 'compra' ? [d.proveedor, d.nro_proveedor ? 'Remito del proveedor: ' + d.nro_proveedor : ''] : [REM_MOT[d.motivo], d.nota || ''] },
+    extra: { titulo: 'Control', lineas: ['Estado: ' + REM_EST(d), 'Cargó: ' + (d.cargo || ''), d.autorizo ? 'Autorizó: ' + d.autorizo : '', d.compra ? 'Factura: ' + d.compra : ''] },
+    cols: ['Código', 'Producto', 'Cantidad'], filas: d.items.map(i => [i.codigo, i.producto, fmtN(i.cantidad)]), colStyles: { 2: { halign: 'right' } },
+    totales: [['UNIDADES', fmtN(d.items.reduce((a, i) => a + Number(i.cantidad), 0)), 1]], notas: d.nota || '' });
+  pdfSave(doc, d.numero);
+}
+async function remitoAutorizar(id) {
+  const d = await rpc('remito_detalle', { p_id: id });
+  if (!await confirmar(`¿Autorizar el remito <b>${esc(d.numero)}</b> (${esc(REM_TIPO[d.tipo])}, ${fmtN(d.unidades)} unidades)? ${d.tipo === 'egreso' ? 'Sale' : 'Entra'} mercadería del stock.`)) return;
+  await rpc('remito_autorizar', { p_id: id }); toast('Remito ' + d.numero + ' autorizado: stock actualizado', 'g'); PAG.remK = null; actualizarBadges(); if (PAG.id === 'stock') remitosCargar();
+}
+async function remitoAnular(id) {
+  const m = await pedirTexto('Anular remito', 'Motivo', { ayuda: 'El remito queda anulado (no se borra). Si ya estaba autorizado, el stock vuelve a como estaba.' }); if (!m) return;
+  await rpc('remito_anular', { p_id: id, p_motivo: m }); toast('Remito anulado', 'g'); PAG.remK = null; actualizarBadges(); remitosCargar();
 }

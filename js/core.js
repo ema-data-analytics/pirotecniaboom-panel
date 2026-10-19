@@ -403,9 +403,9 @@ const MENU = [
   { s: 'Ventas', it: [['presupuestos', 'Presupuestos', 'file-signature'], ['ventas', 'Ventas y notas', 'receipt'], ['cobranzas', 'Cobranzas', 'hand-holding-dollar'], ['ctacte', 'Cuenta corriente clientes', 'address-book'], ['pedidos', 'Pedidos web', 'cart-shopping']] },
   { s: 'Compras', d: true, it: [['compras', 'Compras', 'truck-ramp-box'], ['pagos', 'Pagos a proveedores', 'money-check-dollar'], ['ctacteprov', 'Cuenta corriente proveedores', 'book']] },
   { s: 'Caja y fondos', it: [['caja', 'Caja', 'cash-register'], ['gastos', 'Gastos', 'file-invoice-dollar'], ['cheques', 'Cheques', 'money-check'], ['bancos', 'Bancos y billeteras', 'building-columns', true]] },
-  { s: 'Stock', it: [['productos', 'Productos y precios', 'box-open'], ['stock', 'Stock y ajustes', 'boxes-stacked']] },
+  { s: 'Stock', it: [['productos', 'Productos y precios', 'box-open'], ['stock', 'Remitos y stock', 'boxes-stacked']] },
   { s: 'Maestros', it: [['clientes', 'Clientes', 'users'], ['proveedores', 'Proveedores', 'truck', true], ['categorias', 'Categorías', 'tags'], ['listas', 'Listas de precios', 'list-ol'], ['ofertas', 'Ofertas', 'percent'], ['descuentos', 'Descuentos por monto', 'tag', true], ['tiposgasto', 'Tipos de gasto', 'folder-tree'], ['conceptos', 'Conceptos de gasto', 'list-check'], ['medios', 'Medios de pago', 'credit-card', true], ['cuentas', 'Cuentas bancarias', 'piggy-bank', true]] },
-  { s: 'Reportes', it: [['resultados', 'Estado de resultados', 'chart-line', true], ['rventas', 'Ventas por producto', 'chart-column']] },
+  { s: 'Reportes', it: [['resultados', 'Estado de resultados', 'chart-line', true], ['rventas', 'Ventas por producto', 'chart-column'], ['ivacompras', 'Libro IVA Compras', 'book-open', true]] },
   { s: 'Sistema', it: [['usuarios', 'Usuarios', 'user-shield', true], ['empresa', 'Datos de la empresa', 'building', true], ['miclave', 'Mi contraseña', 'key']] },
 ];
 const PAGINAS = {};
@@ -449,7 +449,7 @@ async function actualizarBadges() {
   try {
     const r = await rpc('panel_inicio', {}, { silencio: true });
     const b = (k, n) => { const e = $('nb_' + k); if (e) { e.textContent = n; e.classList.toggle('hidden', !n); } };
-    b('pedidos', r.pedidos_abiertos); b('presupuestos', r.presupuestos_por_vencer);
+    b('pedidos', r.pedidos_abiertos); b('presupuestos', r.presupuestos_por_vencer); b('stock', r.remitos_pendientes);
   } catch (e) { }
 }
 window.addEventListener('load', async () => {
