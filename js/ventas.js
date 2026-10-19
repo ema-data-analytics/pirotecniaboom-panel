@@ -54,7 +54,7 @@ function editorPintarHdr() {
     <div class="fg" style="grid-column:span 2"><label class="fl req">Cliente</label><div class="flex gap2"><div id="ed_cli_w" class="f1"></div>${ed ? '<button class="btn btn-s" title="Nuevo cliente" onclick="editorClienteNuevo()"><i class="fas fa-user-plus"></i></button>' : ''}</div></div>
     <div class="fg"><label class="fl">Lista de precios</label><select id="ed_lista" class="fs" ${ed ? '' : 'disabled'}><option value="">La del cliente</option>${listas}</select></div>
     ${esV ? `<div class="fg"><label class="fl">Condición</label><select id="ed_cond" class="fs" ${ed ? '' : 'disabled'}><option value="contado" ${d.condicion !== 'cuenta_corriente' ? 'selected' : ''}>Contado</option><option value="cuenta_corriente" ${d.condicion === 'cuenta_corriente' ? 'selected' : ''}>Cuenta corriente</option></select></div>`
-          : `<div class="fg"><label class="fl">Validez</label><div class="fi" style="background:#f6f1ee">${!d.estado || d.estado === 'borrador' ? ((M.empresa || {}).validez_presupuesto_dias || 2) + ' días desde que se graba' : 'Vence el ' + fmtD(d.valido_hasta)}</div></div>`}
+          : `<div class="fg"><label class="fl">Válido hasta</label>${d.estado === 'enviado' ? `<div class="flex gap2"><input type="date" id="ed_val" class="fi" min="${hoy()}" value="${d.valido_hasta}"><button class="btn btn-s" title="Cambiar el vencimiento" onclick="presupuestoValidez()"><i class="fas fa-check"></i></button></div>` : `<input type="date" id="ed_val" class="fi" min="${hoy()}" value="${d.valido_hasta || hoy((M.empresa || {}).validez_presupuesto_dias || 2)}" ${ed ? '' : 'disabled'}>`}</div>`}
   </div><div class="fr4">
     <div class="fg"><label class="fl">Descuento general %</label><input id="ed_desc" type="number" step="0.01" min="0" max="99" class="fi mono" value="${d.descuento_pct || 0}" ${ed && ES_DUENO ? '' : 'disabled'} title="${ES_DUENO ? '' : 'Lo autoriza el dueño'}"></div>
     <div class="fg"><label class="fl">Motivo del descuento / precio especial</label><input id="ed_mot" class="fi" value="${esc(d.descuento_motivo || '')}" ${ed ? '' : 'disabled'}></div>
@@ -74,7 +74,7 @@ async function editorGuardarHdr() {
   const cli = Number($('ed_cli').dataset.id || 0); if (!cli) return toast('Elegí el cliente.', 'r');
   const p = { id: ED.id, cliente_id: cli, lista_id: $('ed_lista').value ? Number($('ed_lista').value) : null, descuento_pct: numIn('ed_desc') || 0, descuento_motivo: val('ed_mot') || null, nota: val('ed_nota') || null };
   if (ED.modo === 'venta') { p.condicion = $('ed_cond').value; p.recargo_neto = numIn('ed_rec') || 0; p.envio_neto = numIn('ed_env') || 0; p.factura_externa = val('ed_fact') || null; ED.id = await rpc('borrador_guardar', { p }); }
-  else { ED.id = await rpc('presupuesto_guardar', { p }); }
+  else { p.valido_hasta = $('ed_val').value || null; ED.id = await rpc('presupuesto_guardar', { p }); }
   history.replaceState(null, '', '#' + (ED.modo === 'venta' ? 'ventas' : 'presupuestos'));
   toast('Encabezado guardado', 'g'); await editorRecargar();
   setTimeout(() => $('ed_prod') && $('ed_prod').focus(), 80);
@@ -289,7 +289,9 @@ async function presupuestoWa(id) {
   const txt = `Hola ${d.cliente.nombre}! Te paso el presupuesto ${d.numero} de Pirotecnia Boom por ${fmt(d.total)}, válido hasta el ${fmtD(d.valido_hasta)}.\n\nPodés verlo y descargarlo acá: ${link}\n\n¡Cualquier consulta escribinos!`;
   waAbrir(d.cliente.celular, txt);
 }
+async function presupuestoValidez() { const f = $('ed_val').value; if (!f) return toast('Elegí la fecha.', 'r'); await rpc('presupuesto_validez', { p_id: ED.id, p_fecha: f }); await editorRecargar(); toast('Vence el ' + fmtD(f), 'g'); }
 async function presupuestoGrabar(id) {
+  if ($('ed_val') && $('ed_val').value && $('ed_val').value !== ED.det.valido_hasta) await rpc('presupuesto_validez', { p_id: id, p_fecha: $('ed_val').value });
   await rpc('presupuesto_estado', { p_id: id, p_estado: 'enviado' });
   await editorRecargar(); toast('Presupuesto ' + ED.det.numero + ' grabado · vence el ' + fmtD(ED.det.valido_hasta), 'g', 6000);
 }
