@@ -1,4 +1,5 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body><title>Manual Pirotecnia Boom</title>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Manual Pirotecnia Boom</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -206,12 +207,13 @@ const S = [
     '<b>Paso 2 · Productos.</b> En <b>Producto</b> buscá por código, nombre o categoría y elegilo. Debajo aparece el precio de lista y el disponible.',
     'Poné la <b>Cantidad</b> y tocá ' + B('+ Agregar') + ' (o Enter). La línea entra en la grilla y el total de abajo a la derecha se actualiza.',
     'Repetí con cada producto. Para corregir una línea tocá el lápiz; para sacarla, el tacho.',
-    'Para mandarlo: ' + B('PDF','s') + ' lo descarga, ' + B('Enviar por WhatsApp','g') + ' abre WhatsApp con un mensaje y un link donde el cliente lo ve y lo descarga. Al enviarlo pasa a estado <b>Enviado</b>.',
-    'Cuando el cliente acepta, tocá ' + B('Convertir en venta') + ': elegí Contado (pasa al cobro) o Cuenta corriente, y si emitiste factura ARCA aparte, su número. Se emite la venta con los precios del presupuesto.',
+    '<b>Paso 3 · Grabar.</b> Tocá ' + B('Grabar presupuesto') + ' al pie. Queda <b>Pendiente</b>, ya no se modifica y la validez de 2 días empieza a correr. Recién ahí aparecen PDF, WhatsApp y Convertir.',
+    'Para mandarlo: ' + B('PDF','s') + ' lo descarga, ' + B('Enviar por WhatsApp','g') + ' abre WhatsApp con un mensaje y un link donde el cliente lo ve y lo descarga.',
+    'Cuando el cliente confirma, tocá ' + B('Cliente confirmó: convertir en venta') + ': elegí Contado (pasa al cobro) o Cuenta corriente, y si emitiste factura ARCA aparte, su número. Se emite la venta con los precios del presupuesto.',
     'Si no acepta, tocá ' + B('Rechazado','s') + ' y anotá el motivo. ' + B('Duplicar','s') + ' crea uno nuevo igual pero con los precios de hoy.'],
   campos:[['Cliente','Elegilo del buscador. Botón de la persona + para crear uno nuevo.','Sí'],
     ['Lista de precios','“La del cliente” o una lista puntual.','No'],
-    ['Válido hasta','Fecha de vencimiento. Después de esa fecha pasa solo a Vencido.','No'],
+    ['Validez','No se escribe: son 2 días desde que se graba (se cambia en Datos de la empresa). Después pasa solo a Vencido.','—'],
     ['Descuento general %','Descuento sobre todo el presupuesto. Solo el dueño.','No'],
     ['Motivo del descuento','Por qué se hizo el descuento o el precio especial.','No'],
     ['Nota para el cliente','Sale impresa en el PDF.','No'],
@@ -220,8 +222,9 @@ const S = [
     ['Precio neto unit.','Vacío = precio de lista. Escribir un precio = precio especial. Solo el dueño.','No'],
     ['Desc. línea %','Descuento de esa línea. Solo el dueño.','No']],
   botones:[['Excel / PDF','Descarga el listado filtrado.'],['Lápiz u ojo','Abre el presupuesto (lápiz si se puede editar, ojo si ya está cerrado).'],['WhatsApp','Lo manda al celular del cliente.'],['Caja registradora','Convertir en venta.'],['Copiar','Duplicar con precios actuales.']],
-  ojo:['Estados: <b>Borrador</b> → <b>Enviado</b> → <b>Aceptado</b> (se convirtió en venta) · <b>Rechazado</b> · <b>Vencido</b>.',
-    'Un presupuesto aceptado, rechazado o vencido ya no se edita: duplicalo.',
+  ojo:['Estados: <b>En carga</b> → (Grabar) → <b>Pendiente</b> → <b>Aceptado</b> (se convirtió en venta) · <b>Rechazado</b> · <b>Vencido</b>.',
+    'La lista abre filtrada en <b>Pendientes</b>: los que esperan respuesta del cliente.',
+    'Un presupuesto grabado no se edita: duplicalo (el nuevo toma los precios de hoy).',
     'Las tarjetas de arriba muestran la <b>Efectividad</b>: aceptados sobre enviados.'] },
 
 { id:'ventas', g:'Ventas', t:'Ventas y notas', shot:'20_venta_cc', cap:'Venta en carga: encabezado, productos y botón Confirmar venta.',

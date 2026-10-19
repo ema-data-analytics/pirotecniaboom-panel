@@ -1,0 +1,278 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Circuitos Pirotecnia Boom</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Una columna; cada circuito = flujo de pasos (cajas y flechas) + qué mueve + reglas con código para responder. */
+:root{--rojo:#e31e24;--amarillo:#fecc00;--vino:#4a0a0d;--bg:#f8f4f2;--panel:#fff;--fg:#25171a;--dim:#76666a;--line:#e7dad5;
+  --paso:#fff;--paso-b:#d9c6bf;--ok:#16794a;--okbg:#e5f5ec;--no:#a3141a;--nobg:#fde9e9;--info:#22508f;--infobg:#e8effa;--chip:#fff3c4;
+  --f:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--m:'JetBrains Mono',ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#160b0c;--panel:#221416;--fg:#f2e6e4;--dim:#b09c99;--line:#3c272a;--paso:#2a1a1c;--paso-b:#5a3d40;--ok:#66d39b;--okbg:#10291b;--no:#ff8a8f;--nobg:#3a1315;--info:#91b9f3;--infobg:#13233a;--chip:#3a300c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#160b0c;--panel:#221416;--fg:#f2e6e4;--dim:#b09c99;--line:#3c272a;--paso:#2a1a1c;--paso-b:#5a3d40;--ok:#66d39b;--okbg:#10291b;--no:#ff8a8f;--nobg:#3a1315;--info:#91b9f3;--infobg:#13233a;--chip:#3a300c;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--f);margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-block:26px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-direction:column;gap:8px}
+.eye{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--rojo)}
+h1{margin:0;font-size:32px;line-height:1.12;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin:0;max-width:68ch;font-size:16px}
+.como{background:var(--chip);border-radius:12px;padding:12px 16px;font-size:14.5px}
+.como code{font:700 13px var(--m)}
+nav{display:flex;flex-wrap:wrap;gap:6px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding-block:8px;z-index:5}
+nav a{text-decoration:none;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:600}
+nav a b{font:700 11px var(--m);color:var(--rojo);margin-right:4px}
+nav a:hover{border-color:var(--rojo)}
+section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;scroll-margin-top:60px}
+h2{margin:0;font-size:22px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+h2 .cod{font:700 13px var(--m);background:var(--vino);color:var(--amarillo);border-radius:6px;padding:2px 8px}
+h2 small{font-size:13px;color:var(--dim);font-weight:500}
+h3{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.flujo{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.p{background:var(--paso);border:1.5px solid var(--paso-b);border-radius:10px;padding:8px 11px;font-size:13.5px;line-height:1.35;max-width:220px;display:flex;flex-direction:column;gap:2px}
+.p b{font-size:14px}
+.p span{color:var(--dim);font-size:12.5px}
+.p.est{border-color:var(--rojo);border-width:2px}
+.p.fin{background:var(--okbg);border-color:transparent}
+.p.fin b{color:var(--ok)}
+.p.malo{background:var(--nobg);border-color:transparent}
+.p.malo b{color:var(--no)}
+.fl{align-self:center;color:var(--rojo);font-weight:900;font-size:18px}
+.ramas{display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--amarillo);padding-left:10px}
+.ramas .flujo{gap:6px}
+.r{font-size:12px;font-weight:700;color:var(--dim);align-self:center;min-width:0}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--vino);color:#fff;font-size:11px;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:8px 10px}
+td{border-top:1px solid var(--line);padding:8px 10px;vertical-align:top}
+td:first-child{font-weight:700;white-space:nowrap}
+.si{color:var(--ok);font-weight:700}.no{color:var(--dim)}
+ul.reg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+ul.reg li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;align-items:start;background:var(--infobg);border-radius:9px;padding:8px 10px}
+ul.reg li code{font:700 13px var(--m);color:var(--info)}
+.nuevo{font-size:11px;font-weight:800;background:var(--rojo);color:#fff;border-radius:5px;padding:1px 6px;margin-left:6px}
+footer{font-size:14px;color:var(--dim)}
+a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
+@media (max-width:600px){h1{font-size:26px}.p{max-width:100%}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eye">Pirotecnia Boom · sistema de gestión</div>
+  <h1>Cómo funciona cada circuito</h1>
+  <p class="lead">Todos los recorridos del sistema en una sola página: qué pasos tiene cada uno, qué mueve (stock, caja, cuenta corriente) y las reglas que hoy aplica. Así se revisa todo de una vez y no pantalla por pantalla.</p>
+  <div class="como"><b>Cómo responder:</b> cada regla tiene un código. Mandame solo los que quieras distinto, por ejemplo: <code>P1: 48 horas exactas</code> · <code>V1: permitir vender sin stock</code>. Lo que no menciones queda como está.</div>
+</header>
+
+<nav>
+  <a href="#p"><b>P</b>Presupuesto</a><a href="#v"><b>V</b>Venta</a><a href="#w"><b>W</b>Pedido web</a><a href="#c"><b>C</b>Cobranza</a><a href="#k"><b>K</b>Compra</a><a href="#o"><b>O</b>Pago a proveedor</a><a href="#s"><b>S</b>Stock</a><a href="#j"><b>J</b>Caja</a><a href="#g"><b>G</b>Gastos</a><a href="#q"><b>Q</b>Cheques</a><a href="#r"><b>R</b>Precios</a>
+</nav>
+
+<section id="p">
+  <h2><span class="cod">P</span>Presupuesto <span class="nuevo">cambiado hoy</span></h2>
+  <div class="flujo">
+    <div class="p est"><b>En carga</b><span>Encabezado y productos. Se puede cambiar todo.</span></div><div class="fl">→</div>
+    <div class="p"><b>Grabar presupuesto</b><span>Botón al pie. Recién ahí aparecen PDF, WhatsApp y Convertir.</span></div><div class="fl">→</div>
+    <div class="p est"><b>Pendiente</b><span>Ya no se edita. Validez 2 días desde que se graba. Se manda por PDF o WhatsApp.</span></div>
+  </div>
+  <div class="ramas">
+    <div class="flujo"><span class="r">El cliente confirma</span><div class="fl">→</div><div class="p"><b>Convertir en venta</b><span>Contado (cobro) o cuenta corriente, con los precios del presupuesto.</span></div><div class="fl">→</div><div class="p fin"><b>Aceptado</b><span>Queda unido a su venta.</span></div></div>
+    <div class="flujo"><span class="r">No acepta</span><div class="fl">→</div><div class="p malo"><b>Rechazado</b><span>Con motivo.</span></div></div>
+    <div class="flujo"><span class="r">Pasa la validez</span><div class="fl">→</div><div class="p malo"><b>Vencido</b><span>Automático. Para retomarlo: Duplicar (toma precios de hoy).</span></div></div>
+  </div>
+  <h3>Qué mueve</h3>
+  <div class="tw"><table><thead><tr><th>Paso</th><th>Stock</th><th>Caja / banco</th><th>Cuenta corriente</th></tr></thead><tbody>
+    <tr><td>En carga / Pendiente</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+    <tr><td>Convertir en venta</td><td class="si">Baja</td><td class="si">Si es contado</td><td class="si">Si es cta. cte.</td></tr></tbody></table></div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>P1</code><span>La validez es de <b>2 días corridos</b> desde que se graba: vence al terminar el segundo día (no son 48 horas al minuto). Se cambia en Datos de la empresa.</span></li>
+    <li><code>P2</code><span>El presupuesto <b>no reserva stock</b>. Si al convertirlo no hay stock, el sistema no deja emitir la venta.</span></li>
+    <li><code>P3</code><span>Mientras está pendiente <b>respeta su precio</b> aunque suba el costo.</span></li>
+    <li><code>P4</code><span>Un presupuesto grabado <b>no se modifica</b>: se duplica y se graba uno nuevo.</span></li>
+    <li><code>P5</code><span>El operador puede presupuestar, pero <b>no poner descuentos ni precios especiales</b>.</span></li>
+  </ul>
+</section>
+
+<section id="v">
+  <h2><span class="cod">V</span>Venta en mostrador</h2>
+  <div class="flujo">
+    <div class="p est"><b>Venta en carga</b><span>Cliente y condición; productos uno por uno. Si se deja a medias queda guardada.</span></div><div class="fl">→</div>
+    <div class="p"><b>Confirmar venta</b><span>Revisa stock, precios y límite de crédito.</span></div>
+  </div>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Contado</span><div class="fl">→</div><div class="p"><b>Cobro</b><span>Uno o varios medios: efectivo (con vuelto), transferencia, QR, tarjeta, cheque.</span></div><div class="fl">→</div><div class="p fin"><b>VTA emitida y pagada</b></div></div>
+    <div class="flujo"><span class="r">Cuenta corriente</span><div class="fl">→</div><div class="p fin"><b>VTA emitida con saldo</b><span>Queda como deuda del cliente.</span></div><div class="fl">→</div><div class="p"><b>Cobranza</b><span>Circuito C.</span></div></div>
+    <div class="flujo"><span class="r">Hubo un error o devolución</span><div class="fl">→</div><div class="p"><b>Nota de crédito</b><span>Por productos (vuelve stock) o por importe. Lo que sobra: a favor, efectivo o transferencia.</span></div></div>
+    <div class="flujo"><span class="r">Hay que cobrar algo más</span><div class="fl">→</div><div class="p"><b>Nota de débito</b><span>Recargo, envío, intereses o diferencia de precio.</span></div></div>
+  </div>
+  <h3>Qué mueve</h3>
+  <div class="tw"><table><thead><tr><th>Comprobante</th><th>Stock</th><th>Caja / banco</th><th>Cuenta corriente</th></tr></thead><tbody>
+    <tr><td>Venta contado</td><td class="si">Baja</td><td class="si">Entra el cobro</td><td class="no">No</td></tr>
+    <tr><td>Venta cta. cte.</td><td class="si">Baja</td><td class="no">No</td><td class="si">Suma deuda</td></tr>
+    <tr><td>Nota de crédito</td><td class="si">Sube si devuelve</td><td class="si">Sale si se reintegra</td><td class="si">Resta deuda</td></tr>
+    <tr><td>Nota de débito</td><td class="no">No</td><td class="no">No</td><td class="si">Suma deuda</td></tr></tbody></table></div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>V1</code><span><b>No se vende sin stock disponible</b> (stock menos lo reservado por pedidos web).</span></li>
+    <li><code>V2</code><span>Para vender de contado o cobrar en efectivo <b>la caja tiene que estar abierta</b>.</span></li>
+    <li><code>V3</code><span>La cuenta corriente respeta el <b>límite de crédito</b> del cliente (0 = sin límite).</span></li>
+    <li><code>V4</code><span>Una venta emitida <b>no se edita ni se anula</b>: se corrige con nota de crédito o débito, y esas las hace <b>solo el dueño</b>.</span></li>
+    <li><code>V5</code><span>El comprobante es <b>interno</b>. La factura electrónica de ARCA se hace aparte y se anota su número en la venta.</span></li>
+    <li><code>V6</code><span>La comisión de tarjetas y billeteras se registra sola como <b>gasto</b>.</span></li>
+    <li><code>V7</code><span>Numeración: <code>VTA 0001-00000001</code>, <code>NC 0001-…</code>, <code>ND 0001-…</code>.</span></li>
+  </ul>
+</section>
+
+<section id="w">
+  <h2><span class="cod">W</span>Pedido web (catálogo)</h2>
+  <div class="flujo">
+    <div class="p"><b>Cliente arma el carrito</b><span>En el catálogo, sin registrarse.</span></div><div class="fl">→</div>
+    <div class="p"><b>Enviar pedido</b><span>Nombre y celular. Se guarda con número y se abre WhatsApp con el detalle.</span></div><div class="fl">→</div>
+    <div class="p est"><b>Abierto</b><span>Reserva el stock 48 h. Aparece en Pedidos web.</span></div>
+  </div>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Lo confirmás</span><div class="fl">→</div><div class="p"><b>Confirmar</b><span>Contado o cta. cte., recargo y envío.</span></div><div class="fl">→</div><div class="p fin"><b>Confirmado = venta</b><span>Con los precios del pedido.</span></div></div>
+    <div class="flujo"><span class="r">El cliente cambia algo</span><div class="fl">→</div><div class="p"><b>Editar</b><span>Con motivo. Lo agregado toma precio de hoy.</span></div></div>
+    <div class="flujo"><span class="r">No se concreta</span><div class="fl">→</div><div class="p malo"><b>Cancelado</b><span>Libera el stock.</span></div></div>
+    <div class="flujo"><span class="r">Pasan 48 h</span><div class="fl">→</div><div class="p malo"><b>Vencido</b><span>Automático, libera el stock.</span></div></div>
+  </div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>W1</code><span>El pedido <b>reserva stock</b> mientras está abierto.</span></li>
+    <li><code>W2</code><span>Vence a las <b>48 horas</b> (Datos de la empresa).</span></li>
+    <li><code>W3</code><span>Máximo <b>5 pedidos por celular por día</b>.</span></li>
+    <li><code>W4</code><span>El WhatsApp llega al número de <b>Datos de la empresa</b> (hoy el tuyo, para probar).</span></li>
+    <li><code>W5</code><span>Mayoristas: mismo circuito con precios de la lista Mayorista, netos + IVA.</span></li>
+  </ul>
+</section>
+
+<section id="c">
+  <h2><span class="cod">C</span>Cobranza a clientes</h2>
+  <div class="flujo">
+    <div class="p"><b>Nuevo cobro</b><span>Elegís el cliente: ves lo que debe y su antigüedad.</span></div><div class="fl">→</div>
+    <div class="p"><b>Importe y a qué aplica</b><span>Las deudas más viejas o una en particular.</span></div><div class="fl">→</div>
+    <div class="p"><b>Medios de pago</b></div><div class="fl">→</div>
+    <div class="p fin"><b>Recibo</b><span>Baja la deuda. Si sobra, queda a favor.</span></div>
+  </div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>C1</code><span>Lo cobrado de más queda <b>a favor</b> del cliente y se aplica a deudas nuevas con el botón “Aplicar saldo a favor”.</span></li>
+    <li><code>C2</code><span>Anular un recibo lo hace <b>solo el dueño</b>: vuelve la deuda y se revierte la caja.</span></li>
+  </ul>
+</section>
+
+<section id="k">
+  <h2><span class="cod">K</span>Compra a proveedor <small>solo dueño</small></h2>
+  <div class="flujo">
+    <div class="p"><b>Encabezado</b><span>Proveedor, letra, punto de venta, número, fecha, condición.</span></div><div class="fl">→</div>
+    <div class="p"><b>Productos</b><span>Cantidad y costo neto de la factura. Bonificación, flete, percepciones.</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Registrar compra</b><span>Suma stock y actualiza el costo.</span></div><div class="fl">→</div>
+    <div class="p"><b>Precios recalculados</b><span>Todas las listas, solos.</span></div>
+  </div>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Contado</span><div class="fl">→</div><div class="p"><b>Pago en el momento</b></div></div>
+    <div class="flujo"><span class="r">Cuenta corriente</span><div class="fl">→</div><div class="p"><b>Deuda con el proveedor</b><span>Se paga con el circuito O.</span></div></div>
+    <div class="flujo"><span class="r">Devolución o bonificación del proveedor</span><div class="fl">→</div><div class="p"><b>NC / ND del proveedor</b><span>Con devolución, sale del stock.</span></div></div>
+    <div class="flujo"><span class="r">Error de carga</span><div class="fl">→</div><div class="p malo"><b>Anular compra</b><span>Saca el stock y vuelve el costo anterior.</span></div></div>
+  </div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>K1</code><span>Con la casilla “Actualizar el costo” tildada, el costo nuevo <b>cambia los precios al instante</b>.</span></li>
+    <li><code>K2</code><span>La ganancia se calcula con el <b>costo promedio</b> del stock.</span></li>
+    <li><code>K3</code><span>No se puede anular una compra si esa mercadería <b>ya se vendió</b> o si la factura <b>tiene pagos</b>.</span></li>
+    <li><code>K4</code><span>Productos con vencimiento piden <b>lote y fecha</b> al comprar.</span></li>
+  </ul>
+</section>
+
+<section id="o">
+  <h2><span class="cod">O</span>Pago a proveedor <small>solo dueño</small></h2>
+  <div class="flujo">
+    <div class="p"><b>Nuevo pago</b><span>Proveedor: ves lo que le debés.</span></div><div class="fl">→</div>
+    <div class="p"><b>Importe y a qué factura</b></div><div class="fl">→</div>
+    <div class="p"><b>Medios</b><span>Efectivo (caja), transferencia (cuenta), cheque de la cartera, cheque propio o e-cheq.</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Orden de pago</b><span>Baja la deuda. Si sobra, anticipo.</span></div>
+  </div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>O1</code><span>Pagos y compras van <b>separados</b>: una compra en cta. cte. se paga después desde Pagos.</span></li>
+    <li><code>O2</code><span>Anular un pago vuelve la deuda, revierte caja o banco y los cheques <b>vuelven a la cartera</b>.</span></li>
+  </ul>
+</section>
+
+<section id="s">
+  <h2><span class="cod">S</span>Stock</h2>
+  <div class="tw"><table><thead><tr><th>Entra</th><th>Sale</th><th>Queda reservado</th></tr></thead><tbody>
+    <tr><td style="white-space:normal">Compras · NC de venta con devolución · Ajuste de inventario inicial · Recuento +</td><td>Ventas · NC del proveedor con devolución · Merma, rotura, vencimiento · Recuento −</td><td>Pedidos web abiertos</td></tr></tbody></table></div>
+  <p style="margin:0"><b>Disponible = stock − reservado.</b> Es lo que se puede vender.</p>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>S1</code><span>El stock <b>no se edita a mano</b>: cada cambio es un movimiento con motivo.</span></li>
+    <li><code>S2</code><span>Los ajustes los hace <b>solo el dueño</b>.</span></li>
+    <li><code>S3</code><span>El stock <b>no puede quedar negativo</b> (ver V1).</span></li>
+    <li><code>S4</code><span>Debajo del stock mínimo de un producto, avisa en Inicio.</span></li>
+  </ul>
+</section>
+
+<section id="j">
+  <h2><span class="cod">J</span>Caja diaria</h2>
+  <div class="flujo">
+    <div class="p"><b>Abrir caja</b><span>Efectivo inicial (podés contar billetes).</span></div><div class="fl">→</div>
+    <div class="p est"><b>Abierta</b><span>Entran solos: ventas contado, cobros, pagos y gastos. A mano: retiros y aportes.</span></div><div class="fl">→</div>
+    <div class="p"><b>Cerrar con arqueo</b><span>Contás cada medio y queda la diferencia.</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Cerrada</b><span>Se descarga el PDF.</span></div>
+  </div>
+  <h3>Reglas actuales</h3>
+  <ul class="reg">
+    <li><code>J1</code><span><b>Una caja por día</b>; cerrada, no se vuelve a abrir.</span></li>
+    <li><code>J2</code><span>Un retiro o aporte mal cargado <b>se revierte</b> con otro movimiento, no se borra.</span></li>
+    <li><code>J3</code><span>Los cheques <b>no se cuentan</b> en el arqueo: se controlan en Cheques.</span></li>
+    <li><code>J4</code><span>Hay <b>una sola caja</b> (“Caja 1”) para todos los usuarios.</span></li>
+  </ul>
+</section>
+
+<section id="g">
+  <h2><span class="cod">G</span>Gastos</h2>
+  <div class="flujo">
+    <div class="p"><b>Nuevo gasto</b><span>Descripción, uno o varios conceptos con importe.</span></div><div class="fl">→</div>
+    <div class="p"><b>Contado</b><span>Sale de la caja o de una cuenta.</span></div><div class="fl">o</div>
+    <div class="p"><b>A pagar</b><span>Queda como deuda con el proveedor.</span></div>
+  </div>
+  <ul class="reg">
+    <li><code>G1</code><span>Gastos “a pagar” y anulaciones: <b>solo el dueño</b>. El operador carga gastos de contado.</span></li>
+    <li><code>G2</code><span>Los gastos restan en el <b>estado de resultados</b> por tipo de gasto.</span></li>
+  </ul>
+</section>
+
+<section id="q">
+  <h2><span class="cod">Q</span>Cheques <small>acciones solo dueño</small></h2>
+  <div class="flujo">
+    <div class="p"><b>Recibido de un cliente</b></div><div class="fl">→</div><div class="p est"><b>En cartera</b></div>
+  </div>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Al banco</span><div class="fl">→</div><div class="p"><b>Depositado</b></div><div class="fl">→</div><div class="p fin"><b>Acreditado</b></div></div>
+    <div class="flujo"><span class="r">Para pagar</span><div class="fl">→</div><div class="p"><b>Endosado a un proveedor</b></div></div>
+    <div class="flujo"><span class="r">Sin fondos</span><div class="fl">→</div><div class="p malo"><b>Rechazado</b><span>Nota de débito al cliente por el cheque y los gastos.</span></div></div>
+    <div class="flujo"><span class="r">Cheque propio</span><div class="fl">→</div><div class="p"><b>Emitido</b></div><div class="fl">→</div><div class="p fin"><b>Debitado</b></div></div>
+  </div>
+</section>
+
+<section id="r">
+  <h2><span class="cod">R</span>Precios</h2>
+  <div class="flujo">
+    <div class="p"><b>Costo neto</b><span>Del producto o de la última compra.</span></div><div class="fl">×</div>
+    <div class="p"><b>1 + margen de la lista</b><span>Público 60 %, Mayorista 30 % (de prueba).</span></div><div class="fl">→</div>
+    <div class="p"><b>Redondeo</b><span>Público: al precio final con IVA.</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Precio de lista</b></div>
+  </div>
+  <ul class="reg">
+    <li><code>R1</code><span>Cambiar el margen de una lista <b>recalcula todos sus precios</b> y guarda el historial.</span></li>
+    <li><code>R2</code><span><b>Ofertas</b>: precio especial por producto y lista, entre dos fechas.</span></li>
+    <li><code>R3</code><span><b>Descuentos por monto</b>: automáticos en el catálogo según el total del pedido.</span></li>
+    <li><code>R4</code><span>Los márgenes y costos actuales son <b>de prueba</b>: hay que cargar los reales.</span></li>
+  </ul>
+</section>
+
+<footer>Respondé con los códigos que quieras cambiar. Lo que no menciones queda como está.</footer>
+</div>
+</body></html>
