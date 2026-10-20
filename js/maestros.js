@@ -141,7 +141,8 @@ const CAMPOS_CLIENTE = [
   { k: 'documento_nro', l: 'N° documento' },
   { k: 'condicion_iva_id', l: 'Condición IVA', t: 'sel', op: OPC.condIva, vacio: false, def: 3 },
   { k: 'lista_id', l: 'Lista de precios', t: 'sel', op: OPC.listas, vacio: 'Según el tipo', dueno: 1 },
-  { k: 'direccion', l: 'Dirección' }, { k: 'localidad', l: 'Localidad' },
+  { k: 'direccion', l: 'Dirección' }, { k: 'localidad', l: 'Localidad' }, { k: 'codigo_postal', l: 'Código postal', ph: '4400' },
+  { k: 'descuento_pct', l: 'Descuento del cliente %', t: 'num', def: 0, dueno: 1, ayuda: 'Se aplica solo en presupuestos y ventas, además de los otros descuentos.' },
   { k: 'limite_credito', l: 'Límite de crédito (0 = sin límite)', t: 'num', def: 0, dueno: 1 },
   { k: 'notas', l: 'Notas', t: 'area', ancho: 1 }];
 PAGINAS.clientes = async () => {
@@ -153,7 +154,7 @@ PAGINAS.clientes = async () => {
 function clientesPintar() {
   const f = leerFiltros(); const n = norm(f.texto || '');
   const rows = CLIENTES.filter(c => (!f.tipo || c.tipo === f.tipo) && (!f.estado || c.estado === f.estado) && (!f.deuda || c.deuda > 0) && (!n || norm(c.nombre + ' ' + (c.celular || '') + ' ' + (c.documento_nro || '')).includes(n)));
-  $('cli_g').innerHTML = grilla('g_cli', [{ t: 'Nombre', k: 'nombre', f: r => `<b>${esc(r.nombre)}</b>` , xf: r => r.nombre }, { t: 'Tipo', k: 'tipo' }, { t: 'Celular', k: 'celular' }, { t: 'Documento', k: 'documento_nro', f: r => esc([r.documento_tipo, r.documento_nro].filter(Boolean).join(' ')), xf: r => [r.documento_tipo, r.documento_nro].filter(Boolean).join(' ') }, { t: 'Lista', k: 'lista' }, { t: 'Límite', k: 'limite_credito', f: 'm', cls: 'tr' }, { t: 'Deuda', k: 'deuda', f: 'm', cls: 'tr', sum: 1 }, { t: 'A favor', k: 'a_favor', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: 'e' }], rows,
+  $('cli_g').innerHTML = grilla('g_cli', [{ t: 'Nombre', k: 'nombre', f: r => `<b>${esc(r.nombre)}</b>` , xf: r => r.nombre }, { t: 'Tipo', k: 'tipo' }, { t: 'Celular', k: 'celular' }, { t: 'Documento', k: 'documento_nro', f: r => esc([r.documento_tipo, r.documento_nro].filter(Boolean).join(' ')), xf: r => [r.documento_tipo, r.documento_nro].filter(Boolean).join(' ') }, { t: 'Lista', k: 'lista' }, { t: 'Desc.', k: 'descuento_pct', f: r => Number(r.descuento_pct) ? fmtP(r.descuento_pct) : '', xf: r => Number(r.descuento_pct) || '', cls: 'tr' }, { t: 'CP', k: 'codigo_postal' }, { t: 'Límite', k: 'limite_credito', f: 'm', cls: 'tr' }, { t: 'Deuda', k: 'deuda', f: 'm', cls: 'tr', sum: 1 }, { t: 'A favor', k: 'a_favor', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: 'e' }], rows,
     { claseFila: r => r.estado !== 'activo' ? 'anulado' : '', acciones: r => `<button class="btn btn-xs btn-s" title="Ver cuenta corriente" onclick="irCtaCli(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-xs btn-b" title="Editar" onclick="clienteEditar(${r.id})"><i class="fas fa-pen"></i></button>${r.celular ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="waAbrir('${r.celular}','Hola ${esc(r.nombre).replace(/'/g, '')}!')"><i class="fab fa-whatsapp"></i></button>` : ''}${ES_DUENO ? `<button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="clienteEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : ''}` });
 }
 function clienteEditar(id, alGuardar) {
@@ -184,6 +185,8 @@ const CAMPOS_PRODUCTO = [
   { k: 'uso', l: 'Uso', t: 'sel', op: [['libre', 'Venta libre'], ['profesional', 'Uso profesional']], vacio: false },
   { k: 'edad_minima', l: 'Edad mínima', t: 'num' },
   { k: 'descripcion', l: 'Descripción (catálogo)', t: 'area', ancho: 1 },
+  { k: 'video_url', l: 'Video (link de YouTube)', ph: 'https://www.youtube.com/watch?v=…', ancho: 1, ayuda: 'Opcional. En el catálogo aparece el botón “Ver más” con el video.' },
+  { k: 'info_adicional', l: 'Información adicional (catálogo)', t: 'area', ancho: 1, ayuda: 'Opcional. Se ve en el catálogo al tocar “Ver más”: efectos, duración, recomendaciones, etc.' },
   { k: 'controla_stock', l: 'Controla stock', t: 'bool', def: true }, { k: 'controla_vencimiento', l: 'Pide lote y vencimiento al comprar', t: 'bool' },
   { k: 'es_nuevo', l: 'Marcar como NUEVO', t: 'bool' }, { k: 'destacado', l: 'Destacado en el catálogo', t: 'bool' },
   { k: 'es_outlet', l: 'Outlet', t: 'bool' }, { k: 'envio_por_correo', l: 'Se puede enviar por correo', t: 'bool' },
@@ -226,7 +229,7 @@ function fotosWidget(cont, urls) {
 }
 PAGINAS.productos = async () => {
   pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
-    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? btnNuevo('productoEditar()') : ''),
+    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button>` + btnNuevo('productoEditar()') : ''),
     cuerpo: `<div class="grid-4 mb3" id="prod_k"></div><div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Código o nombre' }, { k: 'cat', t: 'sel', l: 'Categoría', op: OPC.categorias() }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'bajo', t: 'chk', l: 'Bajo mínimo' }, { k: 'sinstock', t: 'chk', l: 'Sin stock' }], productosPintar)}<div id="prod_g"></div></div>` });
   PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
 };
@@ -251,6 +254,7 @@ function productoEditar(id) {
   const o = modalForm({ titulo: id ? 'Editar producto' : 'Nuevo producto', campos: CAMPOS_PRODUCTO, v: r, cls: 'md-xl', guardar: async p => {
     ['categoria_id', 'alicuota_iva_id', 'unidad_id'].forEach(k => { if (p[k] != null) p[k] = Number(p[k]); });
     if (!id && p.costo == null) throw new Error('Indicá el costo neto: sin costo el producto no tiene precio.');
+    if (p.video_url && !/^https:\/\//i.test(p.video_url)) throw new Error('El link del video tiene que empezar con https://');
     const nid = await rpc('guardar_producto', { p });
     if (W && W.cambio()) { const urls = await W.urls(nid); await rpc('guardar_fotos_producto', { p_producto: nid, p_urls: urls }); }
     toast('Producto guardado. Precios recalculados.', 'g');
@@ -276,24 +280,99 @@ async function productoVer(id) {
   </div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
 }
 
+/* ---------- Cambio de precios: masivo por % o importando una lista de costos (Excel) ---------- */
+function preciosCambiar() {
+  const mid = 'pc' + uid();
+  const o = showModal(modalHdr('Cambiar precios') + `<div class="mb2">
+    <div class="alert al-i">Los precios salen del <b>costo</b>: al cambiar el costo se recalculan solos la lista base (precio sugerido) y la mayorista. Para un solo producto, editalo con el lápiz.</div>
+    <div class="flex gap2 mb3" id="${mid}_tabs"><button class="btn btn-p" data-t="pct"><i class="fas fa-percent"></i> Subir o bajar por %</button><button class="btn btn-s" data-t="xls"><i class="fas fa-file-excel"></i> Importar lista de costos (Excel)</button></div>
+    <div id="${mid}_c"></div><div id="${mid}_r" class="mt3"></div></div>
+    <div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
+  const varia = r => r.actual ? (Number(r.nuevo) / Number(r.actual) - 1) * 100 : null;
+  const tabla = (items, extra = '') => { const raros = items.filter(r => varia(r) != null && Math.abs(varia(r)) >= 50).length;
+    return (raros ? `<div class="alert al-r"><b>Revisá antes de aplicar:</b> ${raros} producto${raros > 1 ? 's cambian' : ' cambia'} más de 50 % (marcado${raros > 1 ? 's' : ''} en rojo). Puede ser un error en el archivo, por ejemplo comas o puntos en los números.</div>` : '')
+      + grilla(mid + 'g', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre' }, { t: 'Costo actual', k: 'actual', f: 'm', cls: 'tr' }, { t: 'Costo nuevo', k: 'nuevo', f: 'm', cls: 'tr' },
+      { t: 'Cambio', k: 'dif', f: r => varia(r) == null ? 'sin costo' : `<span class="${Math.abs(varia(r)) >= 50 ? 'td' : ''}">${varia(r) > 0 ? '+' : ''}${fmtP(varia(r))}</span>`, xf: r => varia(r), cls: 'tr' }], items) + extra; };
+  const verPct = () => {
+    $(mid + '_r').innerHTML = '';
+    $(mid + '_c').innerHTML = `<div class="fr4" style="align-items:end"><div class="fg"><label class="fl">Categoría</label><select id="${mid}_cat" class="fs"><option value="">Todas</option>${OPC.categorias().map(c => `<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Proveedor</label><div id="${mid}_pw"></div></div>
+      <div class="fg"><label class="fl req">Porcentaje</label><input id="${mid}_pct" type="number" step="0.01" class="fi mono" placeholder="10 sube · -5 baja"></div>
+      <div class="fg"><button class="btn btn-b" id="${mid}_ver"><i class="fas fa-eye"></i> Ver cómo quedan</button></div></div>`;
+    buscador(mid + '_pw', { tipo: 'proveedor', id: mid + '_prov' });
+    const leer = () => ({ pct: numIn(mid + '_pct'), categoria_id: $(mid + '_cat').value || null, proveedor_id: Number($(mid + '_prov').dataset.id || 0) || null });
+    $(mid + '_ver').onclick = async () => {
+      const p = leer(); if (!p.pct) return toast('Poné el porcentaje (positivo sube, negativo baja).', 'r');
+      const r = await rpc('precios_ajuste_masivo', { p: { ...p, aplicar: false } });
+      if (!r.cantidad) { $(mid + '_r').innerHTML = '<div class="alert al-w">No hay productos con costo para ese filtro.</div>'; return; }
+      $(mid + '_r').innerHTML = `<div class="flex jb aic mb2 fw gap2"><b>${fmtN(r.cantidad)} productos · costo ${p.pct > 0 ? '+' : ''}${fmtP(p.pct)}</b><button class="btn btn-p" id="${mid}_ap"><i class="fas fa-check"></i> Aplicar a los ${fmtN(r.cantidad)} productos</button></div>` + tabla(r.items, r.cantidad > r.items.length ? `<div class="ss">Se muestran los primeros ${r.items.length}.</div>` : '');
+      $(mid + '_ap').onclick = async () => {
+        if (!await confirmar(`¿Cambiar el costo de <b>${fmtN(r.cantidad)}</b> productos en <b>${p.pct > 0 ? '+' : ''}${fmtP(p.pct)}</b>? Los precios de todas las listas se recalculan. El historial queda guardado.`)) return;
+        const x = await rpc('precios_ajuste_masivo', { p: { ...p, aplicar: true } });
+        toast(`Listo: ${fmtN(x.cantidad)} productos actualizados`, 'g', 6000); o.remove(); PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+      };
+    };
+  };
+  const verXls = () => {
+    $(mid + '_r').innerHTML = '';
+    $(mid + '_c').innerHTML = `<div class="ss mb2">El archivo tiene que tener una columna con el <b>código</b> del producto y otra con el <b>costo neto (sin IVA)</b>. La primera fila son los títulos. Los códigos que no existen se informan y no se dan de alta.</div>
+      <input type="file" id="${mid}_f" accept=".xlsx,.xls,.csv" class="fi"><div id="${mid}_map" class="mt3"></div>`;
+    $(mid + '_f').onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      let filas;
+      try { const csv = /\.csv$/i.test(f.name); const wb = csv ? XLSX.read(await f.text(), { type: 'string', raw: true }) : XLSX.read(await f.arrayBuffer());
+        filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' }); }
+      catch (err) { return toast('No se pudo leer el archivo: ' + err.message, 'r'); }
+      filas = filas.filter(r => r.some(c => String(c).trim() !== ''));
+      if (filas.length < 2) return toast('El archivo no tiene datos.', 'r');
+      const tit = filas[0].map(c => String(c).trim());
+      const busca = re => Math.max(0, tit.findIndex(t => re.test(norm(t))));
+      const iCod = busca(/cod/), iCos = tit.findIndex(t => /costo/.test(norm(t))) >= 0 ? busca(/costo/) : busca(/precio|neto|importe/);
+      const op = sel => tit.map((t, i) => `<option value="${i}" ${i === sel ? 'selected' : ''}>${esc(t || 'Columna ' + (i + 1))}</option>`).join('');
+      $(mid + '_map').innerHTML = `<div class="fr4" style="align-items:end"><div class="fg"><label class="fl">Columna del código</label><select id="${mid}_ic" class="fs">${op(iCod)}</select></div><div class="fg"><label class="fl">Columna del costo neto</label><select id="${mid}_io" class="fs">${op(iCos)}</select></div>
+        <div class="fg"><span class="ss">${fmtN(filas.length - 1)} filas en el archivo</span></div><div class="fg"><button class="btn btn-b" id="${mid}_rev"><i class="fas fa-eye"></i> Revisar cambios</button></div></div>`;
+      const numero = v => { if (typeof v === 'number') return String(v); let s = String(v).replace(/[$\s]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); return s; };
+      const items = () => { const a = Number($(mid + '_ic').value), b = Number($(mid + '_io').value); return filas.slice(1).map(r => ({ codigo: String(r[a]).trim(), costo: numero(r[b]) })).filter(x => x.codigo); };
+      $(mid + '_rev').onclick = async () => {
+        const its = items(); const r = await rpc('importar_costos', { p: { items: its, aplicar: false } });
+        $(mid + '_r').innerHTML = `<div class="grid-4 mb3">${kpi('Cambian', fmtN(r.cambian.length), 'productos', 'b')}${kpi('Sin cambios', fmtN(r.iguales), 'mismo costo')}${kpi('No encontrados', fmtN(r.no_encontrados.length), 'código inexistente', r.no_encontrados.length ? 'w' : '')}${kpi('Con error', fmtN(r.invalidos.length), 'costo inválido o repetido', r.invalidos.length ? 'r' : '')}</div>
+          ${r.no_encontrados.length ? `<div class="alert al-w"><b>Códigos que no existen</b> (no se dan de alta): ${r.no_encontrados.slice(0, 60).map(esc).join(', ')}${r.no_encontrados.length > 60 ? '…' : ''}</div>` : ''}
+          ${r.invalidos.length ? `<div class="alert al-r"><b>Filas con error</b>: ${r.invalidos.slice(0, 30).map(x => `fila ${x.fila + 1} (${esc(x.codigo)}): ${esc(x.motivo)}`).join(' · ')}</div>` : ''}
+          ${r.cambian.length ? `<div class="flex jb aic mb2"><b>Productos que cambian de costo</b><button class="btn btn-p" id="${mid}_ap"><i class="fas fa-check"></i> Aplicar ${fmtN(r.cambian.length)} cambios</button></div>` + tabla(r.cambian) : '<div class="alert al-i">No hay costos para cambiar.</div>'}`;
+        if (r.cambian.length) $(mid + '_ap').onclick = async () => {
+          if (!await confirmar(`¿Actualizar el costo de <b>${fmtN(r.cambian.length)}</b> productos? Los precios de todas las listas se recalculan. El historial queda guardado.`)) return;
+          const x = await rpc('importar_costos', { p: { items: its, aplicar: true } });
+          toast(`Listo: ${fmtN(x.cambian.length)} costos actualizados`, 'g', 6000); o.remove(); PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+        };
+      };
+    };
+  };
+  o.querySelectorAll(`#${mid}_tabs button`).forEach(b => b.onclick = () => { o.querySelectorAll(`#${mid}_tabs button`).forEach(x => x.className = 'btn ' + (x === b ? 'btn-p' : 'btn-s')); (b.dataset.t === 'pct' ? verPct : verXls)(); });
+  verPct();
+}
+
 /* ---------- Listas de precios ---------- */
 PAGINAS.listas = async () => {
   pagina({ titulo: 'Listas de precios', icono: 'list-ol', sub: 'Cada lista tiene su margen sobre el costo; los precios se recalculan solos',
     botones: btnExcel(`exportarExcel('g_lis','Listas de precios')`) + btnPdf(`exportarPdf('g_lis','Listas de precios')`) + (ES_DUENO ? btnNuevo('listaEditar()') : ''),
-    cuerpo: `<div class="alert al-i">El precio de cada producto = costo × (1 + margen de la lista), redondeado. En la lista <b>Público</b> el redondeo se hace sobre el precio final con IVA (lo que ve el cliente).</div><div class="panel" id="lis_g"></div>` });
+    cuerpo: `<div class="alert al-i">Una lista se calcula de dos formas: <b>con margen</b> (costo × (1 + margen), redondeado) o <b>desde otra lista</b> con un % de descuento. Hoy la lista <b>Público</b> es la lista base (precio sugerido) y la <b>Mayorista</b> sale de ella con su descuento. Si cambia el costo o el margen de la base, las listas que salen de ella se recalculan solas.</div><div class="panel" id="lis_g"></div>` });
   PAG.listas = await rpc('listado_listas'); listasPintar();
 };
 function listasPintar() {
-  $('lis_g').innerHTML = grilla('g_lis', [{ t: 'Código', k: 'codigo' }, { t: 'Nombre', k: 'nombre' }, ...(ES_DUENO ? [{ t: 'Margen', k: 'margen', f: 'p', cls: 'tr' }, { t: 'Vigente desde', k: 'margen_desde', f: 'dt' }] : []), { t: 'Redondeo', k: 'redondeo', f: 'm', cls: 'tr' }, { t: 'Redondea final', k: 'redondeo_sobre_final', f: r => r.redondeo_sobre_final ? 'Sí' : 'No' }, { t: 'Productos con precio', k: 'productos_con_precio', f: 'n', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' }], PAG.listas,
+  $('lis_g').innerHTML = grilla('g_lis', [{ t: 'Código', k: 'codigo' }, { t: 'Nombre', k: 'nombre' }, { t: 'Cómo se calcula', k: 'calc', f: r => r.lista_base_id ? `${esc(r.lista_base)} − ${fmtP(r.descuento_base_pct)}` : (ES_DUENO && r.margen != null ? 'Costo + ' + fmtP(r.margen) : 'Costo + margen'), xf: r => r.lista_base_id ? `${r.lista_base} - ${r.descuento_base_pct}%` : 'Costo + ' + (r.margen ?? '') + '%' }, ...(ES_DUENO ? [{ t: 'Vigente desde', k: 'margen_desde', f: r => r.lista_base_id ? '' : fmtDT(r.margen_desde), xf: r => r.lista_base_id ? '' : r.margen_desde }] : []), { t: 'Redondeo', k: 'redondeo', f: 'm', cls: 'tr' }, { t: 'Redondea final', k: 'redondeo_sobre_final', f: r => r.redondeo_sobre_final ? 'Sí' : 'No' }, { t: 'Productos con precio', k: 'productos_con_precio', f: 'n', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' }], PAG.listas,
     { acciones: r => ES_DUENO ? `<button class="btn btn-xs btn-s" title="Historial de márgenes" onclick="listaHist(${r.id})"><i class="fas fa-clock-rotate-left"></i></button><button class="btn btn-xs btn-b" title="Editar" onclick="listaEditar(${r.id})"><i class="fas fa-pen"></i></button>` : '' });
 }
 function listaEditar(id) {
   const r = id ? PAG.listas.find(x => x.id === id) : { redondeo: 1, estado: 'activa' };
   const fijas = ['PUBLICO', 'MAYORISTA'].includes(r.codigo);
+  const bases = () => (PAG.listas || []).filter(l => l.id !== id && !l.lista_base_id && l.estado === 'activa').map(l => [l.id, l.nombre]);
   modalForm({ titulo: id ? 'Editar lista' : 'Nueva lista', v: r, intro: '<div class="alert al-w">Al cambiar el margen o el redondeo se recalculan todos los precios de la lista. El historial queda guardado.</div>',
-    campos: [{ k: 'codigo', l: 'Código', req: 1, soloNuevo: 1, ph: 'GREMIO' }, { k: 'nombre', l: 'Nombre', req: 1 }, { k: 'margen', l: 'Margen % sobre el costo', t: 'num', req: 1 }, { k: 'redondeo', l: 'Redondear a múltiplos de $', t: 'num', def: 1 },
+    campos: [{ k: 'codigo', l: 'Código', req: 1, soloNuevo: 1, ph: 'GREMIO' }, { k: 'nombre', l: 'Nombre', req: 1 },
+      { k: 'lista_base_id', l: 'Se calcula desde', t: 'sel', op: bases, vacio: 'El costo, con margen', ayuda: 'Elegí una lista si esta lista es esa lista con un descuento (ej.: Mayorista = Público − 30 %).' },
+      { k: 'descuento_base_pct', l: 'Descuento % sobre esa lista', t: 'num', def: 0, ayuda: 'Solo si se calcula desde otra lista.' },
+      { k: 'margen', l: 'Margen % sobre el costo', t: 'num', ayuda: 'Solo si se calcula con margen.' }, { k: 'redondeo', l: 'Redondear a múltiplos de $', t: 'num', def: 1, ayuda: 'Con 0,01 no redondea.' },
       { k: 'redondeo_sobre_final', l: 'Redondear el precio final con IVA (consumidor)', t: 'bool' }, ...(fijas ? [] : [{ k: 'estado', l: 'Estado', t: 'sel', op: OPC.estadoA, vacio: false }])],
-    guardar: async p => { await rpc('guardar_lista_precio', { p }); toast('Lista guardada y precios recalculados', 'g'); await cargarMaestros(); PAG.listas = await rpc('listado_listas'); listasPintar(); } });
+    guardar: async p => { p.lista_base_id = p.lista_base_id ? Number(p.lista_base_id) : null; if (!p.lista_base_id && p.margen == null) throw new Error('Indicá el margen o elegí la lista desde la que se calcula.'); await rpc('guardar_lista_precio', { p }); toast('Lista guardada y precios recalculados', 'g'); await cargarMaestros(); PAG.listas = await rpc('listado_listas'); listasPintar(); } });
 }
 function listaHist(id) {
   const r = PAG.listas.find(x => x.id === id);

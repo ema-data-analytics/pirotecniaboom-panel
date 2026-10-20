@@ -67,6 +67,15 @@ label{font-size:12px;font-weight:700;color:var(--vino);display:block;margin-top:
 footer{background:var(--vino);color:#f3dcd3;font-size:13px;padding:18px 14px;text-align:center;line-height:1.7}
 footer a{color:var(--amarillo)}
 .vacio{text-align:center;color:var(--dim);padding:40px}
+.sug{font-size:11px;color:var(--dim)}.sug b{color:var(--vino)}
+.mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
+.mas i{margin-right:4px}
+.ficha{max-width:640px!important;max-height:92vh;overflow-y:auto;padding:0!important}
+.ficha .fh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--vino);color:#fff;font-weight:800;position:sticky;top:0}
+.ficha .fh button{background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
+.ficha .fb{padding:14px 16px;font-size:14px;line-height:1.55}
+.vid{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:12px}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.ffotos{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}.ffotos img{height:150px;border-radius:8px}
 @media (max-width:640px){.top{flex-wrap:wrap}.top .logo img{height:38px}.busq{order:3;flex-basis:100%}.grid{grid-template-columns:repeat(2,1fr);gap:8px}.pr{font-size:16px}.tb span{display:none}}
 </style>
 </head>
@@ -75,7 +84,7 @@ footer a{color:var(--amarillo)}
   <div class="top">
     <a class="logo" href="catalogo.html"><img src="img/logo.png" alt="Pirotecnia Boom"></a>
     <div class="busq"><i class="fas fa-search"></i><input id="q" placeholder="Buscar productos…" autocomplete="off"></div>
-    <button class="tb" id="b-xls" title="Descargar lista de precios"><i class="fas fa-file-excel"></i><span>Lista</span></button>
+    <button class="tb" id="b-xls" title="Descargar lista de precios" style="display:none"><i class="fas fa-file-excel"></i><span>Lista</span></button>
     <button class="tb" id="b-may"><i class="fas fa-store"></i><span id="may-t">Mayoristas</span></button>
   </div>
   <div class="cats" id="cats"></div>
@@ -90,6 +99,7 @@ footer a{color:var(--amarillo)}
   <div class="db" id="dr-b"></div>
   <div class="df" id="dr-f"></div>
 </aside>
+<div class="mod" id="mod-fi"><div class="ficha" id="fi"></div></div>
 <div class="mod" id="mod-may"><div>
   <h3 style="color:var(--vino);margin-bottom:6px">Ingreso mayoristas</h3><div style="font-size:13px;color:var(--dim)">Con el usuario de mayoristas ves los precios por mayor (más IVA).</div>
   <div id="may-err"></div>
@@ -112,12 +122,14 @@ try { CARRO = JSON.parse(localStorage.getItem('pb_carro') || '{}'); } catch (e) 
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
 
 async function cargar() {
-  const [{ data: t }, { data: p, error }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo')]);
+  const [{ data: t }, { data: p, error }, { data: ex }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo'), sb.rpc('catalogo_detalle')]);
   if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
   T = t || {}; PROD = p || [];
+  const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => Object.assign(q, X.get(q.producto_id) || {}));
   for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
   const may = T.mayorista;
   $('may-t').textContent = may ? 'Salir mayorista' : 'Mayoristas';
+  $('b-xls').style.display = may ? '' : 'none';
   $('banda').innerHTML = (may ? '<i class="fas fa-store"></i> Precios mayoristas: netos más IVA · ' : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
   const cats = [...new Map(PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria)).map(x => [x.categoria, 1])).keys()];
   $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
@@ -134,18 +146,40 @@ function pintar() {
   $('cuenta').textContent = l.length + ' productos';
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
-    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}${p.bulto ? ' · bulto x' + p.bulto : ''}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}${p.muestra_iva_aparte ? ' <small>+ IVA</small>' : ''}</div>
+    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}${p.bulto ? ' · bulto x' + p.bulto : ''}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}${p.muestra_iva_aparte ? ' <small>+ IVA</small>' : ''}</div>${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${CARRO[p.producto_id] || 1}" inputmode="numeric"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
   else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
 }
 $('lista').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.f) return ficha(Number(b.dataset.f));
   const id = b.dataset.m || b.dataset.p || b.dataset.a; const inp = $('c' + id);
   if (b.dataset.m) inp.value = Math.max(1, Number(inp.value || 1) - 1);
   if (b.dataset.p) inp.value = Number(inp.value || 0) + 1;
   if (b.dataset.a) { const n = Math.max(1, Math.floor(Number(inp.value) || 1)); CARRO[id] = n; guardar(); b.textContent = '✓'; pintarCarro(); toastFab(); }
 };
+// Ficha del producto: fotos, video, descripción e información adicional
+function ytEmbed(u) { const m = String(u || '').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/); return m ? 'https://www.youtube-nocookie.com/embed/' + m[1] : null; }
+function ficha(id) {
+  const p = PROD.find(x => x.producto_id === id); if (!p) return;
+  const yt = ytEmbed(p.video_url);
+  $('fi').innerHTML = `<div class="fh"><span>${esc(p.nombre)}</span><button id="fi-x" aria-label="Cerrar">&times;</button></div><div class="fb">
+    ${yt ? `<div class="vid"><iframe src="${yt}" title="Video de ${esc(p.nombre)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>` : ''}
+    ${(p.fotos || []).length ? `<div class="ffotos">${p.fotos.map(f => `<img src="${esc(f)}" alt="">`).join('')}</div>` : ''}
+    <div class="cod">${esc(p.codigo)} · ${esc(p.categoria)}${p.bulto ? ' · bulto x' + p.bulto : ''}</div>
+    <div class="pr" style="margin:6px 0">${fmt(p.precio)}${p.muestra_iva_aparte ? ' <small>+ IVA</small>' : ''}</div>${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}
+    ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
+    ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
+    ${p.video_url && !yt ? `<p style="margin-top:10px"><a href="${esc(p.video_url)}" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Ver video</a></p>` : ''}
+    <div class="add" style="margin-top:14px"><div class="qty"><button id="fi-m">−</button><input id="fi-q" value="${CARRO[id] || 1}" inputmode="numeric"><button id="fi-p">+</button></div><button class="bt bt-r" id="fi-a" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : 'Agregar al pedido'}</button></div></div>`;
+  $('mod-fi').classList.add('on');
+  const cerrar = () => { $('mod-fi').classList.remove('on'); $('fi').innerHTML = ''; };
+  $('fi-x').onclick = cerrar; $('mod-fi').onclick = e => { if (e.target === $('mod-fi')) cerrar(); };
+  $('fi-m').onclick = () => $('fi-q').value = Math.max(1, Number($('fi-q').value || 1) - 1);
+  $('fi-p').onclick = () => $('fi-q').value = Number($('fi-q').value || 0) + 1;
+  $('fi-a').onclick = () => { CARRO[id] = Math.max(1, Math.floor(Number($('fi-q').value) || 1)); guardar(); cerrar(); pintar(); pintarCarro(); toastFab(); };
+}
 function toastFab() { $('fab').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 300 }); }
 function totales() {
   let neto = 0, fin = 0;
@@ -214,11 +248,16 @@ $('m-ok').onclick = async () => {
   $('mod-may').classList.remove('on'); $('may-err').innerHTML = ''; await cargar();
   if (!T.mayorista) { await sb.auth.signOut(); alert('Ese usuario no es de mayoristas.'); cargar(); }
 };
+// Lista de precios en Excel: solo con el usuario de mayoristas (su precio + IVA y el precio sugerido de venta)
 $('b-xls').onclick = () => {
-  const filas = PROD.slice().sort((a, b) => a.categoria_orden - b.categoria_orden || a.nombre.localeCompare(b.nombre)).map(p => [p.categoria, p.codigo, p.nombre, Number(p.precio), p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);
-  const ws = XLSX.utils.aoa_to_sheet([['Categoría', 'Código', 'Producto', T.mayorista ? 'Precio neto (+IVA)' : 'Precio final', 'Oferta', 'Stock'], ...filas]);
-  ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 40 }, { wch: 16 }, { wch: 8 }, { wch: 10 }];
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lista de precios'); XLSX.writeFile(wb, 'Lista_Pirotecnia_Boom.xlsx');
+  if (!T.mayorista) return;
+  const r2 = n => Math.round(Number(n) * 100) / 100;
+  const filas = PROD.slice().sort((a, b) => a.categoria_orden - b.categoria_orden || a.nombre.localeCompare(b.nombre))
+    .map(p => [p.categoria, p.codigo, p.nombre, p.bulto || '', r2(p.precio), Number(p.iva_pct), r2(Number(p.precio) * (1 + Number(p.iva_pct) / 100)), p.precio_sugerido ? r2(p.precio_sugerido) : '', p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);
+  const hoyTxt = new Date().toLocaleDateString('es-AR');
+  const ws = XLSX.utils.aoa_to_sheet([[`${T.nombre || ''} · Lista de precios mayorista · ${hoyTxt}`], [], ['Categoría', 'Código', 'Producto', 'Bulto', 'Precio neto', 'IVA %', 'Precio con IVA', 'Precio sugerido de venta', 'Oferta', 'Stock'], ...filas]);
+  ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 42 }, { wch: 7 }, { wch: 14 }, { wch: 7 }, { wch: 15 }, { wch: 22 }, { wch: 8 }, { wch: 10 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lista de precios'); XLSX.writeFile(wb, 'Lista_mayorista_' + hoyTxt.replace(/\//g, '-') + '.xlsx');
 };
 cargar();
 </script>

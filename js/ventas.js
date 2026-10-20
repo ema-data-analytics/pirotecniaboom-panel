@@ -36,7 +36,7 @@ async function editorDoc(modo, id) {
     botones: `<button class="btn btn-s" onclick="ir('${esV ? 'ventas' : 'presupuestos'}')"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span><span id="ed_est"></span></div><div class="pb" id="ed_hdr"></div></div>
       <div class="panel mb3" id="ed_lin_p"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span><span class="ss" id="ed_lista_txt"></span></div><div class="pb" id="ed_lin"></div></div>
-      <div class="flex jb fw gap3"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="tot-box" id="ed_tot"></div></div>` });
+      <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div class="tot-box" id="ed_tot"></div></div></div>` });
   if (id) await editorRecargar(); else editorPintarHdr();
 }
 async function editorRecargar() {
@@ -57,23 +57,29 @@ function editorPintarHdr() {
     ${esV ? `<div class="fg"><label class="fl">Condición</label><select id="ed_cond" class="fs" ${ed ? '' : 'disabled'}><option value="contado" ${d.condicion !== 'cuenta_corriente' ? 'selected' : ''}>Contado</option><option value="cuenta_corriente" ${d.condicion === 'cuenta_corriente' ? 'selected' : ''}>Cuenta corriente</option></select></div>`
           : `<div class="fg"><label class="fl">Válido hasta</label>${d.estado === 'enviado' ? `<div class="flex gap2"><input type="date" id="ed_val" class="fi" min="${hoy()}" value="${d.valido_hasta}"><button class="btn btn-s" title="Cambiar el vencimiento" onclick="presupuestoValidez()"><i class="fas fa-check"></i></button></div>` : `<input type="date" id="ed_val" class="fi" min="${hoy()}" value="${d.valido_hasta || hoy((M.empresa || {}).validez_presupuesto_dias || 2)}" ${ed ? '' : 'disabled'}>`}</div>`}
   </div><div class="fr4">
-    <div class="fg"><label class="fl">Descuento general %</label><input id="ed_desc" type="number" step="0.01" min="0" max="99" class="fi mono" value="${d.descuento_pct || 0}" ${ed && ES_DUENO ? '' : 'disabled'} title="${ES_DUENO ? '' : 'Lo autoriza el dueño'}"></div>
-    <div class="fg"><label class="fl">Motivo del descuento / precio especial</label><input id="ed_mot" class="fi" value="${esc(d.descuento_motivo || '')}" ${ed ? '' : 'disabled'}></div>
     ${esV ? `<div class="fg"><label class="fl">Recargo (neto)</label><input id="ed_rec" type="number" step="0.01" min="0" class="fi mono" value="${d.recargo_neto || 0}" ${ed ? '' : 'disabled'}></div><div class="fg"><label class="fl">Envío (neto)</label><input id="ed_env" type="number" step="0.01" min="0" class="fi mono" value="${d.envio_neto || 0}" ${ed ? '' : 'disabled'}></div>`
-          : `<div class="fg" style="grid-column:span 2"><label class="fl">Nota para el cliente</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div>`}
+          : `<div class="fg" style="grid-column:span 4"><label class="fl">Nota para el cliente</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div>`}
   </div>${esV ? `<div class="fr"><div class="fg"><label class="fl">Nota</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div><div class="fg"><label class="fl">N° de factura ARCA (si se emitió aparte)</label><input id="ed_fact" class="fi" value="${esc(d.factura_externa || '')}" ${ed ? '' : 'disabled'}></div></div>` : ''}
   ${ed ? `<button class="btn btn-p" id="ed_hdr_ok"><i class="fas fa-floppy-disk"></i> ${ED.id ? 'Guardar cambios del encabezado' : 'Guardar encabezado y cargar productos'}</button>` : ''}`;
   const cli = d.cliente_id ? { id: d.cliente_id, label: typeof d.cliente === 'object' ? d.cliente.nombre : d.cliente } : null;
   const inp = buscador('ed_cli_w', { tipo: 'cliente', id: 'ed_cli', valor: cli, placeholder: 'Nombre, celular o documento…', onSelect: c => { if (!ED.id) { const s = $('ed_lista'); if (s) s.value = ''; } } });
   if (!ed && inp) inp.disabled = true;
   if (ed) $('ed_hdr_ok').onclick = editorGuardarHdr;
-  if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
+  if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_dsc').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
   else $('ed_lin_p').style.opacity = 1;
+}
+async function editorDescuento() {
+  const v = numIn('ed_dg') || 0; const imp = $('ed_dgm').value === 'imp';
+  const a = { p_id: ED.id, p_motivo: val('ed_dgmot') || null }; if (imp) a.p_importe = v; else a.p_pct = v;
+  if (v < 0) return toast('El descuento no puede ser negativo.', 'r');
+  if (v > 0 && !a.p_motivo) return toast('Indicá el motivo del descuento.', 'r');
+  await rpc(ED.modo === 'venta' ? 'borrador_descuento' : 'presupuesto_descuento', a);
+  await editorRecargar(); toast(v ? 'Descuento aplicado' : (a.p_motivo ? 'Motivo guardado' : 'Sin descuento general'), 'g');
 }
 function editorClienteNuevo() { clienteEditar(null, c => { $('ed_cli').fijar({ id: c.id, label: c.nombre }); }); }
 async function editorGuardarHdr() {
   const cli = Number($('ed_cli').dataset.id || 0); if (!cli) return toast('Elegí el cliente.', 'r');
-  const p = { id: ED.id, cliente_id: cli, lista_id: $('ed_lista').value ? Number($('ed_lista').value) : null, descuento_pct: numIn('ed_desc') || 0, descuento_motivo: val('ed_mot') || null, nota: val('ed_nota') || null };
+  const p = { id: ED.id, cliente_id: cli, lista_id: $('ed_lista').value ? Number($('ed_lista').value) : null, nota: val('ed_nota') || null };
   if (ED.modo === 'venta') { p.condicion = $('ed_cond').value; p.recargo_neto = numIn('ed_rec') || 0; p.envio_neto = numIn('ed_env') || 0; p.factura_externa = val('ed_fact') || null; ED.id = await rpc('borrador_guardar', { p }); }
   else { p.valido_hasta = $('ed_val').value || null; ED.id = await rpc('presupuesto_guardar', { p }); }
   history.replaceState(null, '', '#' + (ED.modo === 'venta' ? 'ventas' : 'presupuestos'));
@@ -107,8 +113,17 @@ function editorPintarLineas() {
   let t;
   if (esV) { t = d.totales || {}; if (t.error) { $('ed_tot').innerHTML = `<div class="alert al-r">${esc(t.error)}</div>`; } }
   else t = d;
-  if (!t || !t.error) $('ed_tot').innerHTML = `<div class="row"><span>Subtotal neto</span><b class="mono">${fmt(t.subtotal_neto)}</b></div>${Number(t.descuento_neto) ? `<div class="row"><span>Descuentos</span><b class="mono">- ${fmt(t.descuento_neto)}</b></div>` : ''}${Number(t.recargo_neto) ? `<div class="row"><span>Recargo</span><b class="mono">${fmt(t.recargo_neto)}</b></div>` : ''}${Number(t.envio_neto) ? `<div class="row"><span>Envío</span><b class="mono">${fmt(t.envio_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(t.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(t.total)}</span></div>`;
+  const dcli = Number(d.descuento_cliente_pct || 0), dgen = Number(d.descuento_pct || 0);
+  const detDesc = [dcli ? 'cliente ' + fmtP(dcli) : '', dgen ? 'general ' + fmtP(dgen) : ''].filter(Boolean).join(' · ');
+  if (!t || !t.error) $('ed_tot').innerHTML = `<div class="row"><span>Subtotal neto</span><b class="mono">${fmt(t.subtotal_neto)}</b></div>${Number(t.descuento_neto) ? `<div class="row"><span>Descuentos${detDesc ? `<br><small class="tdim">incluye ${detDesc}</small>` : ''}</span><b class="mono">- ${fmt(t.descuento_neto)}</b></div>` : ''}${Number(t.recargo_neto) ? `<div class="row"><span>Recargo</span><b class="mono">${fmt(t.recargo_neto)}</b></div>` : ''}${Number(t.envio_neto) ? `<div class="row"><span>Envío</span><b class="mono">${fmt(t.envio_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(t.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(t.total)}</span></div>`;
   ED.total = Number(t.total || 0);
+  // descuento general al pie (en % o en $), antes de grabar / confirmar
+  $('ed_dsc').innerHTML = !items.length ? '' : (ed ? `<div class="panel" style="min-width:290px;max-width:340px;margin:0"><div class="ph"><span class="pt"><span class="paso">3</span>Descuento general</span></div><div class="pb">
+      ${dcli ? `<div class="ss mb2">El cliente ya tiene <b>${fmtP(dcli)}</b> de descuento propio (se aplica solo).</div>` : ''}
+      <div class="flex gap2"><input id="ed_dg" type="number" step="0.01" min="0" class="fi mono" value="${dgen ? Number(dgen.toFixed(2)) : ''}" placeholder="0" ${ES_DUENO ? '' : 'disabled'}><select id="ed_dgm" class="fs" style="width:70px" ${ES_DUENO ? '' : 'disabled'}><option value="pct">%</option><option value="imp">$</option></select></div>
+      <label class="fl mt2">Motivo del descuento / precio especial</label><input id="ed_dgmot" class="fi" placeholder="Obligatorio si hay descuento o precio especial" value="${esc(d.descuento_motivo || '')}" ${ES_DUENO ? '' : 'disabled'}>
+      ${ES_DUENO ? `<button class="btn btn-s mt2" style="width:100%" onclick="editorDescuento()"><i class="fas fa-tag"></i> Aplicar descuento y motivo</button><div class="ss mt2">En $: es el importe que se descuenta del total con IVA.</div>` : '<div class="ss mt2">El descuento general lo autoriza el dueño.</div>'}</div></div>`
+    : (dgen ? `<div class="panel" style="margin:0;max-width:300px"><div class="pb"><b>Descuento general ${fmtP(dgen)}</b>${d.descuento_motivo ? `<div class="ss">${esc(d.descuento_motivo)}</div>` : ''}</div></div>` : ''));
   // acciones
   let acc = '';
   if (esV) {
@@ -279,9 +294,18 @@ async function presupuestoPdf(id) {
     cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
     filas: d.items.map(i => [i.codigo, i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
     colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
-    totales: ri ? [['Subtotal neto', fmt(Number(d.subtotal_neto) - Number(d.descuento_neto))], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]] : [...(Number(d.descuento_pct) ? [['Descuento ' + fmtP(d.descuento_pct), 'incluido']] : []), ['TOTAL', fmt(d.total), 1]],
+    totales: presupuestoTotales(d, ri),
     notas: [d.nota || '', ri ? 'Precios netos más IVA.' : 'Precios con IVA incluido.', 'Presupuesto válido hasta el ' + fmtD(d.valido_hasta) + '. Precios sujetos a disponibilidad de stock.', (M.empresa || {}).whatsapp ? 'Consultas y pedidos por WhatsApp: ' + M.empresa.whatsapp : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero);
+}
+// Totales del presupuesto: subtotal de las líneas, descuento del cliente + general en $, IVA y total
+function presupuestoTotales(d, ri) {
+  const sumNeto = d.items.reduce((a, i) => a + Number(i.subtotal_neto), 0), sumFin = d.items.reduce((a, i) => a + Number(i.total), 0);
+  const pcts = [Number(d.descuento_cliente_pct) ? 'cliente ' + fmtP(d.descuento_cliente_pct) : '', Number(d.descuento_pct) ? fmtP(d.descuento_pct) : ''].filter(Boolean).join(' + ');
+  if (ri) { const neto = Number(d.subtotal_neto) - Number(d.descuento_neto); const dsc = sumNeto - neto;
+    return [...(dsc >= 0.01 ? [['Subtotal neto', fmt(sumNeto)], ['Descuento' + (pcts ? ' (' + pcts + ')' : ''), '- ' + fmt(dsc)]] : []), ['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]; }
+  const dsc = sumFin - Number(d.total);
+  return [...(dsc >= 0.01 ? [['Subtotal', fmt(sumFin)], ['Descuento' + (pcts ? ' (' + pcts + ')' : ''), '- ' + fmt(dsc)]] : []), ['TOTAL', fmt(d.total), 1]];
 }
 async function presupuestoWa(id) {
   const d = await rpc('presupuesto_detalle', { p_id: id });
