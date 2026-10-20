@@ -61,11 +61,11 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
   <div class="eye">Pirotecnia Boom · sistema de gestión</div>
   <h1>Cómo funciona cada circuito</h1>
   <p class="lead">Todos los recorridos del sistema en una sola página: qué pasos tiene cada uno, qué mueve (stock, caja, cuenta corriente) y las reglas que hoy aplica. Así se revisa todo de una vez y no pantalla por pantalla.</p>
-  <div class="como"><b>Cómo responder:</b> cada regla tiene un código. Mandame solo los que quieras distinto, por ejemplo: <code>P1: 48 horas exactas</code> · <code>V1: permitir vender sin stock</code>. Lo que no menciones queda como está.</div>
+  <div class="como"><b>¿Quieren cambiar una regla?</b> Cada regla tiene un código. Avisen solo las que quieran distinto, con su código, por ejemplo: <code>P1: 3 días de validez</code> · <code>V1: permitir vender sin stock</code>. Lo que no se mencione queda como está.</div>
 </header>
 
 <nav>
-  <a href="#p"><b>P</b>Presupuesto</a><a href="#v"><b>V</b>Venta</a><a href="#w"><b>W</b>Pedido web</a><a href="#c"><b>C</b>Cobranza</a><a href="#k"><b>K</b>Compra</a><a href="#o"><b>O</b>Pago a proveedor</a><a href="#s"><b>S</b>Remitos y stock</a><a href="#j"><b>J</b>Caja</a><a href="#g"><b>G</b>Gastos</a><a href="#q"><b>Q</b>Cheques</a><a href="#r"><b>R</b>Precios</a>
+  <a href="#p"><b>P</b>Presupuesto</a><a href="#v"><b>V</b>Venta</a><a href="#w"><b>W</b>Pedido web</a><a href="#c"><b>C</b>Cobranza</a><a href="#k"><b>K</b>Compra</a><a href="#o"><b>O</b>Pago a proveedor</a><a href="#s"><b>S</b>Remitos y stock</a><a href="#j"><b>J</b>Caja</a><a href="#g"><b>G</b>Gastos</a><a href="#q"><b>Q</b>Cheques</a><a href="#r"><b>R</b>Precios y descuentos</a>
 </nav>
 
 <section id="p">
@@ -90,7 +90,8 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
     <li><code>P2</code><span>El presupuesto <b>no reserva stock</b>. Si al convertirlo no hay stock, el sistema no deja emitir la venta.</span></li>
     <li><code>P3</code><span>Mientras está pendiente <b>respeta su precio</b> aunque suba el costo.</span></li>
     <li><code>P4</code><span>Un presupuesto grabado <b>no se modifica</b>: se duplica y se graba uno nuevo.</span></li>
-    <li><code>P5</code><span>El operador puede presupuestar, pero <b>no poner descuentos ni precios especiales</b>.</span></li>
+    <li><code>P5</code><span>El operador puede presupuestar, pero <b>no poner descuentos ni precios especiales</b>. El descuento propio del cliente sí se aplica solo.</span></li>
+    <li><code>P6</code><span>El <b>descuento general</b> va <b>al pie</b>, en % o en $, antes de grabar. En el PDF se ve el descuento en pesos.</span></li>
   </ul>
 </section>
 
@@ -142,8 +143,9 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
     <li><code>W1</code><span>El pedido <b>reserva stock</b> mientras está abierto.</span></li>
     <li><code>W2</code><span>Vence a las <b>48 horas</b> (Datos de la empresa).</span></li>
     <li><code>W3</code><span>Máximo <b>5 pedidos por celular por día</b>.</span></li>
-    <li><code>W4</code><span>El WhatsApp llega al número de <b>Datos de la empresa</b> (hoy el tuyo, para probar).</span></li>
-    <li><code>W5</code><span>Mayoristas: mismo circuito con precios de la lista Mayorista, netos + IVA.</span></li>
+    <li><code>W4</code><span>El WhatsApp llega al número de <b>Datos de la empresa</b> (se cambia ahí cuando quieran).</span></li>
+    <li><code>W5</code><span>Mayoristas: entran con el usuario de mayoristas, ven su precio (base − 30 %) neto + IVA y el <b>precio sugerido</b>. El pedido toma precio mayorista <b>solo si el celular es de un cliente cargado como Mayorista</b>; si no, va a precio público y se avisa.</span></li>
+    <li><code>W6</code><span>La <b>lista en Excel</b> se descarga solo con el usuario de mayoristas. <b>Ver más</b> abre la ficha con video e información del producto.</span></li>
   </ul>
 </section>
 
@@ -276,20 +278,38 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 </section>
 
 <section id="r">
-  <h2><span class="cod">R</span>Precios</h2>
+  <h2><span class="cod">R</span>Precios <span class="nuevo">nuevo</span></h2>
   <div class="flujo">
-    <div class="p"><b>Costo neto</b><span>Del producto o de la última compra.</span></div><div class="fl">×</div>
-    <div class="p"><b>1 + margen de la lista</b><span>Público 60 %, Mayorista 30 % (de prueba).</span></div><div class="fl">→</div>
-    <div class="p"><b>Redondeo</b><span>Público: al precio final con IVA.</span></div><div class="fl">→</div>
-    <div class="p fin"><b>Precio de lista</b></div>
+    <div class="p"><b>Costo neto</b><span>Del producto, de la última compra, de un cambio masivo o de la lista importada.</span></div><div class="fl">×</div>
+    <div class="p"><b>1 + margen</b><span>De la lista base (Público).</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Lista base = precio sugerido</b><span>Redondeada al precio final con IVA. Es lo que ve el público.</span></div><div class="fl">→</div>
+    <div class="p fin"><b>Mayorista = base − 30 %</b><span>Neto + IVA, sin redondeo.</span></div>
   </div>
+  <h3>Cómo se cambian los precios (siempre por el costo)</h3>
+  <div class="ramas">
+    <div class="flujo"><span class="r">Un producto</span><div class="fl">→</div><div class="p"><b>Editar el producto</b><span>Cambiar el costo neto.</span></div></div>
+    <div class="flujo"><span class="r">Muchos por %</span><div class="fl">→</div><div class="p"><b>Cambiar precios → por %</b><span>Todos, una categoría o un proveedor. Vista previa y después aplicar.</span></div></div>
+    <div class="flujo"><span class="r">Lista del proveedor</span><div class="fl">→</div><div class="p"><b>Cambiar precios → Importar Excel</b><span>Código + costo neto. Vista previa: cambian, iguales, no existen, con error.</span></div></div>
+    <div class="flujo"><span class="r">Todo el margen</span><div class="fl">→</div><div class="p"><b>Listas de precios → Público</b><span>Cambiar el margen. La mayorista se recalcula sola.</span></div></div>
+  </div>
+  <h3>Descuentos (se aplican en cascada, uno sobre el otro)</h3>
+  <div class="tw"><table><thead><tr><th>Descuento</th><th>Dónde se pone</th><th>Dónde aplica</th></tr></thead><tbody>
+    <tr><td>Por línea %</td><td>Al cargar el producto (dueño)</td><td>Presupuesto y venta</td></tr>
+    <tr><td>Del cliente %</td><td>Ficha del cliente (dueño)</td><td>Presupuesto y venta (solo, automático)</td></tr>
+    <tr><td>General en % o $</td><td>Al pie, antes de grabar o confirmar (dueño, con motivo)</td><td>Presupuesto y venta</td></tr>
+    <tr><td>Por monto</td><td>Descuentos por monto</td><td>Catálogo web (como estaba)</td></tr></tbody></table></div>
+  <h3>Reglas actuales</h3>
   <ul class="reg">
-    <li><code>R1</code><span>Cambiar el margen de una lista <b>recalcula todos sus precios</b> y guarda el historial.</span></li>
-    <li><code>R2</code><span><b>Ofertas</b>: precio especial por producto y lista, entre dos fechas.</span></li>
-    <li><code>R3</code><span><b>Descuentos por monto</b>: automáticos en el catálogo según el total del pedido.</span></li>
-    <li><code>R4</code><span>Los márgenes y costos actuales son <b>de prueba</b>: hay que cargar los reales.</span></li>
+    <li><code>R1</code><span>La <b>lista base</b> (Público) es el <b>precio sugerido</b>: costo × (1 + margen), redondeado al final con IVA.</span></li>
+    <li><code>R2</code><span>La <b>Mayorista sale de la base con 30 % de descuento</b>. Si cambia la base, se recalcula sola. El % se cambia en Listas de precios.</span></li>
+    <li><code>R3</code><span>Todo cambio de costo o margen <b>queda en el historial</b>.</span></li>
+    <li><code>R4</code><span>La lista importada <b>no da de alta productos</b>: los códigos que no existen se informan. Los cambios de más de 50 % se marcan en rojo.</span></li>
+    <li><code>R5</code><span>Descuentos <b>en cascada</b>: $ 1.000 con 10 % de cliente y 5 % general = $ 855.</span></li>
+    <li><code>R6</code><span>El <b>descuento del cliente</b> no aplica en el catálogo web (ahí rigen los descuentos por monto).</span></li>
+    <li><code>R7</code><span><b>Ofertas</b>: precio especial por producto y lista, entre dos fechas.</span></li>
+    <li><code>R8</code><span>Los márgenes y costos actuales son <b>de prueba</b>: hay que cargar los reales.</span></li>
   </ul>
 </section>
 
-<footer>Respondé con los códigos que quieras cambiar. Lo que no menciones queda como está.</footer>
+<footer>Para cambiar una regla, indicá su código. Lo que no se mencione queda como está.</footer>
 </div>
