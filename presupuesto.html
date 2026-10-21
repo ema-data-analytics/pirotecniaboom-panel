@@ -40,6 +40,29 @@ const sb = window.supabase.createClient(LOCAL ? location.origin : 'https://ounzs
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nf = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = n => '$ ' + nf.format(Number(n || 0));
+// Desglose de descuentos en pesos (mismo cálculo que el panel)
+function desglose(d, ri) {
+  const r2 = x => Math.round(x * 100) / 100, dcli = Number(d.descuento_cliente_pct || 0), dgen = Number(d.descuento_pct || 0);
+  const k = i => ri ? 1 : 1 + Number(i.iva_pct || 0) / 100;
+  let s0 = 0, s1 = 0, s2 = 0;
+  for (const i of d.items) { const q = Number(i.cantidad), p = Number(i.precio_neto_unit), dl = Number(i.descuento_pct || 0) / 100;
+    s0 += r2(q * p * k(i)); s1 += r2(q * p * (1 - dl) * k(i)); s2 += r2(q * p * (1 - dl) * (1 - dcli / 100) * k(i)); }
+  s0 = r2(s0); s1 = r2(s1); s2 = r2(s2);
+  const fin = ri ? Number(d.subtotal_neto) - Number(d.descuento_neto) : Number(d.total);
+  let dLin = r2(s0 - s1), dCli = r2(s1 - s2), dGen = r2(s2 - fin);
+  if (!(dgen > 0) && Math.abs(dGen) < 0.05 && dGen !== 0) { if (dCli) dCli = r2(dCli + dGen); else dLin = r2(dLin + dGen); dGen = 0; }
+  const ahorro = r2(dLin + dCli + Math.max(dGen, 0)); const pct = s0 ? ahorro * 100 / s0 : 0;
+  let h = '';
+  if (ahorro >= 0.01) {
+    h += `<div><span>Subtotal${ri ? ' neto' : ''} (sin descuentos)</span><b>${fmt(s0)}</b></div>`;
+    if (dLin >= 0.01) h += `<div><span>Descuento por producto</span><b>- ${fmt(dLin)}</b></div>`;
+    if (dCli >= 0.01) h += `<div><span>Descuento cliente ${nf.format(dcli)}%</span><b>- ${fmt(dCli)}</b></div>`;
+    if (dGen >= 0.01) h += `<div><span>Descuento ${dgen > 0 ? nf.format(dgen) + '%' : 'adicional'}</span><b>- ${fmt(dGen)}</b></div>`;
+    h += `<div><span><b>Total de descuentos</b></span><b>- ${fmt(ahorro)} (${nf.format(pct)}%)</b></div>`;
+  }
+  if (ri) h += `<div><span>Neto</span><b>${fmt(fin)}</b></div><div><span>IVA</span><b>${fmt(d.iva)}</b></div>`;
+  return h + `<div class="g"><span>TOTAL</span><span>${fmt(d.total)}</span></div>`;
+}
 const fd = d => { const s = String(d || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y, m, x] = s.split('-'); return x + '/' + m + '/' + y; } return new Date(d).toLocaleDateString('es-AR'); };
 (async () => {
   const t = new URLSearchParams(location.search).get('t');
@@ -50,12 +73,12 @@ const fd = d => { const s = String(d || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) 
   const ri = d.discrimina_iva; const e = d.empresa || {};
   const est = { aceptado: ['ok', 'Aceptado'], rechazado: ['no', 'Rechazado'], vencido: ['no', 'Vencido'] }[d.estado] || ['esp', 'Vigente'];
   const wa = String(e.whatsapp || '').replace(/\D/g, '');
-  h.innerHTML = `<div class="cab"><img src="img/logo.png" alt="Pirotecnia Boom"><div class="tit"><h1>PRESUPUESTO</h1><div><b>${esc(d.numero)}</b> · ${fd(d.fecha)}</div><div>Válido hasta el <b>${fd(d.valido_hasta)}</b></div><span class="est ${est[0]}">${est[1]}</span></div></div>
+  h.innerHTML = `<div class="cab"><img src="img/logo.png" alt="Pirotecnia Boom"><div class="tit"><h1>PRESUPUESTO</h1><div><b>${esc(d.numero)}</b>${d.version > 1 ? ' · versión ' + d.version : ''} · ${fd(d.fecha)}</div><div>Válido hasta el <b>${fd(d.valido_hasta)}</b></div><span class="est ${est[0]}">${est[1]}</span></div></div>
   <div class="cuerpo"><div><b>Cliente:</b> ${esc(d.cliente.nombre)}</div>
   <table><thead><tr><th>Código</th><th>Producto</th><th class="r">Cant.</th><th class="r">Precio</th><th class="r">Importe</th></tr></thead><tbody>
   ${d.items.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.producto)}${Number(i.descuento_pct) ? ` <small>(-${nf.format(i.descuento_pct)}%)</small>` : ''}</td><td class="r">${Number(i.cantidad).toLocaleString('es-AR')}</td><td class="r">${fmt(ri ? i.precio_neto_unit : i.precio_final_unit)}</td><td class="r">${fmt(ri ? i.subtotal_neto : i.total)}</td></tr>`).join('')}
   </tbody></table>
-  <div class="tot">${(() => { const sN = d.items.reduce((a, i) => a + Number(i.subtotal_neto), 0), sF = d.items.reduce((a, i) => a + Number(i.total), 0); const dsc = ri ? sN - (Number(d.subtotal_neto) - Number(d.descuento_neto)) : sF - Number(d.total); return dsc >= 0.01 ? `<div><span>Subtotal${ri ? ' neto' : ''}</span><b>${fmt(ri ? sN : sF)}</b></div><div><span>Descuento</span><b>- ${fmt(dsc)}</b></div>` : ''; })()}${ri ? `<div><span>Neto</span><b>${fmt(Number(d.subtotal_neto) - Number(d.descuento_neto))}</b></div><div><span>IVA</span><b>${fmt(d.iva)}</b></div>` : ''}<div class="g"><span>TOTAL</span><span>${fmt(d.total)}</span></div></div>
+  <div class="tot">${desglose(d, ri)}</div>
   <div class="nota">${d.nota ? esc(d.nota) + '<br>' : ''}${ri ? 'Precios netos más IVA.' : 'Precios con IVA incluido.'} Precios sujetos a disponibilidad de stock.<br>${esc(e.razon_social || 'Pirotecnia Boom')}${e.direccion ? ' · ' + esc(e.direccion) : ''}${e.horarios ? ' · ' + esc(e.horarios) : ''}</div>
   <div class="acc"><button class="btn b1" onclick="print()">⬇ Descargar / imprimir</button>${wa ? `<a class="btn b2" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola! Quiero confirmar el presupuesto ' + d.numero + ' por ' + fmt(d.total))}" target="_blank">WhatsApp: confirmar</a>` : ''}</div></div>`;
   document.title = 'Presupuesto ' + d.numero + ' · Pirotecnia Boom';

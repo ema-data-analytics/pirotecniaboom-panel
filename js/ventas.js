@@ -36,7 +36,7 @@ async function editorDoc(modo, id) {
     botones: `<button class="btn btn-s" onclick="ir('${esV ? 'ventas' : 'presupuestos'}')"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span><span id="ed_est"></span></div><div class="pb" id="ed_hdr"></div></div>
       <div class="panel mb3" id="ed_lin_p"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span><span class="ss" id="ed_lista_txt"></span></div><div class="pb" id="ed_lin"></div></div>
-      <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div class="tot-box" id="ed_tot"></div></div></div>` });
+      <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div id="ed_fin"></div><div class="tot-box" id="ed_tot"></div></div></div>` });
   if (id) await editorRecargar(); else editorPintarHdr();
 }
 async function editorRecargar() {
@@ -49,7 +49,7 @@ function badgePre(e) { return badgeEstado(EST_PRE[e] || e); }
 function editorPintarHdr() {
   const d = ED.det || {}; const esV = ED.modo === 'venta'; const ed = editorEditable();
   const bdg = e => esV ? badgeEstado(e) : badgePre(e);
-  $('ed_est').innerHTML = d.numero ? `<b class="mono">${esc(d.numero)}</b> ${bdg(d.estado)}` : (d.estado ? bdg(d.estado) : '<span class="badge bw">sin guardar</span>');
+  $('ed_est').innerHTML = d.numero ? `<b class="mono">${esc(d.numero)}</b>${d.version > 1 ? ` <span class="badge bw">versión ${d.version}</span>` : ''} ${bdg(d.estado)}` : (d.estado ? bdg(d.estado) : '<span class="badge bw">sin guardar</span>');
   const listas = (M.listas || []).map(l => `<option value="${l.id}" ${l.id === d.lista_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
   $('ed_hdr').innerHTML = `<div class="fr4">
     <div class="fg" style="grid-column:span 2"><label class="fl req">Cliente</label><div class="flex gap2"><div id="ed_cli_w" class="f1"></div>${ed ? '<button class="btn btn-s" title="Nuevo cliente" onclick="editorClienteNuevo()"><i class="fas fa-user-plus"></i></button>' : ''}</div></div>
@@ -65,7 +65,7 @@ function editorPintarHdr() {
   const inp = buscador('ed_cli_w', { tipo: 'cliente', id: 'ed_cli', valor: cli, placeholder: 'Nombre, celular o documento…', onSelect: c => { if (!ED.id) { const s = $('ed_lista'); if (s) s.value = ''; } } });
   if (!ed && inp) inp.disabled = true;
   if (ed) $('ed_hdr_ok').onclick = editorGuardarHdr;
-  if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_dsc').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
+  if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_dsc').innerHTML = ''; $('ed_fin').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
   else $('ed_lin_p').style.opacity = 1;
 }
 async function editorDescuento() {
@@ -100,6 +100,7 @@ function editorPintarLineas() {
     { t: 'Precio unit. neto', k: 'precio_neto_unit', f: r => fmt(r.precio_neto_unit) + (r.precio_manual ? ' <span class="badge bw">especial</span>' : ''), cls: 'tr' },
     { t: 'Precio unit. final', k: 'pf', f: r => fmt(Number(r.precio_neto_unit) * (1 + Number(r.iva_pct) / 100)), cls: 'tr' },
     { t: 'Desc.', k: 'descuento_pct', f: r => Number(r.descuento_pct) ? fmtP(r.descuento_pct) : '', cls: 'tr' },
+    { t: 'Desc. $', k: 'dpes', f: r => Number(r.descuento_pct) ? '- ' + fmt(Number(r.cantidad) * Number(r.precio_neto_unit) * Number(r.descuento_pct) / 100 * (1 + Number(r.iva_pct) / 100)) : '', cls: 'tr' },
     { t: 'Total final', k: 'tf', f: r => fmt(Number(r.cantidad) * Number(r.precio_neto_unit) * (1 - Number(r.descuento_pct) / 100) * (1 + Number(r.iva_pct) / 100)), cls: 'tr' }], items,
     { vacio: 'Todavía no hay productos', acciones: ed ? (r => `<button class="btn btn-xs btn-b" title="Modificar" onclick="editorEditarLinea(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-d" title="Quitar" onclick="editorQuitarLinea(${r.id})"><i class="fas fa-trash"></i></button>`) : null });
   if (ed) {
@@ -117,6 +118,9 @@ function editorPintarLineas() {
   const detDesc = [dcli ? 'cliente ' + fmtP(dcli) : '', dgen ? 'general ' + fmtP(dgen) : ''].filter(Boolean).join(' · ');
   if (!t || !t.error) $('ed_tot').innerHTML = `<div class="row"><span>Subtotal neto</span><b class="mono">${fmt(t.subtotal_neto)}</b></div>${Number(t.descuento_neto) ? `<div class="row"><span>Descuentos${detDesc ? `<br><small class="tdim">incluye ${detDesc}</small>` : ''}</span><b class="mono">- ${fmt(t.descuento_neto)}</b></div>` : ''}${Number(t.recargo_neto) ? `<div class="row"><span>Recargo</span><b class="mono">${fmt(t.recargo_neto)}</b></div>` : ''}${Number(t.envio_neto) ? `<div class="row"><span>Envío</span><b class="mono">${fmt(t.envio_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(t.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(t.total)}</span></div>`;
   ED.total = Number(t.total || 0);
+  // desglose de descuentos en precio final, al lado de los totales
+  $('ed_fin').innerHTML = items.length && t && !t.error ? desgloseHtml(desgloseDesc({ items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), total: t.total,
+      recargo: esV ? Number(d.recargo_neto || 0) : 0, envio: esV ? Number(d.envio_neto || 0) : 0 })) : '';
   // descuento general al pie (en % o en $), antes de grabar / confirmar
   $('ed_dsc').innerHTML = !items.length ? '' : (ed ? `<div class="panel" style="min-width:290px;max-width:340px;margin:0"><div class="ph"><span class="pt"><span class="paso">3</span>Descuento general</span></div><div class="pb">
       ${dcli ? `<div class="ss mb2">El cliente ya tiene <b>${fmtP(dcli)}</b> de descuento propio (se aplica solo).</div>` : ''}
@@ -135,6 +139,7 @@ function editorPintarLineas() {
     else {
       acc = `<button class="btn btn-pdf" onclick="presupuestoPdf(${d.id})"><i class="fas fa-file-pdf"></i> PDF</button>`;
       if (d.estado === 'enviado') acc += `<button class="btn btn-wa" onclick="presupuestoWa(${d.id})"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button><button class="btn btn-p btn-xl" onclick="presupuestoConvertir(${d.id})"><i class="fas fa-cash-register"></i> Cliente confirmó: convertir en venta</button><button class="btn btn-d" onclick="presupuestoRechazar(${d.id})"><i class="fas fa-ban"></i> Rechazado</button>`;
+      if (['enviado', 'vencido'].includes(d.estado) && !d.venta) acc += `<button class="btn btn-b" onclick="presupuestoModificar(${d.id})"><i class="fas fa-pen"></i> Modificar</button>`;
       acc += `<button class="btn btn-s" onclick="presupuestoDuplicar(${d.id})"><i class="fas fa-copy"></i> Duplicar</button>`;
     }
     if (d.venta) acc += `<button class="btn btn-b" onclick="verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta ${esc(d.venta.numero)}</button>`;
@@ -203,9 +208,16 @@ async function verComprobante(id) {
     <div class="kv"><b>Condición</b><span>${d.condicion === 'contado' ? 'Contado' : 'Cuenta corriente'}</span><b>Lista</b><span>${esc(d.lista)}</span>${d.origen ? `<b>Comprobante origen</b><span>${esc(d.origen.numero)}</span>` : ''}${d.pedido ? `<b>Pedido</b><span>${esc(d.pedido)}</span>` : ''}${d.presupuesto ? `<b>Presupuesto</b><span>${esc(d.presupuesto)}</span>` : ''}${d.factura_externa ? `<b>Factura ARCA</b><span>${esc(d.factura_externa)}</span>` : ''}${d.motivo ? `<b>Motivo / nota</b><span>${esc(d.motivo)}</span>` : ''}${d.descuento_motivo ? `<b>Motivo descuento</b><span>${esc(d.descuento_motivo)}</span>` : ''}</div></div>
     ${grilla('g_cd', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: ri ? 'P. unit. neto' : 'P. unit. final', k: ri ? 'precio_neto_unit' : 'precio_final_unit', f: 'm', cls: 'tr' }, { t: 'Desc.', k: 'descuento_pct', f: r => Number(r.descuento_pct) ? fmtP(r.descuento_pct) : '', cls: 'tr' }, { t: ri ? 'Neto' : 'Total', k: ri ? 'subtotal_neto' : 'total', f: 'm', cls: 'tr' }, ...(d.tipo === 'VTA' ? [{ t: 'Devuelto', k: 'devuelto', f: r => Number(r.devuelto) ? fmtN(r.devuelto) : '', cls: 'tr' }] : [])], d.items)}
     <div class="flex jb fw gap3 mt3"><div class="f1">${d.pagos.length ? '<div class="pt mb3">Cobros aplicados</div>' + d.pagos.map(p => `<div class="ss">${esc(p.recibo)} · ${fmtD(p.fecha)} · <b>${fmt(p.importe)}</b></div>`).join('') : ''}${d.notas_credito.length ? '<div class="pt mt3">Notas de crédito aplicadas</div>' + d.notas_credito.map(p => `<div class="ss">${esc(p.numero)} · <b>${fmt(p.importe)}</b></div>`).join('') : ''}</div>
-    <div class="tot-box"><div class="row"><span>Subtotal neto</span><b class="mono">${fmt(d.subtotal_neto)}</b></div>${Number(d.descuento_neto) ? `<div class="row"><span>Descuentos</span><b class="mono">- ${fmt(d.descuento_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(d.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(d.total)}</span></div>${d.tipo !== 'NC' ? `<div class="row"><span>Saldo pendiente</span><b class="mono ${Number(d.saldo) > 0 ? 'td' : 'tg'}">${fmt(d.saldo)}</b></div>` : ''}</div></div>
+    ${d.tipo === 'VTA' && Number(d.descuento_neto) > 0 ? desgloseHtml(desgloseDesc({ items: d.items, total: d.total })) : ''}<div class="tot-box"><div class="row"><span>Subtotal neto</span><b class="mono">${fmt(d.subtotal_neto)}</b></div>${Number(d.descuento_neto) ? `<div class="row"><span>Descuentos</span><b class="mono">- ${fmt(d.descuento_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(d.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(d.total)}</span></div>${d.tipo !== 'NC' ? `<div class="row"><span>Saldo pendiente</span><b class="mono ${Number(d.saldo) > 0 ? 'td' : 'tg'}">${fmt(d.saldo)}</b></div>` : ''}</div></div>
   </div><div class="mf"><button class="btn btn-pdf" onclick="pdfComprobante(${d.id})"><i class="fas fa-file-pdf"></i> PDF</button>${d.cliente.celular ? `<button class="btn btn-wa" onclick="waAbrir('${d.cliente.celular}', 'Hola ${esc(d.cliente.nombre).replace(/'/g, '')}! Te enviamos el detalle de tu compra ${d.numero} por ${fmt(d.total)}. ¡Gracias por elegir Pirotecnia Boom!')"><i class="fab fa-whatsapp"></i> WhatsApp</button>` : ''}
     ${Number(d.saldo) > 0 && d.tipo !== 'NC' ? `<button class="btn btn-g" onclick="closeModal(this);cobroNuevo(${d.cliente.id},${d.id})"><i class="fas fa-hand-holding-dollar"></i> Cobrar</button>` : ''}${ES_DUENO && d.tipo !== 'NC' ? `<button class="btn btn-w" onclick="closeModal(this);ncNueva(${d.id})"><i class="fas fa-rotate-left"></i> Nota de crédito</button>` : ''}<button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
+}
+// Totales del comprobante para el PDF: en ventas, desglose de descuentos en pesos
+function comprobanteTotalesPdf(d, ri) {
+  const neto = Number(d.subtotal_neto) - Number(d.descuento_neto) + Number(d.recargo_neto) + Number(d.envio_neto);
+  if (d.tipo !== 'VTA') return ri ? [['Subtotal neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]] : [['TOTAL', fmt(d.total), 1]];
+  if (ri) return desglosePdf(desgloseDesc({ items: d.items, total: neto, neto: true })).concat([['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]);
+  return desglosePdf(desgloseDesc({ items: d.items, total: d.total })).concat([['TOTAL', fmt(d.total), 1]]);
 }
 async function pdfComprobante(id) {
   const d = await rpc('comprobante_detalle', { p_id: id }); const ri = d.discrimina_iva;
@@ -215,7 +227,7 @@ async function pdfComprobante(id) {
     cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
     filas: d.items.map(i => [i.codigo || '', i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
     colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
-    totales: ri ? [['Subtotal neto', fmt(Number(d.subtotal_neto) - Number(d.descuento_neto) + Number(d.recargo_neto) + Number(d.envio_neto))], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]] : [...(Number(d.descuento_neto) ? [['Descuentos (incluidos)', '- ' + fmt(Number(d.descuento_neto) * 1.21)]] : []), ['TOTAL', fmt(d.total), 1]],
+    totales: comprobanteTotalesPdf(d, ri),
     notas: [d.motivo ? 'Motivo / nota: ' + d.motivo : '', ri ? '' : 'Precios con IVA incluido.', d.tipo !== 'NC' && Number(d.saldo) > 0 ? 'Saldo pendiente: ' + fmt(d.saldo) : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero.replace(/\s+/g, '_'));
 }
@@ -283,13 +295,13 @@ async function presupuestosCargar() {
   const c = e => rows.filter(r => r.estado === e);
   const emit = rows.filter(r => r.estado !== 'borrador').length;
   $('pre_k').innerHTML = kpi('Pendientes', c('enviado').length, fmt(c('enviado').reduce((a, r) => a + Number(r.total), 0)) + (c('borrador').length ? ' · ' + c('borrador').length + ' en carga' : ''), 'b') + kpi('Aceptados', c('aceptado').length, fmt(c('aceptado').reduce((a, r) => a + Number(r.total), 0)), 'g') + kpi('Rechazados / vencidos', c('rechazado').length + c('vencido').length, '', 'r') + kpi('Efectividad', emit ? Math.round(c('aceptado').length * 100 / emit) + '%' : '—', 'aceptados sobre enviados', 'w');
-  $('pre_g').innerHTML = grilla('g_pre', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'N°', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>`, xf: r => r.numero }, { t: 'Cliente', k: 'cliente' }, { t: 'Lista', k: 'lista' }, { t: 'Válido hasta', k: 'valido_hasta', f: 'd' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: r => badgePre(r.estado), xf: r => EST_PRE[r.estado] || r.estado }, { t: 'Venta', k: 'venta' }], rows,
-    { acciones: r => `<button class="btn btn-xs btn-s" title="${r.estado === 'borrador' ? 'Seguir cargando' : 'Ver'}" onclick="editorDoc('presupuesto',${r.id})"><i class="fas fa-${r.estado === 'borrador' ? 'pen' : 'eye'}"></i></button>${r.estado !== 'borrador' ? `<button class="btn btn-xs btn-pdf" title="PDF" onclick="presupuestoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>` : ''}${r.celular && r.estado === 'enviado' ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="presupuestoWa(${r.id})"><i class="fab fa-whatsapp"></i></button>` : ''}${r.estado === 'enviado' ? `<button class="btn btn-xs btn-g" title="Cliente confirmó: convertir en venta" onclick="presupuestoConvertir(${r.id})"><i class="fas fa-cash-register"></i></button>` : ''}<button class="btn btn-xs btn-b" title="Duplicar" onclick="presupuestoDuplicar(${r.id})"><i class="fas fa-copy"></i></button>` });
+  $('pre_g').innerHTML = grilla('g_pre', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'N°', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>${r.version > 1 ? ` <span class="badge bw">v${r.version}</span>` : ''}`, xf: r => r.numero + (r.version > 1 ? ' v' + r.version : '') }, { t: 'Cliente', k: 'cliente' }, { t: 'Lista', k: 'lista' }, { t: 'Válido hasta', k: 'valido_hasta', f: 'd' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: r => badgePre(r.estado), xf: r => EST_PRE[r.estado] || r.estado }, { t: 'Venta', k: 'venta' }], rows,
+    { acciones: r => `<button class="btn btn-xs btn-s" title="${r.estado === 'borrador' ? 'Seguir cargando' : 'Ver'}" onclick="editorDoc('presupuesto',${r.id})"><i class="fas fa-${r.estado === 'borrador' ? 'pen' : 'eye'}"></i></button>${r.estado !== 'borrador' ? `<button class="btn btn-xs btn-pdf" title="PDF" onclick="presupuestoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>` : ''}${r.celular && r.estado === 'enviado' ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="presupuestoWa(${r.id})"><i class="fab fa-whatsapp"></i></button>` : ''}${r.estado === 'enviado' ? `<button class="btn btn-xs btn-g" title="Cliente confirmó: convertir en venta" onclick="presupuestoConvertir(${r.id})"><i class="fas fa-cash-register"></i></button>` : ''}${['enviado', 'vencido'].includes(r.estado) && !r.venta ? `<button class="btn btn-xs btn-b" title="Modificar (vuelve a En carga, versión ${(r.version || 1) + 1})" onclick="presupuestoModificar(${r.id})"><i class="fas fa-pen"></i></button>` : ''}<button class="btn btn-xs btn-s" title="Duplicar" onclick="presupuestoDuplicar(${r.id})"><i class="fas fa-copy"></i></button>` });
 }
 async function presupuestoNuevo() { await editorDoc('presupuesto', null); }
 async function presupuestoPdf(id) {
   const d = await rpc('presupuesto_detalle', { p_id: id }); const ri = d.discrimina_iva;
-  const doc = pdfDocumento({ titulo: 'PRESUPUESTO', numero: d.numero, fecha: fmtD(d.fecha), sub: 'Válido hasta: ' + fmtD(d.valido_hasta),
+  const doc = pdfDocumento({ titulo: 'PRESUPUESTO', numero: d.numero + (d.version > 1 ? ' · v' + d.version : ''), fecha: fmtD(d.fecha), sub: (d.version > 1 ? 'Versión ' + d.version + ' · ' : '') + 'Válido hasta: ' + fmtD(d.valido_hasta),
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.condicion_iva, d.cliente.direccion, d.cliente.celular] },
     cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
     filas: d.items.map(i => [i.codigo, i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
@@ -299,13 +311,47 @@ async function presupuestoPdf(id) {
   pdfSave(doc, d.numero);
 }
 // Totales del presupuesto: subtotal de las líneas, descuento del cliente + general en $, IVA y total
+/* ---- Desglose de descuentos en pesos (precio final con IVA, o neto). Cierra exacto con el total del comprobante. ---- */
+function desgloseDesc({ items, dcli = 0, dgen = 0, total, neto = false, recargo = 0, envio = 0 }) {
+  const r2 = x => Math.round(x * 100) / 100;
+  const k = i => neto ? 1 : 1 + Number(i.iva_pct ?? 0) / 100;
+  let s0 = 0, s1 = 0, s2 = 0, ext = [];
+  for (const i of items || []) {
+    const q = Number(i.cantidad), p = Number(i.precio_neto_unit), dl = Number(i.descuento_pct || 0) / 100;
+    if (/^CONC-/.test(i.codigo || '')) { ext.push([i.producto, r2(q * p * k(i))]); continue; }
+    s0 += r2(q * p * k(i)); s1 += r2(q * p * (1 - dl) * k(i)); s2 += r2(q * p * (1 - dl) * (1 - dcli / 100) * k(i));
+  }
+  if (recargo) ext.push(['Recargo', r2(recargo * (neto ? 1 : 1.21))]);
+  if (envio) ext.push(['Envío', r2(envio * (neto ? 1 : 1.21))]);
+  s0 = r2(s0); s1 = r2(s1); s2 = r2(s2);
+  const sumExt = ext.reduce((a, e) => a + e[1], 0);
+  let dLin = r2(s0 - s1), dCli = r2(s1 - s2), dGen = r2(s2 + sumExt - Number(total));
+  if (!(Number(dgen) > 0) && Math.abs(dGen) < 0.05 && dGen !== 0) { if (dCli) dCli = r2(dCli + dGen); else dLin = r2(dLin + dGen); dGen = 0; }
+  const filas = [{ l: neto ? 'Subtotal neto (sin descuentos)' : 'Subtotal (precio final, sin descuentos)', v: s0, t: 's' }];
+  if (dLin >= 0.01) filas.push({ l: 'Descuento por línea', v: -dLin, t: 'd' });
+  if (dCli >= 0.01) filas.push({ l: 'Descuento del cliente ' + fmtP(dcli), v: -dCli, t: 'd' });
+  if (dGen >= 0.01) filas.push({ l: Number(dgen) > 0 ? 'Descuento general ' + fmtP(dgen) : 'Descuento general / del cliente', v: -dGen, t: 'd' });
+  ext.forEach(e => filas.push({ l: e[0], v: e[1], t: 'e' }));
+  const ahorro = r2(dLin + dCli + Math.max(dGen, 0));
+  return { filas, ahorro, pctAhorro: s0 ? ahorro * 100 / s0 : 0, total: Number(total), subtotal: s0 };
+}
+function desgloseHtml(x, titulo = 'En precio final') {
+  return `<div class="tot-box"><div class="ss mb2" style="font-weight:700;text-transform:uppercase;letter-spacing:.5px">${titulo}</div>${x.filas.map(f => `<div class="row"><span>${esc(f.l)}</span><b class="mono ${f.t === 'd' ? 'td' : ''}">${f.v < 0 ? '- ' + fmt(-f.v) : fmt(f.v)}</b></div>`).join('')}
+    ${x.ahorro >= 0.01 ? `<div class="row" style="border-top:1px dashed #d9ccc6;padding-top:4px"><span><b>Total de descuentos</b></span><b class="mono td">- ${fmt(x.ahorro)} (${fmtP(x.pctAhorro)})</b></div>` : ''}
+    <div class="row big"><span>TOTAL</span><span class="mono">${fmt(x.total)}</span></div></div>`;
+}
+function desglosePdf(x, extraNeto) {
+  const rows = x.filas.map(f => [f.l, f.v < 0 ? '- ' + fmt(-f.v) : fmt(f.v)]);
+  if (x.ahorro >= 0.01) rows.push(['Total de descuentos (' + fmtP(x.pctAhorro) + ')', '- ' + fmt(x.ahorro)]);
+  return rows.concat(extraNeto || []);
+}
+// Totales del presupuesto para el PDF
 function presupuestoTotales(d, ri) {
-  const sumNeto = d.items.reduce((a, i) => a + Number(i.subtotal_neto), 0), sumFin = d.items.reduce((a, i) => a + Number(i.total), 0);
-  const pcts = [Number(d.descuento_cliente_pct) ? 'cliente ' + fmtP(d.descuento_cliente_pct) : '', Number(d.descuento_pct) ? fmtP(d.descuento_pct) : ''].filter(Boolean).join(' + ');
-  if (ri) { const neto = Number(d.subtotal_neto) - Number(d.descuento_neto); const dsc = sumNeto - neto;
-    return [...(dsc >= 0.01 ? [['Subtotal neto', fmt(sumNeto)], ['Descuento' + (pcts ? ' (' + pcts + ')' : ''), '- ' + fmt(dsc)]] : []), ['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]; }
-  const dsc = sumFin - Number(d.total);
-  return [...(dsc >= 0.01 ? [['Subtotal', fmt(sumFin)], ['Descuento' + (pcts ? ' (' + pcts + ')' : ''), '- ' + fmt(dsc)]] : []), ['TOTAL', fmt(d.total), 1]];
+  if (ri) { const neto = Number(d.subtotal_neto) - Number(d.descuento_neto);
+    const x = desgloseDesc({ items: d.items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), total: neto, neto: true });
+    return desglosePdf(x).concat([['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]); }
+  const x = desgloseDesc({ items: d.items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), total: d.total });
+  return desglosePdf(x).concat([['TOTAL', fmt(d.total), 1]]);
 }
 async function presupuestoWa(id) {
   const d = await rpc('presupuesto_detalle', { p_id: id });
@@ -321,6 +367,12 @@ async function presupuestoGrabar(id) {
   await editorRecargar(); toast('Presupuesto ' + ED.det.numero + ' grabado · vence el ' + fmtD(ED.det.valido_hasta), 'g', 6000);
 }
 async function presupuestoRechazar(id) { const m = await pedirTexto('Presupuesto rechazado', 'Motivo (opcional)', { obligatorio: false }); if (m === null) return; await rpc('presupuesto_estado', { p_id: id, p_estado: 'rechazado', p_motivo: m }); toast('Presupuesto rechazado', 'g'); ir('presupuestos'); }
+async function presupuestoModificar(id) {
+  const d = ED.det && ED.det.id === id ? ED.det : await rpc('presupuesto_detalle', { p_id: id });
+  if (!await confirmar(`¿Modificar el presupuesto <b>${esc(d.numero)}</b>? Vuelve a <b>En carga</b>: cambiás lo que haga falta y lo grabás de nuevo. Queda como <b>versión ${(d.version || 1) + 1}</b> con el mismo número.`)) return;
+  const r = await rpc('presupuesto_reabrir', { p_id: id });
+  toast(`Presupuesto ${d.numero} en carga · versión ${r.version}`, 'g'); await editorDoc('presupuesto', id);
+}
 async function presupuestoDuplicar(id) { const n = await rpc('presupuesto_duplicar', { p_id: id }); toast('Presupuesto duplicado con precios actuales', 'g'); await editorDoc('presupuesto', n); }
 async function presupuestoConvertir(id) {
   const d = await rpc('presupuesto_detalle', { p_id: id }); const mid = 'pc' + uid();
