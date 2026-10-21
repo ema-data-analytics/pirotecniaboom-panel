@@ -1,4 +1,3 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
 <title>Manual Pirotecnia Boom</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -198,7 +197,7 @@ const S = [
     'Arriba a la derecha tenés atajos: ' + B('+ Nueva venta') + ' y ' + B('Nuevo presupuesto','y') + '.'],
   ojo:['Si dice <b>Caja CERRADA</b>, no vas a poder vender de contado ni cobrar en efectivo: primero abrí la caja.'] },
 
-{ id:'presupuestos', g:'Ventas', t:'Presupuestos', shot:'10_presupuesto', cap:'Presupuesto con dos productos, listo para PDF, WhatsApp o convertir en venta.',
+{ id:'presupuestos', g:'Ventas', t:'Presupuestos', shot:'10_presupuesto', cap:'Presupuesto grabado (versión 2) con el detalle de descuentos en precio final y el botón Modificar.',
   para:'Cotizaciones para clientes. El presupuesto guarda sus precios mientras está vigente: si después sube un costo, el cliente paga lo presupuestado.',
   pasos:['Tocá ' + B('+ Nuevo presupuesto') + '.',
     '<b>Paso 1 · Encabezado.</b> Elegí el <b>Cliente</b> en el buscador. Si no existe, tocá el botón de la persona con + al lado y dalo de alta ahí mismo.',
@@ -208,7 +207,9 @@ const S = [
     'Poné la <b>Cantidad</b> y tocá ' + B('+ Agregar') + ' (o Enter). La línea entra en la grilla y el total de abajo a la derecha se actualiza.',
     'Repetí con cada producto. Para corregir una línea tocá el lápiz; para sacarla, el tacho.',
     '<b>Descuento general (opcional, solo el dueño).</b> Abajo, en el recuadro <b>3 · Descuento general</b>: escribí el número, elegí <b>%</b> o <b>$</b> (en $ es lo que se descuenta del total con IVA), escribí el <b>Motivo</b> y tocá ' + B('Aplicar descuento y motivo','s') + '. El total se recalcula. Si el cliente tiene descuento propio, ya viene aplicado solo y se ve en los totales.',
-    '<b>Paso 3 · Grabar.</b> Tocá ' + B('Grabar presupuesto') + ' al pie. Queda <b>Pendiente</b>, ya no se modifica y la validez de 2 días empieza a correr. Recién ahí aparecen PDF, WhatsApp y Convertir.',
+    'Al lado de los totales, el recuadro <b>En precio final</b> muestra la cuenta como la ve el cliente: subtotal sin descuentos, cada descuento en pesos (por línea, del cliente, general), el <b>Total de descuentos</b> con su % sobre el total y el <b>TOTAL</b>. En la grilla, la columna <b>Desc. $</b> muestra cuánto se descontó en cada línea.',
+    '<b>Paso 3 · Grabar.</b> Tocá ' + B('Grabar presupuesto') + ' al pie. Queda <b>Pendiente</b> y la validez empieza a correr. Recién ahí aparecen PDF, WhatsApp y Convertir.',
+    '<b>Modificar uno ya grabado.</b> Si el cliente pide un cambio, abrilo y tocá ' + B('Modificar','s') + ' (o el lápiz en la grilla). Vuelve a <b>En carga</b> con el <b>mismo número</b> y pasa a <b>versión 2</b> (v3, v4… cada vez). Cambiá lo que haga falta y grabalo de nuevo. Se puede con Pendientes y Vencidos; no con los ya convertidos en venta ni con los rechazados (esos se duplican).',
     'Para mandarlo: ' + B('PDF','s') + ' lo descarga, ' + B('Enviar por WhatsApp','g') + ' abre WhatsApp con un mensaje y un link donde el cliente lo ve y lo descarga.',
     'Cuando el cliente confirma, tocá ' + B('Cliente confirmó: convertir en venta') + ': elegí Contado (pasa al cobro) o Cuenta corriente, y si emitiste factura ARCA aparte, su número. Se emite la venta con los precios del presupuesto.',
     'Si no acepta, tocá ' + B('Rechazado','s') + ' y anotá el motivo. ' + B('Duplicar','s') + ' crea uno nuevo igual pero con los precios de hoy.'],
@@ -222,12 +223,12 @@ const S = [
     ['Desc. línea %','Descuento de esa línea. Solo el dueño.','No'],
     ['Descuento general (al pie)','Número en % o en $. Solo el dueño, antes de grabar.','No'],
     ['Motivo del descuento / precio especial (al pie)','Obligatorio si hay descuento general, descuento por línea o precio especial.','A veces']],
-  botones:[['Excel / PDF','Descarga el listado filtrado.'],['Lápiz u ojo','Abre el presupuesto (lápiz si se puede editar, ojo si ya está cerrado).'],['WhatsApp','Lo manda al celular del cliente.'],['Caja registradora','Convertir en venta.'],['Copiar','Duplicar con precios actuales.']],
+  botones:[['Excel / PDF','Descarga el listado filtrado.'],['Lápiz u ojo','Abre el presupuesto (lápiz si se puede editar o modificar, ojo si ya está cerrado).'],['Modificar','Reabre un presupuesto grabado (Pendiente o Vencido) como nueva versión, con el mismo número.'],['WhatsApp','Lo manda al celular del cliente.'],['Caja registradora','Convertir en venta.'],['Copiar','Duplicar con precios actuales.']],
   ojo:['Estados: <b>En carga</b> → (Grabar) → <b>Pendiente</b> → <b>Aceptado</b> (se convirtió en venta) · <b>Rechazado</b> · <b>Vencido</b>.',
     'La lista abre filtrada en <b>Pendientes</b>: los que esperan respuesta del cliente.',
-    'Un presupuesto grabado no se edita: duplicalo (el nuevo toma los precios de hoy).',
+    'Un presupuesto grabado se modifica con ' + B('Modificar','s') + ': mismo número, versión nueva (se ve <b>v2</b> en la grilla, en el PDF y en la página del cliente). Mantiene los precios que tenía. Si querés los precios de hoy, usá ' + B('Duplicar','s') + '.',
     'Los descuentos se aplican <b>en cascada</b>, uno sobre el otro: primero el de la línea, después el propio del cliente y al final el general. Ejemplo: $ 1.000 con 10 % de cliente y 5 % general = $ 855 (no $ 850).',
-    'En el PDF y en la página que ve el cliente aparece el subtotal, el descuento en pesos y el total.',
+    'En el PDF y en la página que ve el cliente aparece el mismo detalle del recuadro <b>En precio final</b>: subtotal sin descuentos, cada descuento en pesos, el total de descuentos con su % y el TOTAL.',
     'Las tarjetas de arriba muestran la <b>Efectividad</b>: aceptados sobre enviados.'] },
 
 { id:'ventas', g:'Ventas', t:'Ventas y notas', shot:'20_venta_cc', cap:'Venta en carga: encabezado, productos y botón Confirmar venta.',
@@ -238,6 +239,7 @@ const S = [
     'Completá si hace falta Recargo, Envío, Nota o N° de factura ARCA, y tocá ' + B('Guardar encabezado y cargar productos') + '.',
     '<b>Paso 2 · Productos.</b> Buscá el producto, poné la cantidad y tocá ' + B('+ Agregar') + '. Repetí. Si no hay stock suficiente, el sistema avisa y no lo deja agregar.',
     '<b>Descuento general (opcional, solo el dueño).</b> En el recuadro <b>3 · Descuento general</b> de abajo: número en % o en $, <b>Motivo</b> y ' + B('Aplicar descuento y motivo','s') + '. Si pusiste un descuento por línea o un precio especial, el motivo se escribe ahí mismo (aunque el descuento general quede en 0).',
+    'Al lado de los totales, el recuadro <b>En precio final</b> muestra subtotal sin descuentos, cada descuento en pesos, el total de descuentos con su % y el TOTAL. Lo mismo sale en el PDF de la venta y en el comprobante.',
     '<b>Paso 3 · Confirmar.</b> Revisá el total y tocá ' + B('Confirmar venta') + '.',
     'Si es <b>Cuenta corriente</b>, confirmás y listo: queda como deuda del cliente.',
     'Si es <b>Contado</b>, se abre la ventana de cobro (ver abajo). Al confirmar el cobro se emite la venta <code>VTA 0001-00000001</code> y se abre el comprobante.',
