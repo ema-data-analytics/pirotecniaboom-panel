@@ -79,7 +79,7 @@ const fd = d => { const s = String(d || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) 
   ${d.items.map(i => `<tr><td>${esc(i.codigo)}</td><td>${esc(i.producto)}${Number(i.descuento_pct) ? ` <small>(-${nf.format(i.descuento_pct)}%)</small>` : ''}</td><td class="r">${Number(i.cantidad).toLocaleString('es-AR')}</td><td class="r">${fmt(ri ? i.precio_neto_unit : i.precio_final_unit)}</td><td class="r">${fmt(ri ? i.subtotal_neto : i.total)}</td></tr>`).join('')}
   </tbody></table>
   <div class="tot">${desglose(d, ri)}</div>
-  <div class="nota">${d.nota ? esc(d.nota) + '<br>' : ''}${ri ? 'Precios netos más IVA.' : 'Precios con IVA incluido.'} Precios sujetos a disponibilidad de stock.<br>${esc(e.razon_social || 'Pirotecnia Boom')}${e.direccion ? ' · ' + esc(e.direccion) : ''}${e.horarios ? ' · ' + esc(e.horarios) : ''}</div>
+  <div class="nota">${d.nota ? esc(d.nota) + '<br>' : ''}Precios sujetos a disponibilidad de stock.<br>${esc(e.razon_social || 'Pirotecnia Boom')}${e.direccion ? ' · ' + esc(e.direccion) : ''}${e.horarios ? ' · ' + esc(e.horarios) : ''}</div>
   <div class="acc"><button class="btn b1" onclick="print()">⬇ Descargar / imprimir</button>${wa ? `<a class="btn b2" href="https://wa.me/${wa}?text=${encodeURIComponent('Hola! Quiero confirmar el presupuesto ' + d.numero + ' por ' + fmt(d.total))}" target="_blank">WhatsApp: confirmar</a>` : ''}</div></div>`;
   document.title = 'Presupuesto ' + d.numero + ' · Pirotecnia Boom';
 })();

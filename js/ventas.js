@@ -228,7 +228,7 @@ async function pdfComprobante(id) {
     filas: d.items.map(i => [i.codigo || '', i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
     colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
     totales: comprobanteTotalesPdf(d, ri),
-    notas: [d.motivo ? 'Motivo / nota: ' + d.motivo : '', ri ? '' : 'Precios con IVA incluido.', d.tipo !== 'NC' && Number(d.saldo) > 0 ? 'Saldo pendiente: ' + fmt(d.saldo) : ''].filter(Boolean).join('\n') });
+    notas: [d.motivo ? 'Motivo / nota: ' + d.motivo : '', d.tipo !== 'NC' && Number(d.saldo) > 0 ? 'Saldo pendiente: ' + fmt(d.saldo) : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero.replace(/\s+/g, '_'));
 }
 
@@ -307,7 +307,7 @@ async function presupuestoPdf(id) {
     filas: d.items.map(i => [i.codigo, i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
     colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
     totales: presupuestoTotales(d, ri),
-    notas: [d.nota || '', ri ? 'Precios netos más IVA.' : 'Precios con IVA incluido.', 'Presupuesto válido hasta el ' + fmtD(d.valido_hasta) + '. Precios sujetos a disponibilidad de stock.', (M.empresa || {}).whatsapp ? 'Consultas y pedidos por WhatsApp: ' + M.empresa.whatsapp : ''].filter(Boolean).join('\n') });
+    notas: [d.nota || '', 'Presupuesto válido hasta el ' + fmtD(d.valido_hasta) + '. Precios sujetos a disponibilidad de stock.', (M.empresa || {}).whatsapp ? 'Consultas y pedidos por WhatsApp: ' + M.empresa.whatsapp : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero);
 }
 // Totales del presupuesto: subtotal de las líneas, descuento del cliente + general en $, IVA y total
