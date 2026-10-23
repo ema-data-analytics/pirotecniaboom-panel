@@ -291,7 +291,7 @@ function pdfMarcaAgua(doc) {
   try {
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), w = Math.min(W, H) * 0.75, h = w / 1.5;
     for (let i = 1; i <= doc.getNumberOfPages(); i++) {
-      doc.setPage(i); doc.setGState(new doc.GState({ opacity: 0.07 }));
+      doc.setPage(i); doc.setGState(new doc.GState({ opacity: 0.12 }));
       doc.addImage(LOGO, 'PNG', (W - w) / 2, (H - h) / 2, w, h);
       doc.setGState(new doc.GState({ opacity: 1 }));
     }
