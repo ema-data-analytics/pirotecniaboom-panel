@@ -112,6 +112,11 @@ footer a{color:var(--amarillo)}
 @media (prefers-reduced-motion:reduce){.slide,.slide::before,.slide .tx>*,.slide .fo img,.tx .cta::after{animation:none!important;transition:none!important}}
 @media (max-width:640px){.hero{height:330px}.slide{flex-direction:column;justify-content:center;align-items:stretch}.slide .tx{padding:18px 18px 0;flex:none}.tx h3{font-size:24px}.tx p{font-size:13px}
   .slide .fo{padding:14px 18px 34px;justify-content:center;gap:10px}.fo img{width:86px;height:86px}.fo img:nth-child(2){width:100px;height:100px}.dots{left:18px}}
+/* Pestañas Mayorista / Minorista */
+.tabs{max-width:1240px;margin:0 auto;display:flex;gap:6px;padding:2px 14px 8px}
+.tabs button{flex:0 0 auto;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:7px 16px;font-weight:800;font-size:13px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.tabs button.on{background:#fff;color:var(--vino);border-color:#fff}
+@media (max-width:640px){.tabs button{flex:1;justify-content:center}}
 </style>
 </head>
 <body>
@@ -120,9 +125,8 @@ footer a{color:var(--amarillo)}
     <a class="logo" href="catalogo.html"><img src="img/logo.png" alt="Pirotecnia Boom"></a>
     <div class="busq"><i class="fas fa-search"></i><input id="q" placeholder="Buscar productos…" autocomplete="off"></div>
     <button class="tb" id="b-xls" title="Descargar lista de precios" style="display:none"><i class="fas fa-file-excel"></i><span>Lista</span></button>
-    <button class="tb" id="b-min" title="Ver precios minoristas"><i class="fas fa-tag"></i><span id="min-t">Minorista</span></button>
-    <button class="tb" id="b-may"><i class="fas fa-store"></i><span id="may-t">Mayoristas</span></button>
   </div>
+  <div class="tabs" id="tabs"><button data-l="MAYORISTA"><i class="fas fa-store"></i> Mayorista</button><button data-l="MINORISTA"><i class="fas fa-tag"></i> Minorista</button></div>
   <div class="cats" id="cats"></div>
 </header>
 <div class="banda" id="banda"></div>
@@ -136,12 +140,7 @@ footer a{color:var(--amarillo)}
   <div class="df" id="dr-f"></div>
 </aside>
 <div class="mod" id="mod-fi"><div class="ficha" id="fi"></div></div>
-<div class="mod" id="mod-may"><div>
-  <h3 style="color:var(--vino);margin-bottom:6px">Ingreso mayoristas</h3><div style="font-size:13px;color:var(--dim)">Con el usuario de mayoristas ves los precios por mayor.</div>
-  <div id="may-err"></div>
-  <label>Usuario</label><input class="fi" id="m-u" autocomplete="username"><label>Contraseña</label><input class="fi" id="m-p" type="password" autocomplete="current-password">
-  <div style="display:flex;gap:8px;margin-top:14px"><button class="bt bt-s" id="m-c">Cancelar</button><button class="bt bt-r" id="m-ok">Ingresar</button></div>
-</div></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
@@ -155,27 +154,26 @@ const fmt = n => '$ ' + nf.format(Number(n || 0));
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 let PROD = [], T = {}, CAT = '', CARRO = {};
 try { CARRO = JSON.parse(localStorage.getItem('pb_carro') || '{}'); } catch (e) { CARRO = {}; }
-let MINO = false; try { MINO = localStorage.getItem('pb_minorista') === '1'; } catch (e) { }
-const guardarMino = () => { try { localStorage.setItem('pb_minorista', MINO ? '1' : '0'); } catch (e) { } };
+// Lista que se está viendo: el catálogo abre siempre en Mayorista (sin usuario)
+let LISTA = 'MAYORISTA';
+const esMin = () => LISTA === 'MINORISTA';
+const minimo = () => Number(esMin() ? T.minimo_minorista : T.minimo_mayorista) || 0;
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
 
 async function cargar() {
-  const [{ data: t }, { data: p, error }, { data: ex }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc(MINO ? 'catalogo_minorista' : 'catalogo'), sb.rpc('catalogo_detalle')]);
-  if (t && t.mayorista && MINO) { MINO = false; guardarMino(); return cargar(); }
+  const [{ data: t }, { data: p, error }, { data: ex }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle')]);
   if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
   T = t || {}; PROD = p || [];
-  if (MINO) T.descuentos = []; // los descuentos por monto no aplican a la lista Minorista
+  T.descuentos = (T.descuentos_listas || {})[LISTA] || []; // descuentos por monto de la lista que se ve
   // Precios siempre finales (IVA incluido), también para mayoristas: no se muestra el IVA en ningún lado
   const r2f = n => Math.round(Number(n) * 100) / 100;
   PROD.forEach(x => { if (x.muestra_iva_aparte) { const k = 1 + Number(x.iva_pct) / 100; x.precio = r2f(Number(x.precio) * k); if (x.precio_anterior) x.precio_anterior = r2f(Number(x.precio_anterior) * k); x.muestra_iva_aparte = false; } });
-  const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => Object.assign(q, X.get(q.producto_id) || {}));
+  const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => { const x = X.get(q.producto_id); if (x) { q.video_url = x.video_url; q.info_adicional = x.info_adicional; } });
   heroArmar();
   for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
-  const may = T.mayorista;
-  $('may-t').textContent = may ? 'Salir mayorista' : 'Mayoristas';
-  $('b-xls').style.display = may ? '' : 'none';
-  $('b-min').style.display = may ? 'none' : ''; $('min-t').textContent = MINO ? 'Salir minorista' : 'Minorista';
-  $('banda').innerHTML = (may ? '<i class="fas fa-store"></i> Precios mayoristas · ' : MINO ? `<i class="fas fa-tag"></i> Precios minoristas · Compra mínima ${fmt(T.minimo_minorista || 0)} · ` : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.l === LISTA));
+  $('b-xls').style.display = esMin() ? 'none' : '';
+  $('banda').innerHTML = (esMin() ? '<i class="fas fa-tag"></i> Precios minoristas · ' : '<i class="fas fa-store"></i> Precios mayoristas · ') + (minimo() ? `Compra mínima ${fmt(minimo())} · ` : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
   const cats = [...new Map(PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria)).map(x => [x.categoria, 1])).keys()];
   $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
   document.querySelectorAll('.cat').forEach(c => c.onclick = () => { CAT = c.dataset.c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x === c)); pintar(); });
@@ -241,9 +239,9 @@ function pintarCarro() {
   const sig = (T.descuentos || []).find(x => t.neto < Number(x.desde));
   $('dr-f').innerHTML = !its ? '' : `${t.pct ? `<div class="tot"><span>Descuento ${nf.format(t.pct)}%</span><b>- ${fmt(t.fin - t.total)}</b></div>` : ''}<div class="tot g"><span>Total</span><span>${fmt(t.total)}</span></div>
     ${sig ? `<div class="msg m-w">Sumá ${fmt(Number(sig.desde) - t.neto)} más y obtenés ${nf.format(sig.porcentaje)}% OFF</div>` : ''}
-    ${MINO && t.total < Number(T.minimo_minorista || 0) ? `<div class="msg m-w" id="dr-min">Compra mínima con precios minoristas: <b>${fmt(T.minimo_minorista)}</b>. Te faltan <b>${fmt(Number(T.minimo_minorista) - t.total)}</b>.</div>` : ''}<div id="dr-err"></div><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"><label>DNI (o CUIT) *</label><input class="fi" id="p-d" inputmode="numeric" placeholder="Solo números" autocomplete="off"><label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional">
+    ${t.total < minimo() ? `<div class="msg m-w" id="dr-min">Compra mínima con precios ${esMin() ? 'minoristas' : 'mayoristas'}: <b>${fmt(minimo())}</b>. Te faltan <b>${fmt(minimo() - t.total)}</b>.</div>` : ''}<div id="dr-err"></div><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"><label>DNI (o CUIT) *</label><input class="fi" id="p-d" inputmode="numeric" placeholder="Solo números" autocomplete="off"><label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional">
     <button class="bt bt-r" style="width:100%;margin-top:12px;padding:13px" id="p-ok"><i class="fab fa-whatsapp"></i> Enviar pedido</button><div style="font-size:11px;color:var(--dim);margin-top:6px">El precio queda reservado por ${T.plazo_horas || 48} h hasta que lo confirmemos por WhatsApp. Envío y forma de pago se coordinan por WhatsApp.</div>`;
-  if (its) { $('p-ok').onclick = enviar; if (MINO && t.total < Number(T.minimo_minorista || 0)) $('p-ok').disabled = true; }
+  if (its) { $('p-ok').onclick = enviar; if (t.total < minimo()) $('p-ok').disabled = true; }
 }
 function cambiar(id, d) { const n = (CARRO[id] || 0) + d; if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); pintar(); }
 function fijar(id, v) { const n = Math.floor(Number(v) || 0); if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); }
@@ -253,13 +251,13 @@ async function enviar() {
   if (!(dni.length === 7 || dni.length === 8 || dni.length === 11)) { err.innerHTML = '<div class="msg m-r">El DNI tiene 7 u 8 números (el CUIT, 11).</div>'; return; }
   $('p-ok').disabled = true;
   const items = Object.entries(CARRO).map(([id, q]) => ({ producto_id: Number(id), cantidad: q }));
-  const { data, error } = await sb.rpc('pedido_web', { p: { nombre: nom, celular: cel, dni, items, nota: $('p-o').value.trim() || null, lista: MINO && !T.mayorista ? 'MINORISTA' : null } });
+  const { data, error } = await sb.rpc('pedido_web', { p: { nombre: nom, celular: cel, dni, items, nota: $('p-o').value.trim() || null, lista: LISTA } });
   $('p-ok').disabled = false;
   if (error) { err.innerHTML = `<div class="msg m-r">${esc(error.message)}</div>`; return; }
   const r = data[0]; const nota = $('p-o').value.trim();
   // Detalle con los precios que grabó la base (no los de la pantalla)
   let det = null; try { const v = await sb.rpc('ver_pedido', { p_token: r.token }); if (!v.error) det = v.data; } catch (e) {}
-  const may = !!T.mayorista; let lineas = '', sub = 0;
+  const may = !esMin(); let lineas = '', sub = 0;
   if (det && det.items) {
     lineas = det.items.map(i => {
       const k = 1 + Number(i.iva_pct) / 100, q = Number(i.cantidad);
@@ -274,7 +272,7 @@ async function enviar() {
   }
   let tot = '';
   tot = `${Math.abs(sub - Number(r.total)) >= 1 ? `Subtotal: ${fmt(sub)}\nDescuento: - ${fmt(sub - Number(r.total))}\n` : ''}*TOTAL: ${fmt(Number(r.total))}*`;
-  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : MINO ? ' (minorista)' : ''}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom}\nCelular: ${cel}\nDNI: ${dni}${nota ? `\nComentario: ${nota}` : ''}`;
+  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : ' (minorista)'}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom}\nCelular: ${cel}\nDNI: ${dni}${nota ? `\nComentario: ${nota}` : ''}`;
   const wa = 'https://wa.me/' + String(T.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(txt);
   CARRO = {}; guardar(); pintar();
   $('fab-n').textContent = 0;
@@ -285,19 +283,10 @@ async function enviar() {
 function abrirCarro(v) { $('dr').classList.toggle('on', v); $('ov').classList.toggle('on', v); $('fab').style.display = v ? 'none' : ''; }
 $('fab').onclick = () => { pintarCarro(); abrirCarro(true); }; $('dr-x').onclick = () => abrirCarro(false); $('ov').onclick = () => abrirCarro(false);
 $('q').oninput = pintar; $('orden').onchange = pintar;
-$('b-min').onclick = async () => { MINO = !MINO; guardarMino(); await cargar(); pintarCarro(); };
-$('b-may').onclick = async () => { if (T.mayorista) { await sb.auth.signOut(); cargar(); } else { $('mod-may').classList.add('on'); $('m-u').focus(); } };
-$('m-c').onclick = () => $('mod-may').classList.remove('on');
-$('m-ok').onclick = async () => {
-  const u = $('m-u').value.trim(); const email = u.includes('@') ? u : norm(u).replace(/[^a-z0-9._-]/g, '') + '@pirotecniaboom.local';
-  const { error } = await sb.auth.signInWithPassword({ email, password: $('m-p').value });
-  if (error) { $('may-err').innerHTML = '<div class="msg m-r">Usuario o contraseña incorrectos.</div>'; return; }
-  $('mod-may').classList.remove('on'); $('may-err').innerHTML = ''; await cargar();
-  if (!T.mayorista) { await sb.auth.signOut(); alert('Ese usuario no es de mayoristas.'); cargar(); }
-};
-// Lista de precios en Excel: solo con el usuario de mayoristas (su precio final y el precio sugerido de venta)
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = async () => { if (LISTA === b.dataset.l) return; LISTA = b.dataset.l; await cargar(); pintarCarro(); });
+// Lista de precios en Excel: en la pestaña Mayorista (precio mayorista y precio sugerido de venta = minorista)
 $('b-xls').onclick = () => {
-  if (!T.mayorista) return;
+  if (esMin()) return;
   const r2 = n => Math.round(Number(n) * 100) / 100;
   const filas = PROD.slice().sort((a, b) => a.categoria_orden - b.categoria_orden || a.nombre.localeCompare(b.nombre))
     .map(p => [p.categoria, p.codigo, p.nombre, p.bulto || '', r2(p.precio), p.precio_sugerido ? r2(p.precio_sugerido) : '', p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);

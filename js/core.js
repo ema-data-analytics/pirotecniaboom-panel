@@ -285,7 +285,19 @@ function pdfTable(doc, head, body, foot, startY = 40, columnStyles = {}) {
   });
   return doc.lastAutoTable.finalY;
 }
-function pdfSave(doc, fn) { doc.save(fn + '_' + hoy() + '.pdf'); toast('PDF descargado', 'g'); }
+// Marca de agua con el logo en todas las hojas de los PDF
+function pdfMarcaAgua(doc) {
+  if (!LOGO) return;
+  try {
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), w = Math.min(W, H) * 0.75, h = w / 1.5;
+    for (let i = 1; i <= doc.getNumberOfPages(); i++) {
+      doc.setPage(i); doc.setGState(new doc.GState({ opacity: 0.07 }));
+      doc.addImage(LOGO, 'PNG', (W - w) / 2, (H - h) / 2, w, h);
+      doc.setGState(new doc.GState({ opacity: 1 }));
+    }
+  } catch (e) { }
+}
+function pdfSave(doc, fn) { pdfMarcaAgua(doc); doc.save(fn + '_' + hoy() + '.pdf'); toast('PDF descargado', 'g'); }
 function pdfRecuadro(doc, x, y, w, titulo, lineas) {
   doc.setDrawColor(227, 210, 200); doc.setFillColor(252, 248, 245); doc.roundedRect(x, y, w, 6 + lineas.length * 4.6, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(140, 120, 110); doc.text(titulo.toUpperCase(), x + 3, y + 4.5);
