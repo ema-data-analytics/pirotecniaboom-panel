@@ -368,9 +368,9 @@ async function presupuestoWa(id) {
   const txt = `Hola ${d.cliente.nombre}! Te paso el presupuesto ${d.numero} de Pirotecnia Boom por ${fmt(d.total)}, válido hasta el ${fmtD(d.valido_hasta)}.\n\nPodés verlo y descargarlo acá: ${link}\n\n¡Cualquier consulta escribinos!`;
   waAbrir(d.cliente.celular, txt);
 }
-// Fecha del presupuesto (la de entrega al cliente): editable En carga o Pendiente, no a futuro, hasta 60 días atrás
+// Fecha del presupuesto (la de entrega al cliente): editable En carga o Pendiente, no a futuro
 function presupuestoFechaCampo(d, ed) {
-  const f = String(d.fecha || hoy()).slice(0, 10), lim = `min="${hoy(-60)}" max="${hoy()}"`;
+  const f = String(d.fecha || hoy()).slice(0, 10), lim = `max="${hoy()}"`;
   if (d.estado === 'enviado') return `<div class="fg"><label class="fl">Fecha</label><div class="flex gap2"><input type="date" id="ed_fecha" class="fi" ${lim} value="${f}"><button class="btn btn-s" title="Cambiar la fecha" onclick="presupuestoFecha()"><i class="fas fa-check"></i></button></div></div>`;
   return `<div class="fg"><label class="fl">Fecha</label><input type="date" id="ed_fecha" class="fi" ${lim} value="${f}" ${ed ? '' : 'disabled'}></div>`;
 }

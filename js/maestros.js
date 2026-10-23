@@ -247,9 +247,49 @@ function productosPintar() {
     { t: 'Stock', k: 'stock', f: r => r.controla_stock ? `<span class="${r.stock <= 0 ? 'td' : r.stock <= r.stock_minimo ? 'tw2' : ''}">${fmtN(r.stock)}</span>` : '—', xf: r => r.controla_stock ? Number(r.stock) : '', cls: 'tr' },
     { t: 'Disponible', k: 'disponible', f: r => r.controla_stock ? fmtN(r.disponible) : '—', xf: r => r.controla_stock ? Number(r.disponible) : '', cls: 'tr' }];
   if (ES_DUENO) cols.push({ t: 'Costo (interno)', k: 'costo', f: 'm', cls: 'tr' });
-  cols.push({ t: 'Minorista', k: 'min', f: r => r.min == null ? '<span class="td">sin precio</span>' : fmt(r.min), xf: r => r.min ?? '', cls: 'tr' }, { t: 'Mayorista', k: 'may', f: r => r.may == null ? '<span class="td">sin precio</span>' : fmt(r.may), xf: r => r.may ?? '', cls: 'tr' }, { t: 'Lista 3', k: 'l3', f: r => r.l3 == null ? '—' : fmt(r.l3), xf: r => r.l3 ?? '', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' });
+  cols.push({ t: 'Minorista', k: 'min', f: r => r.min == null ? '<span class="td">sin precio</span>' : fmt(r.min), xf: r => r.min ?? '', cls: 'tr' }, { t: 'Mayorista', k: 'may', f: r => r.may == null ? '<span class="td">sin precio</span>' : fmt(r.may), xf: r => r.may ?? '', cls: 'tr' }, { t: 'Lista 3', k: 'l3', f: r => r.l3 == null ? '—' : fmt(r.l3), xf: r => r.l3 ?? '', cls: 'tr' }, { t: 'Bulto', k: 'bulto', f: r => Number(r.bulto) > 1 ? 'x' + fmtN(r.bulto) : '—', xf: r => r.bulto ?? '', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' });
   $('prod_g').innerHTML = grilla('g_prod', cols, rows, { claseFila: r => r.estado !== 'activo' ? 'anulado' : '',
-    acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="productoVer(${r.id})"><i class="fas fa-eye"></i></button>` + (ES_DUENO ? `<button class="btn btn-xs btn-b" title="Editar" onclick="productoEditar(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="productoEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : '') });
+    acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="productoVer(${r.id})"><i class="fas fa-eye"></i></button>` + (ES_DUENO ? `<button class="btn btn-xs btn-b" title="Editar en la grilla" onclick="productoLinea(${r.id}, this)"><i class="fas fa-pen"></i></button><button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="productoEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : '') });
+}
+/* ---- Edición en la grilla: el lápiz abre la línea para cambiar precios, costo y bulto sin entrar a la ficha.
+   Enter guarda y abre la línea siguiente · Esc cancela · ✓ guarda · la hoja abre la ficha completa ---- */
+const LIN_CAMPOS = [['costo', 'Costo (interno)'], ['precio_minorista', 'Minorista'], ['precio_mayorista', 'Mayorista'], ['precio_lista3', 'Lista 3'], ['bulto', 'Bulto']];
+function productoLinea(id, btn) {
+  if (PAG.linTr && PAG.linTr.isConnected) productoLineaCancelar();
+  const tr = btn.closest('tr'), r = PAG.prods.find(x => x.id === id); if (!tr || !r) return;
+  const ths = [...tr.closest('table').querySelectorAll('thead th')].map(t => t.textContent.trim());
+  PAG.linTr = tr; PAG.linId = id; tr.dataset.orig = tr.innerHTML; tr.style.background = '#fff6d8';
+  for (const [k, t] of LIN_CAMPOS) { const i = ths.indexOf(t); if (i < 0) continue;
+    const v = r[k] == null ? '' : Number(r[k]);
+    tr.cells[i].innerHTML = `<input type="number" min="0" step="${k === 'bulto' ? 1 : 0.01}" class="fi mono" data-k="${k}" data-v="${v}" value="${v}" style="width:${k === 'bulto' ? 70 : 108}px;text-align:right;padding:4px 6px" placeholder="${k === 'bulto' ? 'u.' : '—'}">`; }
+  tr.cells[tr.cells.length - 1].innerHTML = `<button class="btn btn-xs btn-g" title="Guardar (Enter)" onclick="productoLineaGuardar(false)"><i class="fas fa-check"></i></button><button class="btn btn-xs btn-s" title="Cancelar (Esc)" onclick="productoLineaCancelar()"><i class="fas fa-xmark"></i></button><button class="btn btn-xs btn-b" title="Ficha completa" onclick="productoLineaCancelar();productoEditar(${id})"><i class="fas fa-file-lines"></i></button>`;
+  tr.querySelectorAll('input[data-k]').forEach(inp => inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); productoLineaGuardar(true, inp.dataset.k); } else if (e.key === 'Escape') productoLineaCancelar(); });
+  const f = tr.querySelector(`input[data-k="${PAG.linFoco || 'precio_minorista'}"]`) || tr.querySelector('input[data-k]'); if (f) { f.focus(); f.select(); }
+}
+function productoLineaCancelar() { const tr = PAG.linTr; if (tr && tr.isConnected && tr.dataset.orig) { tr.innerHTML = tr.dataset.orig; tr.style.background = ''; } PAG.linTr = null; }
+async function productoLineaGuardar(siguiente, foco) {
+  const tr = PAG.linTr, id = PAG.linId; if (!tr) return;
+  const r = PAG.prods.find(x => x.id === id); const p = { id }; let cambios = 0;
+  for (const inp of tr.querySelectorAll('input[data-k]')) {
+    const k = inp.dataset.k, txt = inp.value.trim(), v = txt === '' ? null : Number(txt);
+    if (v != null && (!isFinite(v) || v < 0)) { inp.focus(); return toast('Valor inválido en ' + LIN_CAMPOS.find(c => c[0] === k)[1] + '.', 'r'); }
+    if (k === 'bulto' && v != null && !Number.isInteger(v)) { inp.focus(); return toast('El bulto son unidades enteras.', 'r'); }
+    const antes = inp.dataset.v === '' ? null : Number(inp.dataset.v);
+    if (v === antes) continue;
+    if (k === 'costo' && v == null) continue; // el costo no se borra
+    p[k] = k === 'bulto' && (v == null || v <= 1) ? null : v; cambios++;
+  }
+  const minN = 'precio_minorista' in p ? p.precio_minorista : r.precio_minorista, mayN = 'precio_mayorista' in p ? p.precio_mayorista : r.precio_mayorista;
+  if (cambios && minN == null && mayN == null) return toast('Dejá al menos el precio minorista o el mayorista: sin precio el producto no se vende.', 'r');
+  const idx = (PAG.grillas.g_prod.rows || []).findIndex(x => x.id === id);
+  if (cambios) {
+    await rpc('guardar_producto', { p });
+    PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' });
+    toast(`${r.codigo} · ${r.nombre}: guardado`, 'g', 2500);
+  }
+  PAG.linTr = null; PAG.linFoco = foco || PAG.linFoco; productosPintar();
+  if (siguiente) { const nx = PAG.grillas.g_prod.rows[idx + 1]; const ntr = nx && $('g_prod').tBodies[0].rows[idx + 1];
+    if (ntr) { const b = ntr.querySelector('[title="Editar en la grilla"]'); if (b) { productoLinea(nx.id, b); ntr.scrollIntoView({ block: 'center' }); } } }
 }
 function productoEditar(id) {
   const r0 = id ? PAG.prods.find(x => x.id === id) : { controla_stock: true, uso: 'libre' };
