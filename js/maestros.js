@@ -233,7 +233,7 @@ function fotosWidget(cont, urls) {
 }
 PAGINAS.productos = async () => {
   pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
-    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button><button class="btn btn-s" onclick="ivaMasivo()"><i class="fas fa-receipt"></i> IVA</button>` + btnNuevo('productoEditar()') : '') + `<button class="btn btn-s" onclick="productoColumnas()"><i class="fas fa-table-columns"></i> Columnas</button>`,
+    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="productosPlanilla()"><i class="fas fa-file-excel"></i> Planilla</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button><button class="btn btn-s" onclick="ivaMasivo()"><i class="fas fa-receipt"></i> IVA</button>` + btnNuevo('productoEditar()') : '') + `<button class="btn btn-s" onclick="productoColumnas()"><i class="fas fa-table-columns"></i> Columnas</button>`,
     cuerpo: `<div class="grid-4 mb3" id="prod_k"></div><div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Código o nombre' }, { k: 'cat', t: 'sel', l: 'Categoría', op: OPC.categorias() }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'bajo', t: 'chk', l: 'Bajo mínimo' }, { k: 'sinstock', t: 'chk', l: 'Sin stock' }], productosPintar)}<div id="prod_g"></div></div>` });
   PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
 };
@@ -489,6 +489,66 @@ function preciosCambiar() {
   };
   o.querySelectorAll(`#${mid}_tabs button`).forEach(b => b.onclick = () => { o.querySelectorAll(`#${mid}_tabs button`).forEach(x => x.className = 'btn ' + (x === b ? 'btn-p' : 'btn-s')); (b.dataset.t === 'pct' ? verPct : verXls)(); });
   verPct();
+}
+
+/* ---------- Planilla de productos: exportar con el ID interno, modificar en Excel y volver a subir ---------- */
+const PLANI_COLS = [['id', 'ID (no tocar)', /^id\b/], ['codigo', 'Código', /^cod/], ['nombre', 'Producto', /^(producto|nombre)/], ['categoria', 'Categoría', /^categ/],
+  ['costo', 'Costo (interno)', /^costo/], ['precio_minorista', 'Minorista', /minor/], ['precio_mayorista', 'Mayorista', /mayor/], ['precio_lista3', 'Lista 3', /lista\s*3/],
+  ['bulto', 'Bulto', /^bulto/], ['display', 'Display', /^display/], ['estado', 'Estado', /^estado/]];
+function productosPlanillaBajar() {
+  const rows = [...PAG.prods].sort((a, b) => a.nombre.localeCompare(b.nombre)).map(p => [p.id, p.codigo, p.nombre, p.categoria, p.costo == null ? '' : Number(p.costo),
+    p.precio_minorista == null ? '' : Number(p.precio_minorista), p.precio_mayorista == null ? '' : Number(p.precio_mayorista), p.precio_lista3 == null ? '' : Number(p.precio_lista3),
+    p.bulto || '', p.display || '', p.estado]);
+  const ayuda = [['1. No borres ni cambies la columna "ID (no tocar)": con ese número el sistema encuentra cada producto.'],
+    ['2. Podés cambiar: Código, Producto, Categoría (escrita igual que en el sistema), Costo, Minorista, Mayorista, Lista 3, Bulto, Display y Estado (activo / inactivo).'],
+    ['3. Precio vacío = el producto queda sin precio en esa lista. Costo vacío = no cambia. Bulto vacío = sin bulto.'],
+    ['4. Podés borrar filas de productos que no querés tocar, o columnas enteras que no querés cambiar.'],
+    ['5. No agregues productos nuevos acá: los nuevos se dan de alta con el botón Nuevo.'],
+    ['6. Guardá el archivo y subilo en Productos → Planilla → Subir planilla modificada. Antes de aplicar vas a ver qué cambia.']];
+  xlsxSave([{ name: 'Productos', headers: PLANI_COLS.map(c => c[1]), rows }, { name: 'Instrucciones', headers: ['Cómo usar la planilla'], rows: ayuda }], 'Planilla_productos');
+}
+function productosPlanilla() {
+  const mid = 'pl' + uid();
+  const o = showModal(modalHdr('Planilla de productos (Excel)') + `<div class="mb2">
+    <div class="alert al-i">Bajás la planilla con todos los productos, la modificás en Excel y la volvés a subir. Trae el <b>ID</b> interno de cada producto: con ese número se encuentra el producto aunque le cambies el código.</div>
+    <div class="panel mb3"><div class="pb"><b>1. Bajar la planilla</b><div class="ss mb2">${fmtN(PAG.prods.length)} productos (activos y dados de baja), con código, nombre, categoría, costo, precios, bulto, display y estado.</div>
+      <button class="btn btn-g" id="${mid}_baj"><i class="fas fa-download"></i> Bajar planilla</button></div></div>
+    <div class="panel"><div class="pb"><b>2. Subir la planilla modificada</b><div class="ss mb2">Antes de aplicar vas a ver qué cambia en cada producto. Las filas con error no se aplican.</div>
+      <input type="file" id="${mid}_f" accept=".xlsx,.xls,.csv" class="fi"></div></div>
+    <div id="${mid}_r" class="mt3"></div></div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
+  $(mid + '_baj').onclick = productosPlanillaBajar;
+  const NOM = { codigo: 'Código', nombre: 'Producto', categoria: 'Categoría', costo: 'Costo', precio_minorista: 'Minorista', precio_mayorista: 'Mayorista', precio_lista3: 'Lista 3', bulto: 'Bulto', display: 'Display', estado: 'Estado' };
+  const valTxt = (k, v) => v == null || v === '' ? '—' : ['costo', 'precio_minorista', 'precio_mayorista', 'precio_lista3'].includes(k) ? fmt(v) : esc(String(v));
+  $(mid + '_f').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return; $(mid + '_r').innerHTML = '';
+    let filas;
+    try { const csv = /\.csv$/i.test(f.name); const wb = csv ? XLSX.read(await f.text(), { type: 'string', raw: true }) : XLSX.read(await f.arrayBuffer());
+      filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' }); }
+    catch (err) { return toast('No se pudo leer el archivo: ' + err.message, 'r'); }
+    filas = filas.filter(r => r.some(c => String(c).trim() !== ''));
+    if (filas.length < 2) return toast('La planilla no tiene datos.', 'r');
+    const tit = filas[0].map(c => norm(String(c).trim()));
+    const col = {}; PLANI_COLS.forEach(([k, , re]) => { const i = tit.findIndex(t => re.test(t)); if (i >= 0) col[k] = i; });
+    if (col.id == null) return toast('La planilla no tiene la columna "ID (no tocar)". Bajá la planilla de nuevo y trabajá sobre esa.', 'r', 8000);
+    const numero = v => { if (v === '' || v == null) return ''; if (typeof v === 'number') return String(v); let s = String(v).replace(/[$\s]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); return s; };
+    const items = filas.slice(1).map(r => { const x = {}; for (const [k, i] of Object.entries(col)) { const v = r[i];
+      x[k] = ['costo', 'precio_minorista', 'precio_mayorista', 'precio_lista3', 'bulto'].includes(k) ? numero(v) : String(v ?? '').trim(); } return x; });
+    const ver = async () => {
+      const r = await rpc('productos_planilla', { p: { items, aplicar: false } });
+      $(mid + '_r').innerHTML = `<div class="grid-4 mb3">${kpi('Cambian', fmtN(r.cambian.length), 'productos', 'b')}${kpi('Sin cambios', fmtN(r.iguales), 'iguales')}${kpi('Con error', fmtN(r.errores.length), 'no se aplican', r.errores.length ? 'r' : '')}${kpi('Filas', fmtN(r.filas), 'en la planilla')}</div>
+        ${r.errores.length ? `<div class="alert al-r"><b>Filas con error</b> (no se aplican):<br>${r.errores.slice(0, 40).map(x => `fila ${x.fila + 1}${x.codigo ? ' (' + esc(x.codigo) + ')' : ''}: ${esc(x.motivo)}`).join('<br>')}${r.errores.length > 40 ? '<br>…' : ''}</div>` : ''}
+        ${r.cambian.length ? `<div class="flex jb aic mb2"><b>Lo que cambia</b><button class="btn btn-p" id="${mid}_ap"><i class="fas fa-check"></i> Aplicar ${fmtN(r.cambian.length)} producto${r.cambian.length > 1 ? 's' : ''}</button></div>`
+          + grilla(mid + 'g', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre' }, { t: 'Cambios', k: 'cambios', f: x => Object.entries(x.cambios).map(([k, c]) => `${NOM[k] || k}: ${valTxt(k, c.actual)} → <b>${valTxt(k, c.nuevo)}</b>`).join('<br>'), xf: x => JSON.stringify(x.cambios) }], r.cambian)
+          : '<div class="alert al-i">No hay nada para cambiar.</div>'}`;
+      if (r.cambian.length) $(mid + '_ap').onclick = async () => {
+        if (!await confirmar(`¿Aplicar los cambios a <b>${fmtN(r.cambian.length)}</b> productos?${r.errores.length ? ` Las ${fmtN(r.errores.length)} filas con error no se aplican.` : ''} Los precios quedan en el historial.`)) return;
+        const x = await rpc('productos_planilla', { p: { items, aplicar: true } });
+        toast(`Listo: ${fmtN(x.cambian.length)} productos actualizados`, 'g', 6000); o.remove();
+        PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+      };
+    };
+    await ver();
+  };
 }
 
 /* ---------- Listas de precios ---------- */
