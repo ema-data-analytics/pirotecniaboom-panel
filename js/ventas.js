@@ -33,7 +33,7 @@ async function editorDoc(modo, id) {
   const esV = modo === 'venta';
   pagina({ titulo: esV ? (id ? 'Venta en carga' : 'Nueva venta') : (id ? 'Presupuesto' : 'Nuevo presupuesto'), icono: esV ? 'receipt' : 'file-signature',
     sub: esV ? 'Paso 1: encabezado · Paso 2: productos · Paso 3: confirmar' : 'Paso 1: encabezado · Paso 2: productos · Paso 3: grabar',
-    botones: `<button class="btn btn-s" onclick="ir('${esV ? 'ventas' : 'presupuestos'}')"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
+    botones: `<button class="btn btn-s" onclick="editorVolver()"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span><span id="ed_est"></span></div><div class="pb" id="ed_hdr"></div></div>
       <div class="panel mb3" id="ed_lin_p"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span><span class="ss" id="ed_lista_txt"></span></div><div class="pb" id="ed_lin"></div></div>
       <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div id="ed_fin"></div><div class="tot-box" id="ed_tot"></div></div></div>` });
@@ -44,7 +44,7 @@ async function editorRecargar() {
   editorPintarHdr(); editorPintarLineas();
 }
 function editorEditable() { const d = ED.det; if (!d) return true; return d.estado === 'borrador'; }
-const EST_PRE = { borrador: 'En carga', enviado: 'Pendiente', aceptado: 'Aceptado', rechazado: 'Rechazado', vencido: 'Vencido' };
+const EST_PRE = { borrador: 'En carga', enviado: 'Pendiente', aceptado: 'Aceptado', rechazado: 'Rechazado', vencido: 'Vencido', anulado: 'Anulado' };
 function badgePre(e) { return badgeEstado(EST_PRE[e] || e); }
 function editorPintarHdr() {
   const d = ED.det || {}; const esV = ED.modo === 'venta'; const ed = editorEditable();
@@ -135,12 +135,13 @@ function editorPintarLineas() {
     else if (d.comprobante_id) acc = `<button class="btn btn-b" onclick="verComprobante(${d.comprobante_id})"><i class="fas fa-eye"></i> Ver comprobante emitido</button>`;
   } else {
     const ok = items.length > 0;
-    if (d.estado === 'borrador') acc = `<button class="btn btn-p btn-xl" onclick="presupuestoGrabar(${d.id})" ${ok ? '' : 'disabled'}><i class="fas fa-floppy-disk"></i> Grabar presupuesto</button><span class="ss">${ok ? 'Al grabarlo queda pendiente: lo mandás al cliente y, cuando confirma, lo convertís en venta.' : 'Cargá al menos un producto para grabarlo.'}</span>`;
+    if (d.estado === 'borrador') acc = `<button class="btn btn-p btn-xl" onclick="presupuestoGrabar(${d.id})" ${ok ? '' : 'disabled'}><i class="fas fa-floppy-disk"></i> Grabar presupuesto</button><span class="ss">${ok ? 'Al grabarlo queda pendiente: lo mandás al cliente y, cuando confirma, lo convertís en venta.' : 'Cargá al menos un producto para grabarlo.'}</span><button class="btn btn-d" onclick="presupuestoAnular(${d.id})"><i class="fas fa-ban"></i> Anular</button>`;
     else {
       acc = `<button class="btn btn-pdf" onclick="presupuestoPdf(${d.id})"><i class="fas fa-file-pdf"></i> PDF</button>`;
       if (d.estado === 'enviado') acc += `<button class="btn btn-wa" onclick="presupuestoWa(${d.id})"><i class="fab fa-whatsapp"></i> Enviar por WhatsApp</button><button class="btn btn-p btn-xl" onclick="presupuestoConvertir(${d.id})"><i class="fas fa-cash-register"></i> Cliente confirmó: convertir en venta</button><button class="btn btn-d" onclick="presupuestoRechazar(${d.id})"><i class="fas fa-ban"></i> Rechazado</button>`;
       if (['enviado', 'vencido'].includes(d.estado) && !d.venta) acc += `<button class="btn btn-b" onclick="presupuestoModificar(${d.id})"><i class="fas fa-pen"></i> Modificar</button>`;
       acc += `<button class="btn btn-s" onclick="presupuestoDuplicar(${d.id})"><i class="fas fa-copy"></i> Duplicar</button>`;
+      if (['enviado', 'vencido'].includes(d.estado) && !d.venta) acc += `<button class="btn btn-d" onclick="presupuestoAnular(${d.id})"><i class="fas fa-ban"></i> Anular</button>`;
     }
     if (d.venta) acc += `<button class="btn btn-b" onclick="verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta ${esc(d.venta.numero)}</button>`;
   }
@@ -287,16 +288,18 @@ async function ndNueva(clienteId, origenId) {
 PAGINAS.presupuestos = async () => {
   pagina({ titulo: 'Presupuestos', icono: 'file-signature', sub: 'Cotizaciones a clientes · respetan su precio mientras están vigentes',
     botones: btnExcel(`exportarExcel('g_pre','Presupuestos')`) + btnPdf(`exportarPdf('g_pre','Listado de presupuestos',filtrosTexto())`) + btnNuevo('presupuestoNuevo()', 'Nuevo presupuesto'),
-    cuerpo: `<div class="grid-4 mb3" id="pre_k"></div><div class="panel">${barraFiltros([{ k: 'desde', t: 'desde', v: hoy(-60) }, { k: 'hasta', t: 'hasta', v: hoy() }, { k: 'cliente_id', t: 'cliente', l: 'Cliente' }, { k: 'estado', t: 'sel', l: 'Estado', op: [['enviado', 'Pendiente'], ['borrador', 'En carga'], ['aceptado', 'Aceptado'], ['rechazado', 'Rechazado'], ['vencido', 'Vencido']], v: 'enviado' }, { k: 'texto', t: 'texto', ph: 'N° o cliente' }], presupuestosCargar)}<div id="pre_g"></div></div>` });
+    cuerpo: `<div class="grid-4 mb3" id="pre_k"></div><div class="panel">${barraFiltros([{ k: 'desde', t: 'desde', v: hoy(-60) }, { k: 'hasta', t: 'hasta', v: hoy() }, { k: 'cliente_id', t: 'cliente', l: 'Cliente' }, { k: 'estado', t: 'sel', l: 'Estado', op: [['enviado', 'Pendiente'], ['borrador', 'En carga'], ['aceptado', 'Aceptado'], ['rechazado', 'Rechazado'], ['vencido', 'Vencido'], ['anulado', 'Anulado']], v: 'enviado' }, { k: 'texto', t: 'texto', ph: 'N° o cliente' }], presupuestosCargar)}<div id="pre_bulk" class="mb2"></div><div id="pre_g"></div></div>` });
   await presupuestosCargar();
 };
 async function presupuestosCargar() {
   const rows = await rpc('listado_presupuestos', { f: leerFiltros() }); PAG.pres = rows;
   const c = e => rows.filter(r => r.estado === e);
-  const emit = rows.filter(r => r.estado !== 'borrador').length;
+  const emit = rows.filter(r => !['borrador', 'anulado'].includes(r.estado)).length;
   $('pre_k').innerHTML = kpi('Pendientes', c('enviado').length, fmt(c('enviado').reduce((a, r) => a + Number(r.total), 0)) + (c('borrador').length ? ' · ' + c('borrador').length + ' en carga' : ''), 'b') + kpi('Aceptados', c('aceptado').length, fmt(c('aceptado').reduce((a, r) => a + Number(r.total), 0)), 'g') + kpi('Rechazados / vencidos', c('rechazado').length + c('vencido').length, '', 'r') + kpi('Efectividad', emit ? Math.round(c('aceptado').length * 100 / emit) + '%' : '—', 'aceptados sobre enviados', 'w');
   $('pre_g').innerHTML = grilla('g_pre', [{ t: 'Fecha', k: 'fecha', f: 'd' }, { t: 'N°', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>${r.version > 1 ? ` <span class="badge bw">v${r.version}</span>` : ''}`, xf: r => r.numero + (r.version > 1 ? ' v' + r.version : '') }, { t: 'Cliente', k: 'cliente' }, { t: 'Lista', k: 'lista' }, { t: 'Válido hasta', k: 'valido_hasta', f: 'd' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Estado', k: 'estado', f: r => badgePre(r.estado), xf: r => EST_PRE[r.estado] || r.estado }, { t: 'Venta', k: 'venta' }], rows,
-    { acciones: r => `<button class="btn btn-xs btn-s" title="${r.estado === 'borrador' ? 'Seguir cargando' : 'Ver'}" onclick="editorDoc('presupuesto',${r.id})"><i class="fas fa-${r.estado === 'borrador' ? 'pen' : 'eye'}"></i></button>${r.estado !== 'borrador' ? `<button class="btn btn-xs btn-pdf" title="PDF" onclick="presupuestoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>` : ''}${r.celular && r.estado === 'enviado' ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="presupuestoWa(${r.id})"><i class="fab fa-whatsapp"></i></button>` : ''}${r.estado === 'enviado' ? `<button class="btn btn-xs btn-g" title="Cliente confirmó: convertir en venta" onclick="presupuestoConvertir(${r.id})"><i class="fas fa-cash-register"></i></button>` : ''}${['enviado', 'vencido'].includes(r.estado) && !r.venta ? `<button class="btn btn-xs btn-b" title="Modificar (vuelve a En carga, versión ${(r.version || 1) + 1})" onclick="presupuestoModificar(${r.id})"><i class="fas fa-pen"></i></button>` : ''}<button class="btn btn-xs btn-s" title="Duplicar" onclick="presupuestoDuplicar(${r.id})"><i class="fas fa-copy"></i></button>` });
+    { acciones: r => `<button class="btn btn-xs btn-s" title="${r.estado === 'borrador' ? 'Seguir cargando' : 'Ver'}" onclick="editorDoc('presupuesto',${r.id})"><i class="fas fa-${r.estado === 'borrador' ? 'pen' : 'eye'}"></i></button>${r.estado !== 'borrador' ? `<button class="btn btn-xs btn-pdf" title="PDF" onclick="presupuestoPdf(${r.id})"><i class="fas fa-file-pdf"></i></button>` : ''}${r.celular && r.estado === 'enviado' ? `<button class="btn btn-xs btn-wa" title="WhatsApp" onclick="presupuestoWa(${r.id})"><i class="fab fa-whatsapp"></i></button>` : ''}${r.estado === 'enviado' ? `<button class="btn btn-xs btn-g" title="Cliente confirmó: convertir en venta" onclick="presupuestoConvertir(${r.id})"><i class="fas fa-cash-register"></i></button>` : ''}${['enviado', 'vencido'].includes(r.estado) && !r.venta ? `<button class="btn btn-xs btn-b" title="Modificar (vuelve a En carga, versión ${(r.version || 1) + 1})" onclick="presupuestoModificar(${r.id})"><i class="fas fa-pen"></i></button>` : ''}<button class="btn btn-xs btn-s" title="Duplicar" onclick="presupuestoDuplicar(${r.id})"><i class="fas fa-copy"></i></button>${['borrador', 'enviado', 'vencido'].includes(r.estado) && !r.venta ? `<button class="btn btn-xs btn-d" title="Anular" onclick="presupuestoAnular(${r.id})"><i class="fas fa-ban"></i></button>` : ''}` });
+  const enCarga = rows.filter(r => r.estado === 'borrador');
+  $('pre_bulk').innerHTML = enCarga.length > 1 ? `<button class="btn btn-d btn-sm" onclick="presupuestosAnularCarga()"><i class="fas fa-ban"></i> Anular los ${enCarga.length} En carga de esta lista</button>` : '';
 }
 async function presupuestoNuevo() { await editorDoc('presupuesto', null); }
 async function presupuestoPdf(id) {
@@ -365,6 +368,37 @@ async function presupuestoGrabar(id) {
   if ($('ed_val') && $('ed_val').value && $('ed_val').value !== ED.det.valido_hasta) await rpc('presupuesto_validez', { p_id: id, p_fecha: $('ed_val').value });
   await rpc('presupuesto_estado', { p_id: id, p_estado: 'enviado' });
   await editorRecargar(); toast('Presupuesto ' + ED.det.numero + ' grabado · vence el ' + fmtD(ED.det.valido_hasta), 'g', 6000);
+}
+async function presupuestoAnular(id) {
+  const r = (PAG.pres || []).find(x => x.id === id) || (ED.det && ED.det.id === id ? ED.det : null);
+  const m = await pedirTexto('Anular presupuesto' + (r ? ' ' + r.numero : ''), 'Motivo (opcional)', { obligatorio: false, ayuda: 'Queda registrado como <b>Anulado</b> (no se borra). Si después lo necesitan, se duplica.' });
+  if (m === null) return;
+  await rpc('presupuesto_estado', { p_id: id, p_estado: 'anulado', p_motivo: m });
+  toast('Presupuesto anulado', 'g');
+  if ($('pre_g')) await presupuestosCargar(); else ir('presupuestos');
+}
+async function presupuestosAnularCarga() {
+  const ids = (PAG.pres || []).filter(r => r.estado === 'borrador').map(r => r.id);
+  if (!ids.length) return;
+  if (!await confirmar(`¿Anular los <b>${ids.length}</b> presupuestos <b>En carga</b> que se ven en la lista? Quedan registrados como <b>Anulados</b> (no se borran).`, { ok: 'Anular ' + ids.length, peligro: true })) return;
+  const x = await rpc('presupuestos_anular', { p: { ids } });
+  toast(x.anulados + ' presupuesto(s) anulado(s)' + (x.no_anulados.length ? ' · ' + x.no_anulados.length + ' no se pudieron' : ''), x.no_anulados.length ? 'r' : 'g', 6000);
+  await presupuestosCargar();
+}
+// Salir del editor: si el presupuesto quedó En carga con productos, preguntar qué hacer
+async function editorVolver() {
+  const d = ED.det;
+  if (ED.modo !== 'presupuesto' || !d || d.estado !== 'borrador' || !(d.items || []).filter(i => i.estado !== 'anulado').length) return ir(ED.modo === 'venta' ? 'ventas' : 'presupuestos');
+  const op = await new Promise(res => {
+    const o = showModal(modalHdr('El presupuesto ' + esc(d.numero) + ' no está grabado') + `<div class="mb2">Está <b>En carga</b>: todavía no se puede mandar al cliente. ¿Qué hacemos?</div>
+      <div class="mf"><button class="btn btn-d" data-r="anular"><i class="fas fa-ban"></i> Anular</button><button class="btn btn-s" data-r="dejar">Dejar en carga</button><button class="btn btn-p" data-r="grabar"><i class="fas fa-floppy-disk"></i> Grabar</button></div>`, 'md-sm');
+    o.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { o.remove(); res(b.dataset.r); });
+    o.querySelector('.mc').onclick = () => { o.remove(); res('quedar'); };
+  });
+  if (op === 'quedar') return;
+  if (op === 'grabar') { await presupuestoGrabar(d.id); return ir('presupuestos'); }
+  if (op === 'anular') { await rpc('presupuesto_estado', { p_id: d.id, p_estado: 'anulado', p_motivo: 'Anulado al salir sin grabar' }); toast('Presupuesto anulado', 'g'); }
+  ir('presupuestos');
 }
 async function presupuestoRechazar(id) { const m = await pedirTexto('Presupuesto rechazado', 'Motivo (opcional)', { obligatorio: false }); if (m === null) return; await rpc('presupuesto_estado', { p_id: id, p_estado: 'rechazado', p_motivo: m }); toast('Presupuesto rechazado', 'g'); ir('presupuestos'); }
 async function presupuestoModificar(id) {

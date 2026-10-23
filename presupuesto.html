@@ -74,7 +74,7 @@ const fd = d => { const s = String(d || ''); if (/^\d{4}-\d{2}-\d{2}$/.test(s)) 
   const { data: d, error } = await sb.rpc('ver_presupuesto', { p_token: t });
   if (error || !d) { h.innerHTML = '<div class="err">No encontramos este presupuesto. Pedilo de nuevo por WhatsApp.</div>'; return; }
   const ri = false; const e = d.empresa || {}; // al cliente: siempre precio final, sin texto de IVA
-  const est = { aceptado: ['ok', 'Aceptado'], rechazado: ['no', 'Rechazado'], vencido: ['no', 'Vencido'] }[d.estado] || ['esp', 'Vigente'];
+  const est = { aceptado: ['ok', 'Aceptado'], rechazado: ['no', 'Rechazado'], vencido: ['no', 'Vencido'], anulado: ['no', 'Anulado'] }[d.estado] || ['esp', 'Vigente'];
   const wa = String(e.whatsapp || '').replace(/\D/g, '');
   h.innerHTML = `<div class="cab"><img src="img/logo.png" alt="Pirotecnia Boom"><div class="tit"><h1>PRESUPUESTO</h1><div><b>${esc(d.numero)}</b>${d.version > 1 ? ' · versión ' + d.version : ''} · ${fd(d.fecha)}</div><div>Válido hasta el <b>${fd(d.valido_hasta)}</b></div><span class="est ${est[0]}">${est[1]}</span></div></div>
   <div class="cuerpo"><div><b>Cliente:</b> ${esc(d.cliente.nombre)}</div>
