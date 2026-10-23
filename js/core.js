@@ -62,6 +62,9 @@ async function rpc(fn, args = {}, { silencio = false } = {}) {
   } finally { cargando(false); }
 }
 
+// Un error de la base ya mostrado en pantalla (toast rojo) no se vuelve a informar como error de página
+window.addEventListener('unhandledrejection', e => { if (e.reason && e.reason.mostrado) e.preventDefault(); });
+
 /* ---------- modales ---------- */
 function showModal(html, cls = '') {
   const o = document.createElement('div'); o.className = 'mo';

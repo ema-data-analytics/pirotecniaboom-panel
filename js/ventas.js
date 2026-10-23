@@ -58,7 +58,7 @@ function editorPintarHdr() {
           : `<div class="fg"><label class="fl">Válido hasta</label>${d.estado === 'enviado' ? `<div class="flex gap2"><input type="date" id="ed_val" class="fi" min="${hoy()}" value="${d.valido_hasta}"><button class="btn btn-s" title="Cambiar el vencimiento" onclick="presupuestoValidez()"><i class="fas fa-check"></i></button></div>` : `<input type="date" id="ed_val" class="fi" min="${hoy()}" value="${d.valido_hasta || hoy((M.empresa || {}).validez_presupuesto_dias || 2)}" ${ed ? '' : 'disabled'}>`}</div>`}
   </div><div class="fr4">
     ${esV ? `<div class="fg"><label class="fl">Recargo (neto)</label><input id="ed_rec" type="number" step="0.01" min="0" class="fi mono" value="${d.recargo_neto || 0}" ${ed ? '' : 'disabled'}></div><div class="fg"><label class="fl">Envío (neto)</label><input id="ed_env" type="number" step="0.01" min="0" class="fi mono" value="${d.envio_neto || 0}" ${ed ? '' : 'disabled'}></div>`
-          : `<div class="fg" style="grid-column:span 4"><label class="fl">Nota para el cliente</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div>`}
+          : `${presupuestoFechaCampo(d, ed)}<div class="fg" style="grid-column:span 3"><label class="fl">Nota para el cliente</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div>`}
   </div>${esV ? `<div class="fr"><div class="fg"><label class="fl">Nota</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div><div class="fg"><label class="fl">N° de factura ARCA (si se emitió aparte)</label><input id="ed_fact" class="fi" value="${esc(d.factura_externa || '')}" ${ed ? '' : 'disabled'}></div></div>` : ''}
   ${ed ? `<button class="btn btn-p" id="ed_hdr_ok"><i class="fas fa-floppy-disk"></i> ${ED.id ? 'Guardar cambios del encabezado' : 'Guardar encabezado y cargar productos'}</button>` : ''}`;
   const cli = d.cliente_id ? { id: d.cliente_id, label: typeof d.cliente === 'object' ? d.cliente.nombre : d.cliente } : null;
@@ -81,7 +81,12 @@ async function editorGuardarHdr() {
   const cli = Number($('ed_cli').dataset.id || 0); if (!cli) return toast('Elegí el cliente.', 'r');
   const p = { id: ED.id, cliente_id: cli, lista_id: $('ed_lista').value ? Number($('ed_lista').value) : null, nota: val('ed_nota') || null };
   if (ED.modo === 'venta') { p.condicion = $('ed_cond').value; p.recargo_neto = numIn('ed_rec') || 0; p.envio_neto = numIn('ed_env') || 0; p.factura_externa = val('ed_fact') || null; ED.id = await rpc('borrador_guardar', { p }); }
-  else { p.valido_hasta = $('ed_val').value || null; ED.id = await rpc('presupuesto_guardar', { p }); }
+  else {
+    const fe = $('ed_fecha') ? $('ed_fecha').value : '';
+    if (fe && fe > hoy()) return toast('La fecha del presupuesto no puede ser posterior a hoy.', 'r');
+    p.valido_hasta = $('ed_val').value || null; ED.id = await rpc('presupuesto_guardar', { p });
+    if (fe && fe !== String(ED.det && ED.det.fecha || hoy()).slice(0, 10)) await rpc('presupuesto_fecha', { p_id: ED.id, p_fecha: fe });
+  }
   history.replaceState(null, '', '#' + (ED.modo === 'venta' ? 'ventas' : 'presupuestos'));
   toast('Encabezado guardado', 'g'); await editorRecargar();
   setTimeout(() => $('ed_prod') && $('ed_prod').focus(), 80);
@@ -363,9 +368,17 @@ async function presupuestoWa(id) {
   const txt = `Hola ${d.cliente.nombre}! Te paso el presupuesto ${d.numero} de Pirotecnia Boom por ${fmt(d.total)}, válido hasta el ${fmtD(d.valido_hasta)}.\n\nPodés verlo y descargarlo acá: ${link}\n\n¡Cualquier consulta escribinos!`;
   waAbrir(d.cliente.celular, txt);
 }
+// Fecha del presupuesto (la de entrega al cliente): editable En carga o Pendiente, no a futuro, hasta 60 días atrás
+function presupuestoFechaCampo(d, ed) {
+  const f = String(d.fecha || hoy()).slice(0, 10), lim = `min="${hoy(-60)}" max="${hoy()}"`;
+  if (d.estado === 'enviado') return `<div class="fg"><label class="fl">Fecha</label><div class="flex gap2"><input type="date" id="ed_fecha" class="fi" ${lim} value="${f}"><button class="btn btn-s" title="Cambiar la fecha" onclick="presupuestoFecha()"><i class="fas fa-check"></i></button></div></div>`;
+  return `<div class="fg"><label class="fl">Fecha</label><input type="date" id="ed_fecha" class="fi" ${lim} value="${f}" ${ed ? '' : 'disabled'}></div>`;
+}
+async function presupuestoFecha() { const f = $('ed_fecha').value; if (!f) return toast('Elegí la fecha.', 'r'); await rpc('presupuesto_fecha', { p_id: ED.id, p_fecha: f }); await editorRecargar(); toast('Fecha del presupuesto: ' + fmtD(f), 'g'); }
 async function presupuestoValidez() { const f = $('ed_val').value; if (!f) return toast('Elegí la fecha.', 'r'); await rpc('presupuesto_validez', { p_id: ED.id, p_fecha: f }); await editorRecargar(); toast('Vence el ' + fmtD(f), 'g'); }
 async function presupuestoGrabar(id) {
   if ($('ed_val') && $('ed_val').value && $('ed_val').value !== ED.det.valido_hasta) await rpc('presupuesto_validez', { p_id: id, p_fecha: $('ed_val').value });
+  if ($('ed_fecha') && $('ed_fecha').value && $('ed_fecha').value !== String(ED.det.fecha).slice(0, 10)) await rpc('presupuesto_fecha', { p_id: id, p_fecha: $('ed_fecha').value });
   await rpc('presupuesto_estado', { p_id: id, p_estado: 'enviado' });
   await editorRecargar(); toast('Presupuesto ' + ED.det.numero + ' grabado · vence el ' + fmtD(ED.det.valido_hasta), 'g', 6000);
 }
@@ -533,11 +546,17 @@ async function pedidosCargar() {
   $('ped_g').innerHTML = grilla('g_ped', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'Pedido', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>`, xf: r => r.numero }, { t: 'Nombre', k: 'nombre' }, { t: 'Celular', k: 'celular' }, { t: 'DNI', k: 'documento', f: r => esc(r.documento || '') }, { t: 'Lista', k: 'lista' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Vence', k: 'vence_at', f: r => r.estado === 'abierto' ? fmtDT(r.vence_at) : '' }, { t: 'Estado', k: 'estado', f: 'e' }, { t: 'Venta', k: 'venta' }], rows,
     { acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="verPedido(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-xs btn-wa" title="WhatsApp" onclick="waAbrir('${r.celular}','Hola ${esc(r.nombre).replace(/'/g, '')}! Recibimos tu pedido ${r.numero}.')"><i class="fab fa-whatsapp"></i></button>${r.estado === 'abierto' ? `<button class="btn btn-xs btn-b" title="Editar" onclick="pedidoEditar(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-g" title="Confirmar (emitir venta)" onclick="pedidoConfirmar(${r.id})"><i class="fas fa-check"></i></button><button class="btn btn-xs btn-s" title="Pasar a presupuesto" onclick="pedidoAPresupuesto(${r.id})"><i class="fas fa-file-pen"></i></button><button class="btn btn-xs btn-d" title="Cancelar" onclick="pedidoCancelar(${r.id})"><i class="fas fa-ban"></i></button>` : ''}` });
 }
+// Totales del pedido en precio final: Subtotal → Descuento (si llegó al tope) → Total
+function pedidoTotalesHtml(d) {
+  const sub = Math.round((d.items || []).reduce((a, i) => a + Number(i.cantidad) * Number(i.precio_final_unit), 0) * 100) / 100;
+  const desc = Math.round((sub - Number(d.total)) * 100) / 100;
+  return `<div class="tot-box mt3" style="margin-left:auto;max-width:320px">${desc >= 1 ? `<div class="row"><span>Subtotal</span><b class="mono">${fmt(sub)}</b></div><div class="row"><span>Descuento ${fmtP(desc * 100 / sub)}</span><b class="mono td">- ${fmt(desc)}</b></div>` : ''}<div class="row big"><span>TOTAL</span><span class="mono">${fmt(d.total)}</span></div></div>`;
+}
 async function verPedido(id) {
   const d = await rpc('pedido_detalle', { p_id: id });
   showModal(modalHdr('Pedido ' + esc(d.numero)) + `<div class="mb2"><div class="grid-2 mb3"><div class="kv"><b>Fecha</b><span>${fmtDT(d.fecha)}</span><b>Nombre</b><span>${esc(d.nombre)}</span><b>Celular</b><span>${esc(d.celular)}</span>${d.documento ? `<b>DNI</b><span>${esc(d.documento)}</span>` : ''}<b>Canal</b><span>${esc(d.canal)} · ${esc(d.lista)}</span></div><div class="kv"><b>Estado</b><span>${badgeEstado(d.estado)}</span><b>Vence</b><span>${fmtDT(d.vence_at)}</span>${d.nota ? `<b>Nota</b><span>${esc(d.nota)}</span>` : ''}${d.motivo_cierre ? `<b>Cierre</b><span>${esc(d.motivo_cierre)}</span>` : ''}</div></div>
-    ${grilla('g_pi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'P. unit. final', k: 'precio_final_unit', f: 'm', cls: 'tr' }, { t: 'Disponible', k: 'disponible', f: r => r.disponible == null ? '—' : `<span class="${Number(r.disponible) < Number(r.cantidad) ? 'td' : ''}">${fmtN(r.disponible)}</span>`, cls: 'tr' }], d.items)}
-    <div class="tot-box mt3" style="margin-left:auto;max-width:300px"><div class="row"><span>Neto</span><b class="mono">${fmt(d.subtotal_neto)}</b></div>${Number(d.descuento_neto) ? `<div class="row"><span>Descuento</span><b class="mono">- ${fmt(d.descuento_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(d.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(d.total)}</span></div></div></div>
+    ${grilla('g_pi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'P. unit. final', k: 'precio_final_unit', f: 'm', cls: 'tr' }, { t: 'Importe', k: 'importe', f: r => fmt(Number(r.cantidad) * Number(r.precio_final_unit)), cls: 'tr' }, { t: 'Disponible', k: 'disponible', f: r => r.disponible == null ? '—' : `<span class="${Number(r.disponible) < Number(r.cantidad) ? 'td' : ''}">${fmtN(r.disponible)}</span>`, cls: 'tr' }], d.items)}
+    ${pedidoTotalesHtml(d)}</div>
     <div class="mf">${d.estado === 'abierto' ? `<button class="btn btn-s" onclick="closeModal(this);pedidoAPresupuesto(${d.id})"><i class="fas fa-file-pen"></i> Pasar a presupuesto</button><button class="btn btn-g" onclick="closeModal(this);pedidoConfirmar(${d.id})"><i class="fas fa-check"></i> Confirmar</button>` : ''}${d.presupuesto ? `<button class="btn btn-b" onclick="closeModal(this);editorDoc('presupuesto', ${d.presupuesto.id})"><i class="fas fa-eye"></i> Ver presupuesto ${esc(d.presupuesto.numero)}</button>` : ''}${d.venta ? `<button class="btn btn-b" onclick="closeModal(this);verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta</button>` : ''}<button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
 }
 async function pedidoEditar(id) {
