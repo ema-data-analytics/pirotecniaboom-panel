@@ -175,7 +175,7 @@ async function clienteEstado(id) {
 const CAMPOS_PRODUCTO = [
   { k: 'codigo', l: 'Código', req: 1 }, { k: 'nombre', l: 'Nombre', req: 1 },
   { k: 'categoria_id', l: 'Categoría', t: 'sel', op: OPC.categorias, req: 1 },
-  { k: 'costo', l: 'Costo neto del proveedor (sin IVA)', t: 'num', dueno: 1, ayuda: 'Con el costo y el margen de cada lista se calculan los precios solos.' },
+  { k: 'costo', l: 'Costo del proveedor', t: 'num', dueno: 1, ayuda: 'Sin IVA si el producto tiene IVA 21 % o 10,5 %; con el IVA incluido si tiene IVA 0 %. Con el costo y el margen de cada lista se calculan los precios solos.' },
   { k: 'precio_minorista', l: 'Precio minorista (final)', t: 'num', dueno: 1, ayuda: 'Opcional. Es el precio de la lista Minorista (botón Minorista del catálogo). Vacío = el precio de la lista base.' },
   { k: 'alicuota_iva_id', l: 'IVA', t: 'sel', op: OPC.alicuotas, vacio: false, def: 1 },
   { k: 'unidad_id', l: 'Unidad de venta', t: 'sel', op: OPC.unidades, vacio: false, def: 1 },
@@ -230,14 +230,14 @@ function fotosWidget(cont, urls) {
 }
 PAGINAS.productos = async () => {
   pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
-    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button>` + btnNuevo('productoEditar()') : ''),
+    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button><button class="btn btn-s" onclick="ivaMasivo()"><i class="fas fa-receipt"></i> IVA</button>` + btnNuevo('productoEditar()') : ''),
     cuerpo: `<div class="grid-4 mb3" id="prod_k"></div><div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Código o nombre' }, { k: 'cat', t: 'sel', l: 'Categoría', op: OPC.categorias() }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'bajo', t: 'chk', l: 'Bajo mínimo' }, { k: 'sinstock', t: 'chk', l: 'Sin stock' }], productosPintar)}<div id="prod_g"></div></div>` });
   PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
 };
 function productosPintar() {
   const f = leerFiltros(); const n = norm(f.texto || '');
   const rows = PAG.prods.filter(p => (!f.cat || p.categoria_id === Number(f.cat)) && (!f.estado || p.estado === f.estado) && (!f.bajo || (p.controla_stock && p.stock <= p.stock_minimo && p.stock_minimo > 0)) && (!f.sinstock || (p.controla_stock && p.disponible <= 0)) && (!n || norm(p.codigo + ' ' + p.nombre).includes(n)))
-    .map(p => ({ ...p, pub: p.precios?.PUBLICO?.final, may: p.precios?.MAYORISTA?.neto }));
+    .map(p => ({ ...p, pub: p.precios?.PUBLICO?.final, may: p.precios?.MAYORISTA?.final, min: p.precios?.MINORISTA?.final }));
   const act = PAG.prods.filter(p => p.estado === 'activo');
   $('prod_k').innerHTML = kpi('Productos activos', act.length) + kpi('Sin stock', act.filter(p => p.controla_stock && p.disponible <= 0).length, '', 'r') + kpi('Bajo mínimo', act.filter(p => p.controla_stock && p.stock_minimo > 0 && p.stock <= p.stock_minimo).length, '', 'w')
     + (ES_DUENO ? kpi('Stock valorizado (costo)', fmt(act.reduce((s, p) => s + Math.max(0, p.stock) * Number(p.costo_promedio || 0), 0)), '', 'b') : kpi('Sin precio', act.filter(p => p.pub == null).length));
@@ -245,7 +245,7 @@ function productosPintar() {
     { t: 'Stock', k: 'stock', f: r => r.controla_stock ? `<span class="${r.stock <= 0 ? 'td' : r.stock <= r.stock_minimo ? 'tw2' : ''}">${fmtN(r.stock)}</span>` : '—', xf: r => r.controla_stock ? Number(r.stock) : '', cls: 'tr' },
     { t: 'Disponible', k: 'disponible', f: r => r.controla_stock ? fmtN(r.disponible) : '—', xf: r => r.controla_stock ? Number(r.disponible) : '', cls: 'tr' }];
   if (ES_DUENO) cols.push({ t: 'Costo neto', k: 'costo', f: 'm', cls: 'tr' });
-  cols.push({ t: 'Público (final)', k: 'pub', f: r => r.pub == null ? '<span class="td">sin precio</span>' : fmt(r.pub), xf: r => r.pub ?? '', cls: 'tr' }, { t: 'Mayorista (neto)', k: 'may', f: r => r.may == null ? '—' : fmt(r.may), xf: r => r.may ?? '', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' });
+  cols.push({ t: 'Público (final)', k: 'pub', f: r => r.pub == null ? '<span class="td">sin precio</span>' : fmt(r.pub), xf: r => r.pub ?? '', cls: 'tr' }, { t: 'Mayorista (final)', k: 'may', f: r => r.may == null ? '—' : fmt(r.may), xf: r => r.may ?? '', cls: 'tr' }, { t: 'Minorista (final)', k: 'min', f: r => r.min == null ? '—' : fmt(r.min), xf: r => r.min ?? '', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' });
   $('prod_g').innerHTML = grilla('g_prod', cols, rows, { claseFila: r => r.estado !== 'activo' ? 'anulado' : '',
     acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="productoVer(${r.id})"><i class="fas fa-eye"></i></button>` + (ES_DUENO ? `<button class="btn btn-xs btn-b" title="Editar" onclick="productoEditar(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="productoEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : '') });
 }
@@ -306,6 +306,36 @@ function stockControlMasivo() {
     };
   };
   $(mid + '_ver').onclick = ver; $(mid + '_cat').onchange = () => $(mid + '_r').innerHTML = ''; $(mid + '_v').onchange = () => $(mid + '_r').innerHTML = '';
+}
+
+/* ---------- IVA: cambiar la alícuota de muchos productos a la vez ---------- */
+function ivaMasivo() {
+  const mid = 'iv' + uid();
+  const o = showModal(modalHdr('IVA de muchos productos') + `<div class="mb2">
+    <div class="alert al-i">El precio se calcula como <b>costo × margen + IVA</b>. Con <b>Mantener el precio final</b> marcado, el costo se ajusta solo (por ejemplo, de IVA 21 % a 0 %: costo × 1,21, o sea costo con IVA incluido) y el cliente sigue viendo el mismo precio. Sin marcarlo, el precio final cambia. El costo anterior queda en el historial.</div>
+    <div class="fr4" style="align-items:end"><div class="fg"><label class="fl">Productos</label><select id="${mid}_cat" class="fs"><option value="">Todos</option>${OPC.categorias().map(c => `<option value="${c[0]}">Categoría: ${esc(c[1])}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">IVA nuevo</label><select id="${mid}_al" class="fs">${OPC.alicuotas().map(a => `<option value="${a[0]}">${esc(a[1])}</option>`).join('')}</select></div>
+      <div class="fg"><label class="flex aic gap1"><input type="checkbox" id="${mid}_m" checked> Mantener el precio final</label></div>
+      <div class="fg"><button class="btn btn-b" id="${mid}_ver"><i class="fas fa-eye"></i> Ver cuántos cambian</button></div></div>
+    <div id="${mid}_r" class="mt3"></div></div>
+    <div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
+  const al0 = OPC.alicuotas().find(a => /0\s*%|exento/i.test(a[1])); if (al0) $(mid + '_al').value = al0[0];
+  const datos = aplicar => ({ categoria_id: $(mid + '_cat').value ? Number($(mid + '_cat').value) : null, alicuota_iva_id: Number($(mid + '_al').value), mantener_final: $(mid + '_m').checked, aplicar });
+  const limpiar = () => $(mid + '_r').innerHTML = '';
+  $(mid + '_cat').onchange = limpiar; $(mid + '_al').onchange = limpiar; $(mid + '_m').onchange = limpiar;
+  $(mid + '_ver').onclick = async () => {
+    const d = datos(false); const r = await rpc('productos_iva_masivo', { p: d });
+    if (!r.cambian) { $(mid + '_r').innerHTML = `<div class="alert al-g">No hay productos para cambiar: ya tienen ese IVA.</div>`; return; }
+    $(mid + '_r').innerHTML = `<div class="alert al-w">Se pasa a <b>IVA ${fmtP(r.iva_nuevo)}</b> en <b>${fmtN(r.cambian)}</b> producto${r.cambian > 1 ? 's' : ''}. ${d.mantener_final ? 'El precio final <b>no cambia</b>: se ajusta el costo.' : '<b>El precio final cambia</b>: el costo queda igual.'}</div>
+      <div style="max-height:300px;overflow:auto">${grilla(mid + 'g', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre' }, { t: 'Categoría', k: 'categoria' }, { t: 'IVA actual', k: 'iva_actual', f: 'p', cls: 'tr' }, { t: 'Costo actual', k: 'costo_actual', f: 'm', cls: 'tr' }, { t: 'Costo nuevo', k: 'costo_nuevo', f: 'm', cls: 'tr' }], r.productos)}</div>
+      <button class="btn btn-p mt3" id="${mid}_ok"><i class="fas fa-check"></i> Aplicar a ${fmtN(r.cambian)} producto${r.cambian > 1 ? 's' : ''}</button>`;
+    $(mid + '_ok').onclick = async () => {
+      if (!await confirmar(`¿Pasar <b>${fmtN(r.cambian)}</b> productos a <b>IVA ${fmtP(r.iva_nuevo)}</b>? ${d.mantener_final ? 'El precio final no cambia.' : 'El precio final va a cambiar.'}`)) return;
+      const z = await rpc('productos_iva_masivo', { p: datos(true) });
+      toast(`IVA cambiado en ${fmtN(z.cambian)} productos. Precios recalculados.`, 'g'); o.remove();
+      PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+    };
+  };
 }
 
 /* ---------- Cambio de precios: masivo por % o importando una lista de costos (Excel) ---------- */
