@@ -166,13 +166,14 @@ function ajustarBultos() { for (const id of Object.keys(CARRO)) { const b = bu(P
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
 
 async function cargar() {
-  const [{ data: t }, { data: p, error }, { data: ex }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle')]);
+  const [{ data: t }, { data: p, error }, { data: ex }, { data: dsp }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle'), sb.rpc('catalogo_display')]);
   if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
   T = t || {}; PROD = p || [];
   T.descuentos = (T.descuentos_listas || {})[LISTA] || []; // descuentos por monto de la lista que se ve
   // Precios siempre finales (IVA incluido), también para mayoristas: no se muestra el IVA en ningún lado
   const r2f = n => Math.round(Number(n) * 100) / 100;
   PROD.forEach(x => { if (x.muestra_iva_aparte) { const k = 1 + Number(x.iva_pct) / 100; x.precio = r2f(Number(x.precio) * k); if (x.precio_anterior) x.precio_anterior = r2f(Number(x.precio_anterior) * k); x.muestra_iva_aparte = false; } });
+  const D = new Map((dsp || []).map(x => [x.producto_id, x.display])); PROD.forEach(q => { q.display = D.get(q.producto_id) || null; });
   const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => { const x = X.get(q.producto_id); if (x) { q.video_url = x.video_url; q.info_adicional = x.info_adicional; } });
   heroArmar();
   for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
@@ -196,7 +197,7 @@ function pintar() {
   $('cuenta').textContent = l.length + ' productos';
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
-    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}${bu(p) > 1 ? ' <small>c/u</small>' : ''}</div>${bu(p) > 1 ? `<div class="blt"><i class="fas fa-box"></i> Bulto x${bu(p)} u. · <b>${fmt(p.precio * bu(p))}</b></div>` : ''}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
+    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}${bu(p) > 1 ? ' <small>c/u</small>' : ''}</div>${bu(p) > 1 ? `<div class="blt"><i class="fas fa-box"></i> Bulto x${bu(p)} u. · <b>${fmt(p.precio * bu(p))}</b></div>` : ''}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion || (!esMin() && p.display) ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
   else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
@@ -219,6 +220,7 @@ function ficha(id) {
     ${(p.fotos || []).length ? `<div class="ffotos">${p.fotos.map(f => `<img src="${esc(f)}" alt="">`).join('')}</div>` : ''}
     <div class="cod">${esc(p.codigo)} · ${esc(p.categoria)}</div>
     <div class="pr" style="margin:6px 0">${fmt(p.precio)}${bu(p) > 1 ? ' <small>c/u</small>' : ''}</div>${bu(p) > 1 ? `<div class="blt"><i class="fas fa-box"></i> Se vende por bulto de ${bu(p)} unidades · <b>${fmt(p.precio * bu(p))}</b> el bulto</div>` : ''}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}
+    ${!esMin() && p.display ? `<div class="blt" style="margin-top:8px"><i class="fas fa-boxes-stacked"></i> Display: <b>${esc(p.display)}</b></div>` : ''}
     ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
     ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
     ${p.video_url && !yt ? `<p style="margin-top:10px"><a href="${esc(p.video_url)}" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Ver video</a></p>` : ''}

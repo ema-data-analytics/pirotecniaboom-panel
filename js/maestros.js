@@ -182,6 +182,7 @@ const CAMPOS_PRODUCTO = [
   { k: 'alicuota_iva_id', l: 'IVA', t: 'sel', op: OPC.alicuotas, vacio: false, def: 1 },
   { k: 'unidad_id', l: 'Unidad de venta', t: 'sel', op: OPC.unidades, vacio: false, def: 1 },
   { k: 'bulto', l: 'Unidades por bulto', t: 'num' },
+  { k: 'display', l: 'Display (presentación del bulto)', ph: 'Ej: 10 displays de 12 unidades', ayuda: 'Cuántos displays y de cuántas unidades trae el bulto. Se ve en el catálogo Mayorista, en “Ver más”.' },
   { k: 'proveedor_principal_id', l: 'Proveedor principal', t: 'proveedor', labelK: 'proveedor' },
   { k: 'stock_minimo', l: 'Stock mínimo (aviso)', t: 'num', def: 0 },
   { k: 'codigo_barras', l: 'Código de barras' },
