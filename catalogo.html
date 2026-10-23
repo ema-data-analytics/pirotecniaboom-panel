@@ -68,7 +68,7 @@ footer{background:var(--vino);color:#f3dcd3;font-size:13px;padding:18px 14px;tex
 footer a{color:var(--amarillo)}
 .vacio{text-align:center;color:var(--dim);padding:40px}
 .sug{font-size:11px;color:var(--dim)}.sug b{color:var(--vino)}
-.blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:inline-block}.it .t small{color:var(--dim)}
+.blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:block;width:fit-content}.it .t small{color:var(--dim)}
 .mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
 .mas i{margin-right:4px}
 .ficha{max-width:640px!important;max-height:92vh;overflow-y:auto;padding:0!important}
@@ -159,8 +159,9 @@ try { CARRO = JSON.parse(localStorage.getItem('pb_carro') || '{}'); } catch (e) 
 let LISTA = 'MAYORISTA';
 const esMin = () => LISTA === 'MINORISTA';
 const minimo = () => Number(esMin() ? T.minimo_minorista : T.minimo_mayorista) || 0;
-// Mayorista: se vende por bulto cerrado si el producto tiene "unidades por bulto"; Minorista: por unidad. El carrito guarda siempre unidades.
-const bu = p => !esMin() && p && Number(p.bulto) > 1 ? Number(p.bulto) : 1;
+// Se vende siempre por unidad. En Mayorista se informa (sin precio) cuántas unidades trae el bulto y el display.
+const bu = p => 1;
+const infoBulto = p => esMin() ? '' : [Number(p.bulto) > 1 ? `<i class="fas fa-box"></i> Bulto: <b>${p.bulto} unidades</b>` : '', p.display ? `<i class="fas fa-boxes-stacked"></i> Display: <b>${esc(p.display)}</b>` : ''].filter(Boolean).map(x => `<div class="blt">${x}</div>`).join('');
 const enBultos = id => { const p = PROD.find(x => x.producto_id == id); const b = bu(p); return Math.round((CARRO[id] || 0) / b); };
 function ajustarBultos() { for (const id of Object.keys(CARRO)) { const b = bu(PROD.find(x => x.producto_id == id)); if (b > 1 && CARRO[id] % b) CARRO[id] = Math.ceil(CARRO[id] / b) * b; } }
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
@@ -197,7 +198,7 @@ function pintar() {
   $('cuenta').textContent = l.length + ' productos';
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
-    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}${bu(p) > 1 ? ' <small>c/u</small>' : ''}</div>${bu(p) > 1 ? `<div class="blt"><i class="fas fa-box"></i> Bulto x${bu(p)} u. · <b>${fmt(p.precio * bu(p))}</b></div>` : ''}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion || (!esMin() && p.display) ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
+    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
   else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
@@ -219,8 +220,7 @@ function ficha(id) {
     ${yt ? `<div class="vid"><iframe src="${yt}" title="Video de ${esc(p.nombre)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>` : ''}
     ${(p.fotos || []).length ? `<div class="ffotos">${p.fotos.map(f => `<img src="${esc(f)}" alt="">`).join('')}</div>` : ''}
     <div class="cod">${esc(p.codigo)} · ${esc(p.categoria)}</div>
-    <div class="pr" style="margin:6px 0">${fmt(p.precio)}${bu(p) > 1 ? ' <small>c/u</small>' : ''}</div>${bu(p) > 1 ? `<div class="blt"><i class="fas fa-box"></i> Se vende por bulto de ${bu(p)} unidades · <b>${fmt(p.precio * bu(p))}</b> el bulto</div>` : ''}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}
-    ${!esMin() && p.display ? `<div class="blt" style="margin-top:8px"><i class="fas fa-boxes-stacked"></i> Display: <b>${esc(p.display)}</b></div>` : ''}
+    <div class="pr" style="margin:6px 0">${fmt(p.precio)}</div>${infoBulto(p)}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}
     ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
     ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
     ${p.video_url && !yt ? `<p style="margin-top:10px"><a href="${esc(p.video_url)}" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Ver video</a></p>` : ''}
