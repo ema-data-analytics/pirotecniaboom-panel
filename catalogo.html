@@ -77,6 +77,27 @@ footer a{color:var(--amarillo)}
 .vid{position:relative;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;margin-bottom:12px}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .ffotos{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px}.ffotos img{height:150px;border-radius:8px}
 @media (max-width:640px){.top{flex-wrap:wrap}.top .logo img{height:38px}.busq{order:3;flex-basis:100%}.grid{grid-template-columns:repeat(2,1fr);gap:8px}.pr{font-size:16px}.tb span{display:none}}
+
+/* Banners del inicio: armados con las fotos de los productos del catálogo */
+.hero{position:relative;border-radius:16px;overflow:hidden;margin-bottom:16px;height:270px;background:var(--vino);box-shadow:0 6px 20px rgba(74,10,13,.18)}
+.slide{position:absolute;inset:0;display:flex;align-items:center;opacity:0;visibility:hidden;transition:opacity .7s,visibility .7s;
+  background:radial-gradient(circle at 78% 22%,rgba(254,204,0,.30),transparent 32%),radial-gradient(circle at 92% 85%,rgba(255,255,255,.12),transparent 26%),linear-gradient(115deg,var(--vino) 0%,#7c0d12 52%,var(--rojo) 100%)}
+.slide.on{opacity:1;visibility:visible;z-index:1}
+.slide::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:radial-gradient(2px 2px at 12% 18%,#fff,transparent),radial-gradient(2px 2px at 34% 70%,var(--amarillo),transparent),radial-gradient(1.5px 1.5px at 56% 30%,#fff,transparent),radial-gradient(2px 2px at 64% 82%,var(--amarillo),transparent),radial-gradient(1.5px 1.5px at 22% 88%,#fff,transparent),radial-gradient(2px 2px at 46% 12%,var(--amarillo),transparent)}
+.slide .tx{flex:1;padding:24px 34px;color:#fff;position:relative;z-index:2;min-width:0}
+.tx .k{display:inline-block;background:var(--amarillo);color:var(--vino);font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:5px}
+.tx h3{font-size:34px;font-weight:800;line-height:1.05;margin:10px 0 8px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.tx p{font-size:15px;opacity:.92;max-width:430px;line-height:1.4}
+.tx .cta{margin-top:14px;background:var(--amarillo);color:var(--vino);border:none;border-radius:22px;padding:10px 18px;font-weight:800;font-size:14px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;text-decoration:none}
+.slide .fo{display:flex;gap:14px;padding-right:30px;align-items:center;position:relative;z-index:2}
+.fo img{width:150px;height:150px;object-fit:cover;border-radius:14px;box-shadow:0 10px 24px rgba(0,0,0,.35);border:3px solid rgba(255,255,255,.9);background:#fff}
+.fo img:nth-child(2){width:184px;height:184px}
+.dots{position:absolute;bottom:12px;left:34px;z-index:3;display:flex;gap:6px}
+.dots span{width:8px;height:8px;border-radius:4px;background:rgba(255,255,255,.45);cursor:pointer;transition:width .3s}
+.dots span.on{background:var(--amarillo);width:22px}
+@media (max-width:640px){.hero{height:330px}.slide{flex-direction:column;justify-content:center;align-items:stretch}.slide .tx{padding:18px 18px 0;flex:none}.tx h3{font-size:24px}.tx p{font-size:13px}
+  .slide .fo{padding:14px 18px 34px;justify-content:center;gap:10px}.fo img{width:86px;height:86px}.fo img:nth-child(2){width:100px;height:100px}.dots{left:18px}}
 </style>
 </head>
 <body>
@@ -85,12 +106,13 @@ footer a{color:var(--amarillo)}
     <a class="logo" href="catalogo.html"><img src="img/logo.png" alt="Pirotecnia Boom"></a>
     <div class="busq"><i class="fas fa-search"></i><input id="q" placeholder="Buscar productos…" autocomplete="off"></div>
     <button class="tb" id="b-xls" title="Descargar lista de precios" style="display:none"><i class="fas fa-file-excel"></i><span>Lista</span></button>
+    <button class="tb" id="b-min" title="Ver precios minoristas"><i class="fas fa-tag"></i><span id="min-t">Minorista</span></button>
     <button class="tb" id="b-may"><i class="fas fa-store"></i><span id="may-t">Mayoristas</span></button>
   </div>
   <div class="cats" id="cats"></div>
 </header>
 <div class="banda" id="banda"></div>
-<main><div class="barra"><span id="cuenta"></span><select id="orden"><option value="cat">Ordenar por categoría</option><option value="menor">Menor precio</option><option value="mayor">Mayor precio</option><option value="nombre">Nombre</option></select></div><div id="lista"><div class="vacio">Cargando productos…</div></div></main>
+<main><div class="hero" id="hero" style="display:none"></div><div class="barra"><span id="cuenta"></span><select id="orden"><option value="cat">Ordenar por categoría</option><option value="menor">Menor precio</option><option value="mayor">Mayor precio</option><option value="nombre">Nombre</option></select></div><div id="lista"><div class="vacio">Cargando productos…</div></div></main>
 <footer id="pie"></footer>
 <button class="fab" id="fab"><i class="fas fa-cart-shopping"></i> Mi pedido <span class="n" id="fab-n">0</span></button>
 <div class="ov" id="ov"></div>
@@ -101,7 +123,7 @@ footer a{color:var(--amarillo)}
 </aside>
 <div class="mod" id="mod-fi"><div class="ficha" id="fi"></div></div>
 <div class="mod" id="mod-may"><div>
-  <h3 style="color:var(--vino);margin-bottom:6px">Ingreso mayoristas</h3><div style="font-size:13px;color:var(--dim)">Con el usuario de mayoristas ves los precios por mayor (más IVA).</div>
+  <h3 style="color:var(--vino);margin-bottom:6px">Ingreso mayoristas</h3><div style="font-size:13px;color:var(--dim)">Con el usuario de mayoristas ves los precios por mayor.</div>
   <div id="may-err"></div>
   <label>Usuario</label><input class="fi" id="m-u" autocomplete="username"><label>Contraseña</label><input class="fi" id="m-p" type="password" autocomplete="current-password">
   <div style="display:flex;gap:8px;margin-top:14px"><button class="bt bt-s" id="m-c">Cancelar</button><button class="bt bt-r" id="m-ok">Ingresar</button></div>
@@ -119,18 +141,27 @@ const fmt = n => '$ ' + nf.format(Number(n || 0));
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 let PROD = [], T = {}, CAT = '', CARRO = {};
 try { CARRO = JSON.parse(localStorage.getItem('pb_carro') || '{}'); } catch (e) { CARRO = {}; }
+let MINO = false; try { MINO = localStorage.getItem('pb_minorista') === '1'; } catch (e) { }
+const guardarMino = () => { try { localStorage.setItem('pb_minorista', MINO ? '1' : '0'); } catch (e) { } };
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
 
 async function cargar() {
-  const [{ data: t }, { data: p, error }, { data: ex }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo'), sb.rpc('catalogo_detalle')]);
+  const [{ data: t }, { data: p, error }, { data: ex }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc(MINO ? 'catalogo_minorista' : 'catalogo'), sb.rpc('catalogo_detalle')]);
+  if (t && t.mayorista && MINO) { MINO = false; guardarMino(); return cargar(); }
   if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
   T = t || {}; PROD = p || [];
+  if (MINO) T.descuentos = []; // los descuentos por monto no aplican a la lista Minorista
+  // Precios siempre finales (IVA incluido), también para mayoristas: no se muestra el IVA en ningún lado
+  const r2f = n => Math.round(Number(n) * 100) / 100;
+  PROD.forEach(x => { if (x.muestra_iva_aparte) { const k = 1 + Number(x.iva_pct) / 100; x.precio = r2f(Number(x.precio) * k); if (x.precio_anterior) x.precio_anterior = r2f(Number(x.precio_anterior) * k); x.muestra_iva_aparte = false; } });
   const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => Object.assign(q, X.get(q.producto_id) || {}));
+  heroArmar();
   for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
   const may = T.mayorista;
   $('may-t').textContent = may ? 'Salir mayorista' : 'Mayoristas';
   $('b-xls').style.display = may ? '' : 'none';
-  $('banda').innerHTML = (may ? '<i class="fas fa-store"></i> Precios mayoristas: netos más IVA · ' : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
+  $('b-min').style.display = may ? 'none' : ''; $('min-t').textContent = MINO ? 'Salir minorista' : 'Minorista';
+  $('banda').innerHTML = (may ? '<i class="fas fa-store"></i> Precios mayoristas · ' : MINO ? `<i class="fas fa-tag"></i> Precios minoristas · Compra mínima ${fmt(T.minimo_minorista || 0)} · ` : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
   const cats = [...new Map(PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria)).map(x => [x.categoria, 1])).keys()];
   $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
   document.querySelectorAll('.cat').forEach(c => c.onclick = () => { CAT = c.dataset.c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x === c)); pintar(); });
@@ -143,6 +174,7 @@ function pintar() {
   let l = PROD.filter(p => (!CAT || (CAT === '__of' ? p.es_oferta : p.categoria === CAT)) && (!q || norm(p.nombre + ' ' + p.codigo + ' ' + p.categoria + ' ' + (p.descripcion || '')).includes(q)));
   if (o === 'menor') l.sort((a, b) => a.precio - b.precio); else if (o === 'mayor') l.sort((a, b) => b.precio - a.precio); else if (o === 'nombre') l.sort((a, b) => a.nombre.localeCompare(b.nombre));
   else l.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria) || (b.destacado - a.destacado) || a.nombre.localeCompare(b.nombre));
+  $('hero').style.display = !CAT && !q && $('hero').innerHTML ? '' : 'none';
   $('cuenta').textContent = l.length + ' productos';
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
@@ -193,20 +225,21 @@ function pintarCarro() {
   const its = Object.entries(CARRO).map(([id, q]) => { const p = PROD.find(x => x.producto_id == id); return p ? `<div class="it">${p.fotos && p.fotos[0] ? `<img src="${esc(p.fotos[0])}">` : '<img src="img/logo.png" style="object-fit:contain">'}<div class="t"><b>${esc(p.nombre)}</b>${fmt(p.precio)}${p.muestra_iva_aparte ? ' + IVA' : ''} c/u</div><div class="qty"><button onclick="cambiar(${id},-1)">−</button><input value="${q}" onchange="fijar(${id},this.value)"><button onclick="cambiar(${id},1)">+</button></div><button class="bt bt-s" onclick="cambiar(${id},-9999)" title="Quitar"><i class="fas fa-trash"></i></button></div>` : ''; }).join('');
   $('dr-b').innerHTML = its || '<div class="vacio">Tu pedido está vacío.<br>Agregá productos del catálogo.</div>';
   const sig = (T.descuentos || []).find(x => t.neto < Number(x.desde));
-  $('dr-f').innerHTML = !its ? '' : `${T.mayorista ? `<div class="tot"><span>Neto</span><b>${fmt(t.neto)}</b></div>` : ''}${t.pct ? `<div class="tot"><span>Descuento ${nf.format(t.pct)}%</span><b>- ${fmt(t.fin - t.total)}</b></div>` : ''}<div class="tot g"><span>Total${T.mayorista ? ' con IVA' : ''}</span><span>${fmt(t.total)}</span></div>
-    ${sig ? `<div class="msg m-w">Sumá ${fmt(Number(sig.desde) - t.neto)} ${T.mayorista ? 'netos ' : ''}más y obtenés ${nf.format(sig.porcentaje)}% OFF</div>` : ''}
-    <div id="dr-err"></div><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"><label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional">
+  $('dr-f').innerHTML = !its ? '' : `${t.pct ? `<div class="tot"><span>Descuento ${nf.format(t.pct)}%</span><b>- ${fmt(t.fin - t.total)}</b></div>` : ''}<div class="tot g"><span>Total</span><span>${fmt(t.total)}</span></div>
+    ${sig ? `<div class="msg m-w">Sumá ${fmt(Number(sig.desde) - t.neto)} más y obtenés ${nf.format(sig.porcentaje)}% OFF</div>` : ''}
+    ${MINO && t.total < Number(T.minimo_minorista || 0) ? `<div class="msg m-w" id="dr-min">Compra mínima con precios minoristas: <b>${fmt(T.minimo_minorista)}</b>. Te faltan <b>${fmt(Number(T.minimo_minorista) - t.total)}</b>.</div>` : ''}<div id="dr-err"></div><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"><label>DNI (o CUIT) *</label><input class="fi" id="p-d" inputmode="numeric" placeholder="Solo números" autocomplete="off"><label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional">
     <button class="bt bt-r" style="width:100%;margin-top:12px;padding:13px" id="p-ok"><i class="fab fa-whatsapp"></i> Enviar pedido</button><div style="font-size:11px;color:var(--dim);margin-top:6px">El precio queda reservado por ${T.plazo_horas || 48} h hasta que lo confirmemos por WhatsApp. Envío y forma de pago se coordinan por WhatsApp.</div>`;
-  if (its) $('p-ok').onclick = enviar;
+  if (its) { $('p-ok').onclick = enviar; if (MINO && t.total < Number(T.minimo_minorista || 0)) $('p-ok').disabled = true; }
 }
 function cambiar(id, d) { const n = (CARRO[id] || 0) + d; if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); pintar(); }
 function fijar(id, v) { const n = Math.floor(Number(v) || 0); if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); }
 async function enviar() {
-  const nom = $('p-n').value.trim(), cel = $('p-c').value.trim(); const err = $('dr-err');
-  if (!nom || !cel) { err.innerHTML = '<div class="msg m-r">Completá nombre y celular.</div>'; return; }
+  const nom = $('p-n').value.trim(), cel = $('p-c').value.trim(), dni = $('p-d').value.replace(/\D/g, ''); const err = $('dr-err');
+  if (!nom || !cel || !dni) { err.innerHTML = '<div class="msg m-r">Completá nombre, celular y DNI.</div>'; return; }
+  if (!(dni.length === 7 || dni.length === 8 || dni.length === 11)) { err.innerHTML = '<div class="msg m-r">El DNI tiene 7 u 8 números (el CUIT, 11).</div>'; return; }
   $('p-ok').disabled = true;
   const items = Object.entries(CARRO).map(([id, q]) => ({ producto_id: Number(id), cantidad: q }));
-  const { data, error } = await sb.rpc('crear_pedido', { p_nombre: nom, p_celular: cel, p_items: items, p_nota: $('p-o').value.trim() || null });
+  const { data, error } = await sb.rpc('pedido_web', { p: { nombre: nom, celular: cel, dni, items, nota: $('p-o').value.trim() || null, lista: MINO && !T.mayorista ? 'MINORISTA' : null } });
   $('p-ok').disabled = false;
   if (error) { err.innerHTML = `<div class="msg m-r">${esc(error.message)}</div>`; return; }
   const r = data[0]; const nota = $('p-o').value.trim();
@@ -216,19 +249,18 @@ async function enviar() {
   if (det && det.items) {
     lineas = det.items.map(i => {
       const k = 1 + Number(i.iva_pct) / 100, q = Number(i.cantidad);
-      const pu = may ? Number(i.precio_neto_unit) : Math.round(Number(i.precio_neto_unit) * k * 100) / 100;
-      const st = may ? Number(i.subtotal_neto) : Math.round(Number(i.precio_neto_unit) * q * k * 100) / 100; sub += st;
-      return `• ${nf.format(q)} x ${i.nombre} (${i.codigo})\n   ${fmt(pu)}${may ? ' + IVA' : ''} c/u = *${fmt(st)}*`;
+      const pu = Math.round(Number(i.precio_neto_unit) * k * 100) / 100;
+      const st = Math.round(Number(i.precio_neto_unit) * q * k * 100) / 100; sub += st;
+      return `• ${nf.format(q)} x ${i.nombre} (${i.codigo})\n   ${fmt(pu)} c/u = *${fmt(st)}*`;
     }).join('\n');
   } else {
     lineas = items.map(i => { const p = PROD.find(x => x.producto_id == i.producto_id); if (!p) return `• ${i.cantidad} x ${i.producto_id}`;
       const pu = Number(p.precio); const st = pu * i.cantidad; sub += st;
-      return `• ${i.cantidad} x ${p.nombre} (${p.codigo})\n   ${fmt(pu)}${may ? ' + IVA' : ''} c/u = *${fmt(st)}*`; }).join('\n');
+      return `• ${i.cantidad} x ${p.nombre} (${p.codigo})\n   ${fmt(pu)} c/u = *${fmt(st)}*`; }).join('\n');
   }
   let tot = '';
-  if (may && det) tot = `Subtotal neto: ${fmt(Number(det.subtotal_neto))}\n${Number(det.descuento_neto) > 0 ? `Descuento: - ${fmt(Number(det.descuento_neto))}\n` : ''}IVA: ${fmt(Number(det.iva))}\n*TOTAL: ${fmt(Number(r.total))}*`;
-  else tot = `${Math.abs(sub - Number(r.total)) >= 1 ? `Subtotal: ${fmt(sub)}\nDescuento: - ${fmt(sub - Number(r.total))}\n` : ''}*TOTAL: ${fmt(Number(r.total))}*`;
-  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : ''}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom}\nCelular: ${cel}${nota ? `\nComentario: ${nota}` : ''}`;
+  tot = `${Math.abs(sub - Number(r.total)) >= 1 ? `Subtotal: ${fmt(sub)}\nDescuento: - ${fmt(sub - Number(r.total))}\n` : ''}*TOTAL: ${fmt(Number(r.total))}*`;
+  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : MINO ? ' (minorista)' : ''}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom}\nCelular: ${cel}\nDNI: ${dni}${nota ? `\nComentario: ${nota}` : ''}`;
   const wa = 'https://wa.me/' + String(T.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(txt);
   CARRO = {}; guardar(); pintar();
   $('fab-n').textContent = 0;
@@ -239,6 +271,7 @@ async function enviar() {
 function abrirCarro(v) { $('dr').classList.toggle('on', v); $('ov').classList.toggle('on', v); $('fab').style.display = v ? 'none' : ''; }
 $('fab').onclick = () => { pintarCarro(); abrirCarro(true); }; $('dr-x').onclick = () => abrirCarro(false); $('ov').onclick = () => abrirCarro(false);
 $('q').oninput = pintar; $('orden').onchange = pintar;
+$('b-min').onclick = async () => { MINO = !MINO; guardarMino(); await cargar(); pintarCarro(); };
 $('b-may').onclick = async () => { if (T.mayorista) { await sb.auth.signOut(); cargar(); } else { $('mod-may').classList.add('on'); $('m-u').focus(); } };
 $('m-c').onclick = () => $('mod-may').classList.remove('on');
 $('m-ok').onclick = async () => {
@@ -248,17 +281,52 @@ $('m-ok').onclick = async () => {
   $('mod-may').classList.remove('on'); $('may-err').innerHTML = ''; await cargar();
   if (!T.mayorista) { await sb.auth.signOut(); alert('Ese usuario no es de mayoristas.'); cargar(); }
 };
-// Lista de precios en Excel: solo con el usuario de mayoristas (su precio + IVA y el precio sugerido de venta)
+// Lista de precios en Excel: solo con el usuario de mayoristas (su precio final y el precio sugerido de venta)
 $('b-xls').onclick = () => {
   if (!T.mayorista) return;
   const r2 = n => Math.round(Number(n) * 100) / 100;
   const filas = PROD.slice().sort((a, b) => a.categoria_orden - b.categoria_orden || a.nombre.localeCompare(b.nombre))
-    .map(p => [p.categoria, p.codigo, p.nombre, p.bulto || '', r2(p.precio), Number(p.iva_pct), r2(Number(p.precio) * (1 + Number(p.iva_pct) / 100)), p.precio_sugerido ? r2(p.precio_sugerido) : '', p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);
+    .map(p => [p.categoria, p.codigo, p.nombre, p.bulto || '', r2(p.precio), p.precio_sugerido ? r2(p.precio_sugerido) : '', p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);
   const hoyTxt = new Date().toLocaleDateString('es-AR');
-  const ws = XLSX.utils.aoa_to_sheet([[`${T.nombre || ''} · Lista de precios mayorista · ${hoyTxt}`], [], ['Categoría', 'Código', 'Producto', 'Bulto', 'Precio neto', 'IVA %', 'Precio con IVA', 'Precio sugerido de venta', 'Oferta', 'Stock'], ...filas]);
-  ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 42 }, { wch: 7 }, { wch: 14 }, { wch: 7 }, { wch: 15 }, { wch: 22 }, { wch: 8 }, { wch: 10 }];
+  const ws = XLSX.utils.aoa_to_sheet([[`${T.nombre || ''} · Lista de precios mayorista · ${hoyTxt}`], [], ['Categoría', 'Código', 'Producto', 'Bulto', 'Precio mayorista', 'Precio sugerido de venta', 'Oferta', 'Stock'], ...filas]);
+  ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 42 }, { wch: 7 }, { wch: 16 }, { wch: 22 }, { wch: 8 }, { wch: 10 }];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lista de precios'); XLSX.writeFile(wb, 'Lista_mayorista_' + hoyTxt.replace(/\//g, '-') + '.xlsx');
 };
+// ---- Banners del inicio (con las fotos de los productos; se actualizan solos)
+const SLIDES = [
+  { cats: ['Tortas grandes', 'Tortas medianas'], k: 'Tortas', t: 'Tortas para el gran final', p: 'Grandes y medianas, de muchos tiros y colores, para cerrar tu festejo a lo grande.' },
+  { cats: ['Candelas'], k: 'Candelas', t: 'Candelas y luces de colores', p: 'Para festejos, egresados y eventos.' },
+  { cats: ['Infantil'], k: 'Infantil', t: 'Para disfrutar en familia', p: 'Bengalitas, estrellitas y más.' },
+  { cats: ['Volcanes'], k: 'Volcanes', t: 'Volcanes y fuentes', p: 'Lluvias de chispas y colores desde el piso.' },
+  { cats: ['Bases de misil'], k: 'Bases de misil', t: 'Bases de misil', p: 'De 16 a 100 tiros.' },
+  { cats: ['Giratorios'], k: 'Giratorios', t: 'Giratorios', p: 'Helicópteros, abejitas, drones y más.' },
+  { cats: null, k: 'Cómo pedir', t: 'Armá tu pedido y mandalo por WhatsApp', p: 'Elegí los productos, completá tus datos y te confirmamos el pedido por WhatsApp.' }];
+let HERO_I = 0, HERO_T = null;
+function heroArmar() {
+  const h = $('hero'); if (!h) return;
+  const conFoto = PROD.filter(x => x.fotos && x.fotos[0] && !x.sin_stock);
+  const sl = SLIDES.map(s => {
+    const ps = s.cats ? conFoto.filter(x => s.cats.includes(x.categoria)).sort((a, b) => (b.destacado - a.destacado) || (s.cats.indexOf(a.categoria) - s.cats.indexOf(b.categoria)) || a.nombre.localeCompare(b.nombre)).slice(0, 3)
+                      : [...conFoto].sort((a, b) => (b.destacado - a.destacado) || a.nombre.localeCompare(b.nombre)).filter((x, i, a) => a.findIndex(y => y.categoria === x.categoria) === i).slice(0, 3);
+    return { ...s, ps };
+  }).filter(s => s.ps.length >= 2);
+  if (!sl.length) { h.innerHTML = ''; return; }
+  h.innerHTML = sl.map((s, i) => `<div class="slide${i === 0 ? ' on' : ''}"><div class="tx"><span class="k">${esc(s.k)}</span><h3>${esc(s.t)}</h3><p>${esc(s.p)}</p>${s.cats ? `<button class="cta" data-hc="${esc(s.cats[0])}">Ver ${esc(s.k.toLowerCase())} <i class="fas fa-arrow-right"></i></button>` : '<a class="cta" href="como-pedir.html">Cómo pido <i class="fas fa-arrow-right"></i></a>'}</div>
+    <div class="fo">${s.ps.map(x => `<img src="${esc(x.fotos[0])}" alt="${esc(x.nombre)}" loading="lazy">`).join('')}</div></div>`).join('') + `<div class="dots">${sl.map((s, i) => `<span data-hd="${i}" class="${i === 0 ? 'on' : ''}"></span>`).join('')}</div>`;
+  HERO_I = 0; heroAuto();
+}
+function heroIr(i) {
+  const sl = $('hero').querySelectorAll('.slide'), dt = $('hero').querySelectorAll('.dots span'); if (!sl.length) return;
+  HERO_I = (i + sl.length) % sl.length; sl.forEach((x, k) => x.classList.toggle('on', k === HERO_I)); dt.forEach((x, k) => x.classList.toggle('on', k === HERO_I));
+}
+function heroAuto() { clearInterval(HERO_T); HERO_T = setInterval(() => { if ($('hero').style.display !== 'none' && !document.hidden) heroIr(HERO_I + 1); }, 6000); }
+$('hero').onclick = e => {
+  const d = e.target.closest('[data-hd]'); if (d) { heroIr(Number(d.dataset.hd)); heroAuto(); return; }
+  const c = e.target.closest('[data-hc]'); if (c) { const ch = [...document.querySelectorAll('#cats .cat')].find(x => x.dataset.c === c.dataset.hc); if (ch) { ch.click(); window.scrollTo({ top: 0, behavior: 'smooth' }); } }
+};
+$('hero').onmouseenter = () => clearInterval(HERO_T); $('hero').onmouseleave = heroAuto;
+{ let x0 = null; $('hero').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  $('hero').addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { heroIr(HERO_I + (dx < 0 ? 1 : -1)); heroAuto(); } x0 = null; }); }
 cargar();
 </script>
 </body>

@@ -176,6 +176,7 @@ const CAMPOS_PRODUCTO = [
   { k: 'codigo', l: 'Código', req: 1 }, { k: 'nombre', l: 'Nombre', req: 1 },
   { k: 'categoria_id', l: 'Categoría', t: 'sel', op: OPC.categorias, req: 1 },
   { k: 'costo', l: 'Costo neto del proveedor (sin IVA)', t: 'num', dueno: 1, ayuda: 'Con el costo y el margen de cada lista se calculan los precios solos.' },
+  { k: 'precio_minorista', l: 'Precio minorista (final)', t: 'num', dueno: 1, ayuda: 'Opcional. Es el precio de la lista Minorista (botón Minorista del catálogo). Vacío = el precio de la lista base.' },
   { k: 'alicuota_iva_id', l: 'IVA', t: 'sel', op: OPC.alicuotas, vacio: false, def: 1 },
   { k: 'unidad_id', l: 'Unidad de venta', t: 'sel', op: OPC.unidades, vacio: false, def: 1 },
   { k: 'bulto', l: 'Unidades por bulto', t: 'num' },
@@ -355,12 +356,18 @@ function preciosCambiar() {
 PAGINAS.listas = async () => {
   pagina({ titulo: 'Listas de precios', icono: 'list-ol', sub: 'Cada lista tiene su margen sobre el costo; los precios se recalculan solos',
     botones: btnExcel(`exportarExcel('g_lis','Listas de precios')`) + btnPdf(`exportarPdf('g_lis','Listas de precios')`) + (ES_DUENO ? btnNuevo('listaEditar()') : ''),
-    cuerpo: `<div class="alert al-i">Una lista se calcula de dos formas: <b>con margen</b> (costo × (1 + margen), redondeado) o <b>desde otra lista</b> con un % de descuento. Hoy la lista <b>Público</b> es la lista base (precio sugerido) y la <b>Mayorista</b> sale de ella con su descuento. Si cambia el costo o el margen de la base, las listas que salen de ella se recalculan solas.</div><div class="panel" id="lis_g"></div>` });
+    cuerpo: `<div class="alert al-i">Una lista se calcula de dos formas: <b>con margen</b> (costo × (1 + margen), redondeado) o <b>desde otra lista</b> con un % de descuento. Hoy la lista <b>Público</b> es la lista base (precio sugerido), la <b>Mayorista</b> sale de ella con su descuento y la <b>Minorista</b> sale de ella sin descuento, salvo los productos con precio minorista cargado. Si cambia el costo o el margen de la base, las listas que salen de ella se recalculan solas. Con <b>Precios</b> ves la lista completa, buscás un producto y le ponés un precio manual.</div><div class="panel" id="lis_g"></div>` });
   PAG.listas = await rpc('listado_listas'); listasPintar();
 };
 function listasPintar() {
   $('lis_g').innerHTML = grilla('g_lis', [{ t: 'Código', k: 'codigo' }, { t: 'Nombre', k: 'nombre' }, { t: 'Cómo se calcula', k: 'calc', f: r => r.lista_base_id ? `${esc(r.lista_base)} − ${fmtP(r.descuento_base_pct)}` : (ES_DUENO && r.margen != null ? 'Costo + ' + fmtP(r.margen) : 'Costo + margen'), xf: r => r.lista_base_id ? `${r.lista_base} - ${r.descuento_base_pct}%` : 'Costo + ' + (r.margen ?? '') + '%' }, ...(ES_DUENO ? [{ t: 'Vigente desde', k: 'margen_desde', f: r => r.lista_base_id ? '' : fmtDT(r.margen_desde), xf: r => r.lista_base_id ? '' : r.margen_desde }] : []), { t: 'Redondeo', k: 'redondeo', f: 'm', cls: 'tr' }, { t: 'Redondea final', k: 'redondeo_sobre_final', f: r => r.redondeo_sobre_final ? 'Sí' : 'No' }, { t: 'Productos con precio', k: 'productos_con_precio', f: 'n', cls: 'tr' }, { t: 'Estado', k: 'estado', f: 'e' }], PAG.listas,
-    { acciones: r => ES_DUENO ? `<button class="btn btn-xs btn-s" title="Historial de márgenes" onclick="listaHist(${r.id})"><i class="fas fa-clock-rotate-left"></i></button><button class="btn btn-xs btn-b" title="Editar" onclick="listaEditar(${r.id})"><i class="fas fa-pen"></i></button>` : '' });
+    { acciones: r => ES_DUENO ? `${r.estado === 'activa' ? `<button class="btn btn-xs btn-g" title="Ver y editar precios" onclick="listaPrecios(${r.id})"><i class="fas fa-table-list"></i> Precios</button>` : ''}<button class="btn btn-xs btn-s" title="Historial de márgenes" onclick="listaHist(${r.id})"><i class="fas fa-clock-rotate-left"></i></button><button class="btn btn-xs btn-b" title="Editar" onclick="listaEditar(${r.id})"><i class="fas fa-pen"></i></button>${['PUBLICO', 'MAYORISTA', 'MINORISTA'].includes(r.codigo) ? '' : `<button class="btn btn-xs ${r.estado === 'activa' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activa' ? 'Desactivar' : 'Reactivar'}" onclick="listaEstado(${r.id})"><i class="fas fa-${r.estado === 'activa' ? 'ban' : 'rotate-left'}"></i></button>`}` : '' });
+}
+async function listaEstado(id) {
+  const r = PAG.listas.find(x => x.id === id); const act = r.estado === 'activa';
+  if (!await confirmar(act ? `¿Desactivar la lista <b>${esc(r.nombre)}</b>? No se borra: queda con todo su historial y la podés reactivar cuando quieras.` : `¿Reactivar la lista <b>${esc(r.nombre)}</b>? Se recalculan sus precios.`, act ? { peligro: true, ok: 'Desactivar' } : {})) return;
+  await rpc('guardar_lista_precio', { p: { id, nombre: r.nombre, estado: act ? 'inactiva' : 'activa' } });
+  toast(act ? 'Lista desactivada' : 'Lista reactivada', 'g'); await cargarMaestros(); PAG.listas = await rpc('listado_listas'); listasPintar();
 }
 function listaEditar(id) {
   const r = id ? PAG.listas.find(x => x.id === id) : { redondeo: 1, estado: 'activa' };
@@ -377,6 +384,47 @@ function listaEditar(id) {
 function listaHist(id) {
   const r = PAG.listas.find(x => x.id === id);
   showModal(modalHdr('Historial de márgenes · ' + esc(r.nombre)) + `<div class="mb2">${grilla('g_lh', [{ t: 'Margen', k: 'margen', f: 'p', cls: 'tr' }, { t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: 'dt' }], r.historial || [])}</div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`);
+}
+
+/* ---------- Precios de una lista: ver, buscar y poner precio manual ---------- */
+async function listaPrecios(id) {
+  const d = await rpc('lista_precios_detalle', { p_lista: id }); const L = d.lista;
+  PAG.lp = d; PAG.lpId = id;
+  const como = L.lista_base_id ? `${esc(L.lista_base)} − ${fmtP(L.descuento_base_pct)}` : 'Costo + ' + fmtP(L.margen);
+  pagina({ titulo: 'Precios · ' + esc(L.nombre), icono: 'table-list', sub: 'Se calcula: ' + como + (L.codigo === 'MINORISTA' ? ' (o el precio minorista del producto)' : ''),
+    botones: `<button class="btn btn-s" onclick="ir('listas')"><i class="fas fa-arrow-left"></i> Volver a listas</button>` + btnExcel(`exportarExcel('g_lp','Precios ${esc(L.nombre)}')`),
+    cuerpo: `<div class="alert al-i">Tocá el lápiz para poner un <b>precio manual</b>: es el precio final, el que ve el cliente. Queda fijo aunque cambie el costo, hasta que lo vuelvas al cálculo.${L.lista_base_id ? '' : ' Un precio manual en esta lista también cambia las listas que salen de ella (por ejemplo, la Mayorista).'}</div>
+      <div class="panel"><div class="flex gap2 fw aic mb3"><input id="lp_q" class="fi" style="max-width:380px" placeholder="Buscar por código, producto o categoría"><label class="flex aic gap1"><input type="checkbox" id="lp_m"> Solo con precio manual</label><span class="ss" id="lp_n"></span></div><div id="lp_g"></div></div>` });
+  $('lp_q').oninput = listaPreciosPintar; $('lp_m').onchange = listaPreciosPintar; listaPreciosPintar(); $('lp_q').focus();
+}
+function listaPreciosPintar() {
+  const q = norm($('lp_q').value || ''), solo = $('lp_m').checked;
+  const rows = PAG.lp.items.filter(r => (!solo || r.manual != null) && (!q || norm(r.codigo + ' ' + r.producto + ' ' + r.categoria).includes(q)));
+  $('lp_n').textContent = rows.length + ' de ' + PAG.lp.items.length + ' productos · ' + PAG.lp.items.filter(r => r.manual != null).length + ' con precio manual';
+  $('lp_g').innerHTML = grilla('g_lp', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Categoría', k: 'categoria' }, { t: 'Costo neto', k: 'costo', f: 'm', cls: 'tr' },
+    { t: 'Calculado', k: 'calculado', f: r => r.calculado == null ? '—' : fmt(r.calculado), xf: r => r.calculado ?? '', cls: 'tr' },
+    { t: 'Precio manual', k: 'manual', f: r => r.manual == null ? '' : `<b>${fmt(r.manual)}</b>${r.motivo ? `<div class="ss">${esc(r.motivo)}</div>` : ''}`, xf: r => r.manual ?? '', cls: 'tr' },
+    { t: 'Precio vigente', k: 'precio', f: r => r.precio == null ? '<span class="td">sin precio</span>' : `<b>${fmt(r.precio)}</b>`, xf: r => r.precio ?? '', cls: 'tr' }], rows,
+    { claseFila: r => r.manual != null ? 'fila-manual' : '', acciones: r => `<button class="btn btn-xs btn-s" title="Historial de precios" onclick="listaPrecioHist(${r.producto_id})"><i class="fas fa-clock-rotate-left"></i></button><button class="btn btn-xs btn-b" title="Poner precio manual" onclick="listaPrecioEditar(${r.producto_id})"><i class="fas fa-pen"></i></button>${r.manual != null ? `<button class="btn btn-xs btn-w" title="Volver al precio calculado" onclick="listaPrecioQuitar(${r.producto_id})"><i class="fas fa-rotate-left"></i></button>` : ''}` });
+}
+async function listaPreciosRecargar() { const q = $('lp_q').value, m = $('lp_m').checked; PAG.lp = await rpc('lista_precios_detalle', { p_lista: PAG.lpId }); $('lp_q').value = q; $('lp_m').checked = m; listaPreciosPintar(); }
+function listaPrecioEditar(pid) {
+  const r = PAG.lp.items.find(x => x.producto_id === pid); const L = PAG.lp.lista;
+  modalForm({ titulo: 'Precio manual · ' + esc(r.codigo) + ' · ' + esc(L.nombre), v: { precio: r.manual ?? r.precio, motivo: r.motivo || '' }, cls: '',
+    intro: `<div class="alert al-i"><b>${esc(r.producto)}</b><br>Calculado: <b>${r.calculado == null ? '—' : fmt(r.calculado)}</b> · Vigente: <b>${r.precio == null ? '—' : fmt(r.precio)}</b></div>`,
+    campos: [{ k: 'precio', l: 'Precio final (el que ve el cliente)', t: 'num', req: 1 }, ...(L.codigo === 'MINORISTA' ? [] : [{ k: 'motivo', l: 'Motivo (opcional)', ph: 'Ej.: precio de lanzamiento' }])],
+    guardar: async p => { if (!(Number(p.precio) > 0)) throw new Error('El precio tiene que ser mayor a cero.');
+      await rpc('precio_manual_guardar', { p_producto: pid, p_lista: PAG.lpId, p_precio: Number(p.precio), p_motivo: p.motivo || null }); toast('Precio manual guardado', 'g'); await listaPreciosRecargar(); } });
+}
+async function listaPrecioHist(pid) {
+  const r = PAG.lp.items.find(x => x.producto_id === pid);
+  const h = await rpc('lista_precio_historial', { p_lista: PAG.lpId, p_producto: pid });
+  showModal(modalHdr('Historial de precios · ' + esc(r.codigo) + ' · ' + esc(PAG.lp.lista.nombre)) + `<div class="mb2"><div class="ss mb2">${esc(r.producto)}</div>${grilla('g_lph', [{ t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: r => r.hasta ? fmtDT(r.hasta) : '<span class="badge bg">vigente</span>' }, { t: 'Precio', k: 'precio', f: 'm', cls: 'tr' }, { t: 'Costo neto', k: 'costo', f: 'm', cls: 'tr' }, { t: 'Origen', k: 'manual', f: r => r.manual ? `<b>Manual</b>${r.motivo ? ' · ' + esc(r.motivo) : ''}` : 'Calculado' }], h)}</div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
+}
+async function listaPrecioQuitar(pid) {
+  const r = PAG.lp.items.find(x => x.producto_id === pid);
+  if (!await confirmar(`¿Volver <b>${esc(r.producto)}</b> al precio calculado (${r.calculado == null ? '—' : fmt(r.calculado)})? El precio manual queda en el historial.`)) return;
+  await rpc('precio_manual_guardar', { p_producto: pid, p_lista: PAG.lpId, p_precio: null, p_motivo: null }); toast('Volvió al precio calculado', 'g'); await listaPreciosRecargar();
 }
 
 /* ---------- Ofertas ---------- */
@@ -424,7 +472,7 @@ PAGINAS.empresa = async () => {
   const e = (await rpc('abm_listar', { p_tabla: 'config_empresa' }))[0] || {};
   const campos = [{ k: 'razon_social', l: 'Razón social' }, { k: 'nombre_fantasia', l: 'Nombre de fantasía', req: 1 }, { k: 'cuit', l: 'CUIT' }, { k: 'condicion_iva_id', l: 'Condición IVA', t: 'sel', op: OPC.condIva }, { k: 'direccion', l: 'Dirección' }, { k: 'horarios', l: 'Horarios' },
     { k: 'whatsapp_pedidos', l: 'WhatsApp para pedidos', ph: '+5493874749807' }, { k: 'email_pedidos', l: 'Email' }, { k: 'instagram', l: 'Instagram' }, { k: 'facebook', l: 'Facebook' }, { k: 'tiktok', l: 'TikTok' },
-    { k: 'plazo_pedido_horas', l: 'Vencimiento de pedidos web (horas)', t: 'num' }, { k: 'tope_pedidos_dia', l: 'Máximo de pedidos por celular por día', t: 'num' }, { k: 'validez_presupuesto_dias', l: 'Validez de presupuestos (días)', t: 'num' }, { k: 'leyenda_precios', l: 'Leyenda de precios (catálogo)', t: 'area', ancho: 1 }];
+    { k: 'plazo_pedido_horas', l: 'Vencimiento de pedidos web (horas)', t: 'num' }, { k: 'minimo_compra_minorista', l: 'Compra mínima con precios minoristas ($)', t: 'num', ayuda: 'Pedido mínimo, con los precios finales, para comprar desde el botón Minorista del catálogo.' }, { k: 'validez_presupuesto_dias', l: 'Validez de presupuestos (días)', t: 'num' }, { k: 'leyenda_precios', l: 'Leyenda de precios (catálogo)', t: 'area', ancho: 1 }];
   pagina({ titulo: 'Datos de la empresa', icono: 'building', sub: 'Aparecen en los PDF y en el catálogo',
     cuerpo: `<div class="panel pb">${formHtml(campos, e, 'emp')}<div class="flex gap2 mt3"><button class="btn btn-p" id="emp_ok"><i class="fas fa-floppy-disk"></i> Guardar</button></div></div>` });
   $('emp_ok').onclick = async () => { let p; try { p = formLeer(campos, {}, 'emp'); } catch (x) { return toast(x.message, 'r'); } if (p.condicion_iva_id) p.condicion_iva_id = Number(p.condicion_iva_id); await rpc('abm_guardar', { p_tabla: 'config_empresa', p }); await cargarMaestros(); toast('Datos guardados', 'g'); };

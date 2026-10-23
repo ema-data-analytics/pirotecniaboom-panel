@@ -220,9 +220,9 @@ function comprobanteTotalesPdf(d, ri) {
   return desglosePdf(desgloseDesc({ items: d.items, total: d.total })).concat([['TOTAL', fmt(d.total), 1]]);
 }
 async function pdfComprobante(id) {
-  const d = await rpc('comprobante_detalle', { p_id: id }); const ri = d.discrimina_iva;
+  const d = await rpc('comprobante_detalle', { p_id: id }); const ri = false; // al cliente: siempre precio final, sin texto de IVA
   const doc = pdfDocumento({ titulo: d.tipo_nombre.toUpperCase(), numero: d.numero, fecha: fmtD(d.fecha), sub: 'Comprobante interno · no válido como factura',
-    receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.condicion_iva, d.cliente.direccion, d.cliente.celular] },
+    receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     extra: { titulo: 'Condiciones', lineas: [d.condicion === 'contado' ? 'Contado' : 'Cuenta corriente', 'Lista: ' + d.lista, d.origen ? 'Origen: ' + d.origen.numero : '', d.factura_externa ? 'Factura ARCA: ' + d.factura_externa : '', d.pedido ? 'Pedido: ' + d.pedido : '', d.presupuesto ? 'Presupuesto: ' + d.presupuesto : ''] },
     cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
     filas: d.items.map(i => [i.codigo || '', i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
@@ -300,9 +300,9 @@ async function presupuestosCargar() {
 }
 async function presupuestoNuevo() { await editorDoc('presupuesto', null); }
 async function presupuestoPdf(id) {
-  const d = await rpc('presupuesto_detalle', { p_id: id }); const ri = d.discrimina_iva;
+  const d = await rpc('presupuesto_detalle', { p_id: id }); const ri = false; // al cliente: siempre precio final, sin texto de IVA
   const doc = pdfDocumento({ titulo: 'PRESUPUESTO', numero: d.numero + (d.version > 1 ? ' · v' + d.version : ''), fecha: fmtD(d.fecha), sub: (d.version > 1 ? 'Versión ' + d.version + ' · ' : '') + 'Válido hasta: ' + fmtD(d.valido_hasta),
-    receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.condicion_iva, d.cliente.direccion, d.cliente.celular] },
+    receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
     filas: d.items.map(i => [i.codigo, i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
     colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
@@ -496,15 +496,15 @@ PAGINAS.pedidos = async () => {
 };
 async function pedidosCargar() {
   const rows = await rpc('listado_pedidos', { f: leerFiltros() });
-  $('ped_g').innerHTML = grilla('g_ped', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'Pedido', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>`, xf: r => r.numero }, { t: 'Nombre', k: 'nombre' }, { t: 'Celular', k: 'celular' }, { t: 'Canal', k: 'canal' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Vence', k: 'vence_at', f: r => r.estado === 'abierto' ? fmtDT(r.vence_at) : '' }, { t: 'Estado', k: 'estado', f: 'e' }, { t: 'Venta', k: 'venta' }], rows,
-    { acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="verPedido(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-xs btn-wa" title="WhatsApp" onclick="waAbrir('${r.celular}','Hola ${esc(r.nombre).replace(/'/g, '')}! Recibimos tu pedido ${r.numero}.')"><i class="fab fa-whatsapp"></i></button>${r.estado === 'abierto' ? `<button class="btn btn-xs btn-b" title="Editar" onclick="pedidoEditar(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-g" title="Confirmar (emitir venta)" onclick="pedidoConfirmar(${r.id})"><i class="fas fa-check"></i></button><button class="btn btn-xs btn-d" title="Cancelar" onclick="pedidoCancelar(${r.id})"><i class="fas fa-ban"></i></button>` : ''}` });
+  $('ped_g').innerHTML = grilla('g_ped', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'Pedido', k: 'numero', f: r => `<b class="mono">${esc(r.numero)}</b>`, xf: r => r.numero }, { t: 'Nombre', k: 'nombre' }, { t: 'Celular', k: 'celular' }, { t: 'DNI', k: 'documento', f: r => esc(r.documento || '') }, { t: 'Lista', k: 'lista' }, { t: 'Líneas', k: 'lineas', f: 'n', cls: 'tr' }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }, { t: 'Vence', k: 'vence_at', f: r => r.estado === 'abierto' ? fmtDT(r.vence_at) : '' }, { t: 'Estado', k: 'estado', f: 'e' }, { t: 'Venta', k: 'venta' }], rows,
+    { acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="verPedido(${r.id})"><i class="fas fa-eye"></i></button><button class="btn btn-xs btn-wa" title="WhatsApp" onclick="waAbrir('${r.celular}','Hola ${esc(r.nombre).replace(/'/g, '')}! Recibimos tu pedido ${r.numero}.')"><i class="fab fa-whatsapp"></i></button>${r.estado === 'abierto' ? `<button class="btn btn-xs btn-b" title="Editar" onclick="pedidoEditar(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-g" title="Confirmar (emitir venta)" onclick="pedidoConfirmar(${r.id})"><i class="fas fa-check"></i></button><button class="btn btn-xs btn-s" title="Pasar a presupuesto" onclick="pedidoAPresupuesto(${r.id})"><i class="fas fa-file-pen"></i></button><button class="btn btn-xs btn-d" title="Cancelar" onclick="pedidoCancelar(${r.id})"><i class="fas fa-ban"></i></button>` : ''}` });
 }
 async function verPedido(id) {
   const d = await rpc('pedido_detalle', { p_id: id });
-  showModal(modalHdr('Pedido ' + esc(d.numero)) + `<div class="mb2"><div class="grid-2 mb3"><div class="kv"><b>Fecha</b><span>${fmtDT(d.fecha)}</span><b>Nombre</b><span>${esc(d.nombre)}</span><b>Celular</b><span>${esc(d.celular)}</span><b>Canal</b><span>${esc(d.canal)} · ${esc(d.lista)}</span></div><div class="kv"><b>Estado</b><span>${badgeEstado(d.estado)}</span><b>Vence</b><span>${fmtDT(d.vence_at)}</span>${d.nota ? `<b>Nota</b><span>${esc(d.nota)}</span>` : ''}${d.motivo_cierre ? `<b>Cierre</b><span>${esc(d.motivo_cierre)}</span>` : ''}</div></div>
+  showModal(modalHdr('Pedido ' + esc(d.numero)) + `<div class="mb2"><div class="grid-2 mb3"><div class="kv"><b>Fecha</b><span>${fmtDT(d.fecha)}</span><b>Nombre</b><span>${esc(d.nombre)}</span><b>Celular</b><span>${esc(d.celular)}</span>${d.documento ? `<b>DNI</b><span>${esc(d.documento)}</span>` : ''}<b>Canal</b><span>${esc(d.canal)} · ${esc(d.lista)}</span></div><div class="kv"><b>Estado</b><span>${badgeEstado(d.estado)}</span><b>Vence</b><span>${fmtDT(d.vence_at)}</span>${d.nota ? `<b>Nota</b><span>${esc(d.nota)}</span>` : ''}${d.motivo_cierre ? `<b>Cierre</b><span>${esc(d.motivo_cierre)}</span>` : ''}</div></div>
     ${grilla('g_pi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'P. unit. final', k: 'precio_final_unit', f: 'm', cls: 'tr' }, { t: 'Disponible', k: 'disponible', f: r => r.disponible == null ? '—' : `<span class="${Number(r.disponible) < Number(r.cantidad) ? 'td' : ''}">${fmtN(r.disponible)}</span>`, cls: 'tr' }], d.items)}
     <div class="tot-box mt3" style="margin-left:auto;max-width:300px"><div class="row"><span>Neto</span><b class="mono">${fmt(d.subtotal_neto)}</b></div>${Number(d.descuento_neto) ? `<div class="row"><span>Descuento</span><b class="mono">- ${fmt(d.descuento_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(d.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(d.total)}</span></div></div></div>
-    <div class="mf">${d.estado === 'abierto' ? `<button class="btn btn-g" onclick="closeModal(this);pedidoConfirmar(${d.id})"><i class="fas fa-check"></i> Confirmar</button>` : ''}${d.venta ? `<button class="btn btn-b" onclick="closeModal(this);verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta</button>` : ''}<button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
+    <div class="mf">${d.estado === 'abierto' ? `<button class="btn btn-s" onclick="closeModal(this);pedidoAPresupuesto(${d.id})"><i class="fas fa-file-pen"></i> Pasar a presupuesto</button><button class="btn btn-g" onclick="closeModal(this);pedidoConfirmar(${d.id})"><i class="fas fa-check"></i> Confirmar</button>` : ''}${d.presupuesto ? `<button class="btn btn-b" onclick="closeModal(this);editorDoc('presupuesto', ${d.presupuesto.id})"><i class="fas fa-eye"></i> Ver presupuesto ${esc(d.presupuesto.numero)}</button>` : ''}${d.venta ? `<button class="btn btn-b" onclick="closeModal(this);verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta</button>` : ''}<button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
 }
 async function pedidoEditar(id) {
   const d = await rpc('pedido_detalle', { p_id: id }); const mid = 'pe' + uid(); let items = d.items.map(i => ({ producto_id: i.producto_id, label: i.codigo + ' · ' + i.producto, cantidad: Number(i.cantidad) }));
@@ -533,6 +533,12 @@ async function pedidoConfirmar(id) {
     const cot = await rpc('cotizar_venta', { p_venta: base });
     modalPagos({ total: Number(cot.total), titulo: 'Cobro del pedido ' + esc(d.numero), onConfirm: async (pagos, ent) => fin(await rpc('registrar_venta', { p_venta: { ...base, pagos, efectivo_entregado: ent } })) });
   };
+}
+async function pedidoAPresupuesto(id) {
+  const d = await rpc('pedido_detalle', { p_id: id });
+  if (!await confirmar(`¿Pasar el pedido <b>${esc(d.numero)}</b> de <b>${esc(d.nombre)}</b> a presupuesto? Se arma un presupuesto <b>En carga</b> con los productos y precios del pedido, para que lo edites y lo grabes. El pedido queda cerrado.`)) return;
+  const pre = await rpc('pedido_a_presupuesto', { p_pedido: id });
+  toast('Pedido pasado a presupuesto', 'g'); actualizarBadges(); await editorDoc('presupuesto', pre);
 }
 async function pedidoCancelar(id) {
   const m = await pedirTexto('Cancelar pedido', 'Motivo', { ayuda: 'El pedido queda cancelado (no se borra) y libera el stock reservado.' }); if (!m) return;

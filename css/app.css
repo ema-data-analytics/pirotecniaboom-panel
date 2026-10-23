@@ -175,3 +175,4 @@ tr.anulado td{opacity:.55;text-decoration:line-through}
 }
 @media print{#sidebar,.page-hdr,.no-print{display:none!important}#main{overflow:visible}}
 td.mono{white-space:nowrap}
+tr.fila-manual td{background:#fff8e1}
