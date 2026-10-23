@@ -233,7 +233,7 @@ function fotosWidget(cont, urls) {
 }
 PAGINAS.productos = async () => {
   pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
-    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button><button class="btn btn-s" onclick="ivaMasivo()"><i class="fas fa-receipt"></i> IVA</button>` + btnNuevo('productoEditar()') : ''),
+    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button><button class="btn btn-s" onclick="ivaMasivo()"><i class="fas fa-receipt"></i> IVA</button>` + btnNuevo('productoEditar()') : '') + `<button class="btn btn-s" onclick="productoColumnas()"><i class="fas fa-table-columns"></i> Columnas</button>`,
     cuerpo: `<div class="grid-4 mb3" id="prod_k"></div><div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Código o nombre' }, { k: 'cat', t: 'sel', l: 'Categoría', op: OPC.categorias() }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'bajo', t: 'chk', l: 'Bajo mínimo' }, { k: 'sinstock', t: 'chk', l: 'Sin stock' }], productosPintar)}<div id="prod_g"></div></div>` });
   PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
 };
@@ -249,8 +249,26 @@ function productosPintar() {
     { t: 'Disponible', k: 'disponible', f: r => r.controla_stock ? fmtN(r.disponible) : '—', xf: r => r.controla_stock ? Number(r.disponible) : '', cls: 'tr' }];
   if (ES_DUENO) cols.push({ t: 'Costo (interno)', k: 'costo', f: 'm', cls: 'tr' });
   cols.push({ t: 'Minorista', k: 'min', f: r => r.min == null ? '<span class="td">sin precio</span>' : fmt(r.min), xf: r => r.min ?? '', cls: 'tr' }, { t: 'Mayorista', k: 'may', f: r => r.may == null ? '<span class="td">sin precio</span>' : fmt(r.may), xf: r => r.may ?? '', cls: 'tr' }, { t: 'Lista 3', k: 'l3', f: r => r.l3 == null ? '—' : fmt(r.l3), xf: r => r.l3 ?? '', cls: 'tr' }, { t: 'Bulto', k: 'bulto', f: r => Number(r.bulto) > 1 ? 'x' + fmtN(r.bulto) : '—', xf: r => r.bulto ?? '', cls: 'tr' }, { t: 'Display', k: 'display', f: r => r.display ? `<span class="ss" title="${esc(r.display)}">${esc(r.display.length > 28 ? r.display.slice(0, 27) + '…' : r.display)}</span>` : '—', xf: r => r.display || '' }, { t: 'Estado', k: 'estado', f: 'e' });
-  $('prod_g').innerHTML = grilla('g_prod', cols, rows, { claseFila: r => r.estado !== 'activo' ? 'anulado' : '',
+  const ocultas = prodOcultas(); const vis = cols.filter(c => !ocultas.includes(c.t || 'Foto'));
+  $('prod_g').innerHTML = grilla('g_prod', vis, rows, { claseFila: r => r.estado !== 'activo' ? 'anulado' : '',
     acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="productoVer(${r.id})"><i class="fas fa-eye"></i></button>` + (ES_DUENO ? `<button class="btn btn-xs btn-b" title="Editar en la grilla" onclick="productoLinea(${r.id}, this)"><i class="fas fa-pen"></i></button><button class="btn btn-xs ${r.estado === 'activo' ? 'btn-d' : 'btn-g'}" title="${r.estado === 'activo' ? 'Dar de baja' : 'Reactivar'}" onclick="productoEstado(${r.id})"><i class="fas fa-${r.estado === 'activo' ? 'ban' : 'rotate-left'}"></i></button>` : '') });
+}
+/* ---- Columnas visibles de la grilla de productos: cada uno tilda qué ver (queda guardado en esa computadora) ---- */
+const PROD_COLS_FIJAS = ['Código', 'Producto'];
+let PROD_OC_MEM = null;
+function prodOcultas() { if (PROD_OC_MEM) return PROD_OC_MEM; try { const v = JSON.parse(localStorage.getItem('pb_prod_ocultas')); if (Array.isArray(v)) return v; } catch (e) { } return ['Stock', 'Disponible', 'Lista 3']; }
+function productoColumnas() {
+  const todas = ['Foto', 'Código', 'Producto', 'Categoría', 'Stock', 'Disponible'].concat(ES_DUENO ? ['Costo (interno)'] : []).concat(['Minorista', 'Mayorista', 'Lista 3', 'Bulto', 'Display', 'Estado']);
+  const oc = prodOcultas();
+  const o = showModal(modalHdr('Columnas a mostrar') + `<div class="mb2"><div class="ss mb2">Tildá lo que querés ver en la grilla. Queda guardado en esta computadora.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px">${todas.map(t => `<label class="chk"><input type="checkbox" data-c="${esc(t)}" ${oc.includes(t) ? '' : 'checked'} ${PROD_COLS_FIJAS.includes(t) ? 'disabled' : ''}> ${esc(t)}</label>`).join('')}</div></div>
+    <div class="mf"><button class="btn btn-s" data-r="todo">Mostrar todo</button><button class="btn btn-p" data-r="ok">Aplicar</button></div>`, 'md-sm');
+  o.querySelector('[data-r="todo"]').onclick = () => o.querySelectorAll('input[data-c]').forEach(i => i.checked = true);
+  o.querySelector('[data-r="ok"]').onclick = () => {
+    const ocultas = [...o.querySelectorAll('input[data-c]')].filter(i => !i.checked && !PROD_COLS_FIJAS.includes(i.dataset.c)).map(i => i.dataset.c);
+    PROD_OC_MEM = ocultas; try { localStorage.setItem('pb_prod_ocultas', JSON.stringify(ocultas)); } catch (e) { }
+    o.remove(); productosPintar();
+  };
 }
 /* ---- Edición en la grilla: el lápiz abre la línea para cambiar precios, costo y bulto sin entrar a la ficha.
    Enter guarda y abre la línea siguiente · Esc cancela · ✓ guarda · la hoja abre la ficha completa ---- */
