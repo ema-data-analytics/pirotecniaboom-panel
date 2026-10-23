@@ -230,7 +230,7 @@ function fotosWidget(cont, urls) {
 }
 PAGINAS.productos = async () => {
   pagina({ titulo: 'Productos y precios', icono: 'box-open', sub: 'Catálogo, stock y precios por lista',
-    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button>` + btnNuevo('productoEditar()') : ''),
+    botones: btnExcel(`exportarExcel('g_prod','Lista de precios')`) + btnPdf(`exportarPdf('g_prod','Lista de precios','',true)`) + (ES_DUENO ? `<button class="btn btn-w" onclick="preciosCambiar()"><i class="fas fa-percent"></i> Cambiar precios</button><button class="btn btn-s" onclick="stockControlMasivo()"><i class="fas fa-boxes-stacked"></i> Control de stock</button>` + btnNuevo('productoEditar()') : ''),
     cuerpo: `<div class="grid-4 mb3" id="prod_k"></div><div class="panel">${barraFiltros([{ k: 'texto', t: 'texto', ph: 'Código o nombre' }, { k: 'cat', t: 'sel', l: 'Categoría', op: OPC.categorias() }, { k: 'estado', t: 'sel', l: 'Estado', op: OPC.estado2, v: 'activo' }, { k: 'bajo', t: 'chk', l: 'Bajo mínimo' }, { k: 'sinstock', t: 'chk', l: 'Sin stock' }], productosPintar)}<div id="prod_g"></div></div>` });
   PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
 };
@@ -279,6 +279,33 @@ async function productoVer(id) {
     ${h ? `<div class="panel mb3"><div class="ph"><span class="pt">Historial de costos</span></div>${grilla('g_hc', [{ t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: 'dt' }, { t: 'Costo neto', k: 'costo', f: 'm', cls: 'tr' }, { t: 'Origen', k: 'origen' }, { t: 'Proveedor', k: 'proveedor' }], h.costos)}</div>` : ''}
     <div class="panel"><div class="ph"><span class="pt">Movimientos de stock (12 meses)</span><span class="badge ba">Saldo anterior ${fmtN(mov.saldo_anterior)}</span></div>${grilla('g_mv', [{ t: 'Fecha', k: 'fecha', f: 'dt' }, { t: 'Tipo', k: 'tipo' }, { t: 'Documento', k: 'documento' }, { t: 'Cantidad', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'Saldo', k: 'saldo', f: 'n', cls: 'tr' }], mov.movimientos.slice().reverse())}</div>
   </div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-xl');
+}
+
+/* ---------- Control de stock: activar o desactivar en muchos productos a la vez ---------- */
+function stockControlMasivo() {
+  const mid = 'cs' + uid();
+  const o = showModal(modalHdr('Control de stock en muchos productos') + `<div class="mb2">
+    <div class="alert al-i">Con <b>Controla stock</b> desactivado, el producto se puede vender y pedir aunque el sistema no tenga stock cargado. Se puede volver a activar cuando quieras. No se borra nada.</div>
+    <div class="fr4" style="align-items:end"><div class="fg"><label class="fl">Productos</label><select id="${mid}_cat" class="fs"><option value="">Todos</option>${OPC.categorias().map(c => `<option value="${c[0]}">Categoría: ${esc(c[1])}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Acción</label><select id="${mid}_v" class="fs"><option value="false">Desactivar el control de stock</option><option value="true">Activar el control de stock</option></select></div>
+      <div class="fg"><button class="btn btn-b" id="${mid}_ver"><i class="fas fa-eye"></i> Ver cuántos cambian</button></div></div>
+    <div id="${mid}_r" class="mt3"></div></div>
+    <div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
+  const datos = aplicar => ({ categoria_id: $(mid + '_cat').value ? Number($(mid + '_cat').value) : null, controla: $(mid + '_v').value === 'true', aplicar });
+  const ver = async () => {
+    const r = await rpc('productos_controla_stock', { p: datos(false) }); const act = datos(false).controla;
+    if (!r.cambian) { $(mid + '_r').innerHTML = `<div class="alert al-g">No hay productos para cambiar: ya tienen el control de stock ${act ? 'activado' : 'desactivado'}.</div>`; return; }
+    $(mid + '_r').innerHTML = `<div class="alert al-w">Se va a <b>${act ? 'activar' : 'desactivar'}</b> el control de stock en <b>${fmtN(r.cambian)}</b> producto${r.cambian > 1 ? 's' : ''}.</div>
+      <div style="max-height:260px;overflow:auto">${grilla(mid + 'g', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'nombre' }, { t: 'Categoría', k: 'categoria' }], r.productos)}</div>
+      <button class="btn btn-p mt3" id="${mid}_ok"><i class="fas fa-check"></i> Aplicar a ${fmtN(r.cambian)} producto${r.cambian > 1 ? 's' : ''}</button>`;
+    $(mid + '_ok').onclick = async () => {
+      if (!await confirmar(`¿${act ? 'Activar' : 'Desactivar'} el control de stock en <b>${fmtN(r.cambian)}</b> productos?`)) return;
+      const z = await rpc('productos_controla_stock', { p: datos(true) });
+      toast(`Control de stock ${act ? 'activado' : 'desactivado'} en ${fmtN(z.cambian)} productos`, 'g'); o.remove();
+      PAG.prods = await rpc('abm_listar', { p_tabla: 'productos' }); productosPintar();
+    };
+  };
+  $(mid + '_ver').onclick = ver; $(mid + '_cat').onchange = () => $(mid + '_r').innerHTML = ''; $(mid + '_v').onchange = () => $(mid + '_r').innerHTML = '';
 }
 
 /* ---------- Cambio de precios: masivo por % o importando una lista de costos (Excel) ---------- */
