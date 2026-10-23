@@ -467,6 +467,9 @@ function listaHist(id) {
   showModal(modalHdr('Historial de márgenes · ' + esc(r.nombre)) + `<div class="mb2">${grilla('g_lh', [{ t: 'Margen', k: 'margen', f: 'p', cls: 'tr' }, { t: 'Desde', k: 'desde', f: 'dt' }, { t: 'Hasta', k: 'hasta', f: 'dt' }], r.historial || [])}</div><div class="mf"><button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`);
 }
 
+// La pantalla de Listas de precios está apagada: los precios de venta se cargan en cada producto.
+PAGINAS.listas = () => ir('productos');
+
 /* ---------- Precios de una lista: ver, buscar y poner precio manual ---------- */
 async function listaPrecios(id) {
   const d = await rpc('lista_precios_detalle', { p_lista: id }); const L = d.lista;
