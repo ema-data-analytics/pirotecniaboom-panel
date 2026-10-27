@@ -158,7 +158,7 @@ const S = [
   extra:`<div class="blk"><h2>Quién ve qué</h2><div class="tw"><table><thead><tr><th>Usuario</th><th>Puede</th><th>No ve</th></tr></thead><tbody>
     <tr><td>Dueño</td><td>Todo: ventas, compras, costos, bancos, márgenes, usuarios, anulaciones y notas de crédito.</td><td>—</td></tr>
     <tr><td>Operador</td><td>Vender, presupuestar, cobrar, abrir y cerrar caja, cargar gastos de contado, dar de alta clientes.</td><td>Compras, pagos a proveedores, bancos, costos, márgenes, usuarios y datos de la empresa. No puede poner descuentos ni precios especiales.</td></tr>
-    <tr><td>Mayorista</td><td>Solo el catálogo, con precios por mayor.</td><td>Todo el panel de gestión.</td></tr></tbody></table></div></div>
+    <tr><td>Clientes</td><td>El catálogo es abierto, sin usuario: pestañas <b>Mayorista</b> y <b>Minorista</b>.</td><td>Todo el panel de gestión.</td></tr></tbody></table></div></div>
   <div class="blk"><h2>Cómo es cualquier pantalla</h2><div class="grid2">
     <div class="tarj"><b>Encabezado</b><span>Título, para qué sirve y a la derecha los botones ${B('Excel','s')} ${B('PDF','s')} ${B('+ Nuevo')}. Excel y PDF bajan exactamente lo que muestra la grilla.</span></div>
     <div class="tarj"><b>Tarjetas de resumen</b><span>Los recuadros de colores de arriba: totales de lo que está filtrado.</span></div>
@@ -169,20 +169,20 @@ const S = [
   </div></div>`,
   ojo:['<b>Nada se borra.</b> Lo que está mal se anula o se da de baja, siempre con un motivo, y queda registrado.',
        '<b>Una venta emitida no se cambia.</b> Se corrige con una nota de crédito (devolver o bonificar) o una nota de débito (cobrar algo más).',
-       '<b>Los precios se calculan solos</b>: la <b>lista base</b> (Público, que es el precio sugerido de venta) = costo × (1 + margen). La <b>Mayorista</b> = lista base − 30 %. Para cambiar precios se cambia el costo (de a uno, en masa por % o importando un Excel) o el margen de la lista base.',
+       '<b>Los precios de venta se cargan en cada producto</b>, ya finales (lo que paga el cliente): <b>Minorista</b> (también la usa Público), <b>Mayorista</b> y <b>Lista 3</b> (libre). El <b>costo</b> es solo para uso interno: no cambia los precios. Se cambian de a uno en la grilla, en masa por % o con la planilla de Excel.',
        'Los campos con <b style="color:var(--rojo)">*</b> son obligatorios. Los avisos de abajo a la derecha dicen si salió bien (verde) o por qué no se pudo (rojo).'] },
 
 { id:'primerdia', g:'Empezá acá', t:'Primer día: qué cargar y en qué orden', check:true,
   para:'Si el sistema se usa por primera vez, cargá las cosas en este orden: cada paso usa datos del anterior. Tildá lo que ya hiciste; queda guardado en este navegador.',
   lista:[
-    ['empresa','<b>Datos de la empresa</b>: razón social, CUIT, dirección, horarios, WhatsApp de pedidos.'],
+    ['empresa','<b>Datos de la empresa</b>: razón social, CUIT, dirección, horarios, WhatsApp de pedidos y compra mínima minorista y mayorista.'],
     ['usuarios','<b>Usuarios</b>: creá uno por persona que use el sistema y cambiá las claves iniciales.'],
     ['cuentas','<b>Cuentas bancarias</b>: banco, Mercado Pago, caja fuerte.'],
     ['medios','<b>Medios de pago</b>: indicá en qué cuenta acredita cada uno (transferencia → banco, QR → Mercado Pago) y la comisión de las tarjetas.'],
-    ['listas','<b>Listas de precios</b>: margen de la lista base (Público) y el % de descuento de la Mayorista.'],
+    
     ['categorias','<b>Categorías</b>: los rubros del catálogo y su orden.'],
     ['proveedores','<b>Proveedores</b>.'],
-    ['productos','<b>Productos y precios</b>: cada producto con su costo. Los precios salen solos.'],
+    ['productos','<b>Productos y precios</b>: cada producto con su precio minorista y mayorista (y el costo, de uso interno). Para muchos a la vez: botón <b>Planilla</b>.'],
     ['stock','<b>Remitos y stock</b>: un remito de <b>Ingreso</b> con motivo <b>Inventario inicial</b> con lo que hay en el depósito.'],
     ['conceptos','<b>Tipos y conceptos de gasto</b>: luz, alquiler, sueldos, etc.'],
     ['clientes','<b>Clientes</b> habituales y mayoristas (los nuevos también se cargan al vender).'],
@@ -197,11 +197,11 @@ const S = [
     'Arriba a la derecha tenés atajos: ' + B('+ Nueva venta') + ' y ' + B('Nuevo presupuesto','y') + '.'],
   ojo:['Si dice <b>Caja CERRADA</b>, no vas a poder vender de contado ni cobrar en efectivo: primero abrí la caja.'] },
 
-{ id:'presupuestos', g:'Ventas', t:'Presupuestos', shot:'10_presupuesto', cap:'Presupuesto grabado (versión 2) con el detalle de descuentos en precio final y el botón Modificar.',
+{ id:'presupuestos', g:'Ventas', t:'Presupuestos', shot:'10_presupuesto', cap:'Presupuesto grabado (versión 2): fecha editable, detalle de descuentos en precio final y los botones Modificar y Anular.',
   para:'Cotizaciones para clientes. El presupuesto guarda sus precios mientras está vigente: si después sube un costo, el cliente paga lo presupuestado.',
   pasos:['Tocá ' + B('+ Nuevo presupuesto') + '.',
     '<b>Paso 1 · Encabezado.</b> Elegí el <b>Cliente</b> en el buscador. Si no existe, tocá el botón de la persona con + al lado y dalo de alta ahí mismo.',
-    'Revisá <b>Lista de precios</b> (por defecto la del cliente) y <b>Válido hasta</b> (por defecto hoy + 2 días). Si querés, escribí una nota.',
+    'Revisá <b>Lista de precios</b> (por defecto la del cliente) y <b>Válido hasta</b> (por defecto hoy + 2 días). En <b>Fecha</b> poné el día en que le entregaste el presupuesto al cliente (por defecto hoy; no puede ser futura). Si querés, escribí una nota.',
     'Tocá ' + B('Guardar encabezado y cargar productos') + '. Aparece el número <code>PR-000001</code> y se habilita el paso 2.',
     '<b>Paso 2 · Productos.</b> En <b>Producto</b> buscá por código, nombre o categoría y elegilo. Debajo aparece el precio de lista y el disponible.',
     'Poné la <b>Cantidad</b> y tocá ' + B('+ Agregar') + ' (o Enter). La línea entra en la grilla y el total de abajo a la derecha se actualiza.',
@@ -209,12 +209,16 @@ const S = [
     '<b>Descuento general (opcional, solo el dueño).</b> Abajo, en el recuadro <b>3 · Descuento general</b>: escribí el número, elegí <b>%</b> o <b>$</b> (en $ es lo que se descuenta del total con IVA), escribí el <b>Motivo</b> y tocá ' + B('Aplicar descuento y motivo','s') + '. El total se recalcula. Si el cliente tiene descuento propio, ya viene aplicado solo y se ve en los totales.',
     'Al lado de los totales, el recuadro <b>En precio final</b> muestra la cuenta como la ve el cliente: subtotal sin descuentos, cada descuento en pesos (por línea, del cliente, general), el <b>Total de descuentos</b> con su % sobre el total y el <b>TOTAL</b>. En la grilla, la columna <b>Desc. $</b> muestra cuánto se descontó en cada línea.',
     '<b>Paso 3 · Grabar.</b> Tocá ' + B('Grabar presupuesto') + ' al pie. Queda <b>Pendiente</b> y la validez empieza a correr. Recién ahí aparecen PDF, WhatsApp y Convertir.',
+    '<b>Si salís sin grabar.</b> Si tocás ' + B('Volver al listado','s') + ' con un presupuesto En carga que tiene productos, el sistema pregunta: ' + B('Grabar') + ', ' + B('Dejar en carga','s') + ' o ' + B('Anular') + '. Así no quedan presupuestos En carga por olvido.',
+    '<b>Cambiar la fecha de uno Pendiente:</b> cambiá la <b>Fecha</b> y tocá el tilde de al lado. Queda registrado quién la cambió.',
     '<b>Modificar uno ya grabado.</b> Si el cliente pide un cambio, abrilo y tocá ' + B('Modificar','s') + ' (o el lápiz en la grilla). Vuelve a <b>En carga</b> con el <b>mismo número</b> y pasa a <b>versión 2</b> (v3, v4… cada vez). Cambiá lo que haga falta y grabalo de nuevo. Se puede con Pendientes y Vencidos; no con los ya convertidos en venta ni con los rechazados (esos se duplican).',
     'Para mandarlo: ' + B('PDF','s') + ' lo descarga, ' + B('Enviar por WhatsApp','g') + ' abre WhatsApp con un mensaje y un link donde el cliente lo ve y lo descarga.',
     'Cuando el cliente confirma, tocá ' + B('Cliente confirmó: convertir en venta') + ': elegí Contado (pasa al cobro) o Cuenta corriente, y si emitiste factura ARCA aparte, su número. Se emite la venta con los precios del presupuesto.',
-    'Si no acepta, tocá ' + B('Rechazado','s') + ' y anotá el motivo. ' + B('Duplicar','s') + ' crea uno nuevo igual pero con los precios de hoy.'],
+    'Si no acepta, tocá ' + B('Rechazado','s') + ' y anotá el motivo. ' + B('Duplicar','s') + ' crea uno nuevo igual pero con los precios de hoy.',
+    '<b>Anular sin entrar.</b> En el listado, el círculo tachado rojo de cada fila anula ese presupuesto (motivo opcional). Si filtrás por <b>En carga</b> y hay más de uno, arriba de la grilla aparece ' + B('Anular los N En carga de esta lista') + ': los anula todos de una vez. Se puede anular uno En carga, Pendiente o Vencido; nunca uno que ya es venta.'],
   campos:[['Cliente','Elegilo del buscador. Botón de la persona + para crear uno nuevo.','Sí'],
     ['Lista de precios','“La del cliente” o una lista puntual.','No'],
+    ['Fecha','Día en que se le entregó al cliente. Hoy por defecto; no puede ser futura. Se cambia En carga o Pendiente.','No'],
     ['Válido hasta','Viene en hoy + 2 días; podés poner una fecha más larga. Al grabar nunca queda en menos de 2 días. Ya pendiente, se cambia con la fecha y el tilde de al lado. Después de esa fecha pasa solo a Vencido.','No'],
     ['Nota para el cliente','Sale impresa en el PDF.','No'],
     ['Producto','Buscador por código, nombre o categoría.','Sí'],
@@ -223,13 +227,16 @@ const S = [
     ['Desc. línea %','Descuento de esa línea. Solo el dueño.','No'],
     ['Descuento general (al pie)','Número en % o en $. Solo el dueño, antes de grabar.','No'],
     ['Motivo del descuento / precio especial (al pie)','Obligatorio si hay descuento general, descuento por línea o precio especial.','A veces']],
-  botones:[['Excel / PDF','Descarga el listado filtrado.'],['Lápiz u ojo','Abre el presupuesto (lápiz si se puede editar o modificar, ojo si ya está cerrado).'],['Modificar','Reabre un presupuesto grabado (Pendiente o Vencido) como nueva versión, con el mismo número.'],['WhatsApp','Lo manda al celular del cliente.'],['Caja registradora','Convertir en venta.'],['Copiar','Duplicar con precios actuales.']],
-  ojo:['Estados: <b>En carga</b> → (Grabar) → <b>Pendiente</b> → <b>Aceptado</b> (se convirtió en venta) · <b>Rechazado</b> · <b>Vencido</b>.',
+  botones:[['Excel / PDF','Descarga el listado filtrado.'],['Lápiz u ojo','Abre el presupuesto (lápiz si se puede editar o modificar, ojo si ya está cerrado).'],['Modificar','Reabre un presupuesto grabado (Pendiente o Vencido) como nueva versión, con el mismo número.'],['WhatsApp','Lo manda al celular del cliente.'],['Caja registradora','Convertir en venta.'],['Copiar','Duplicar con precios actuales.'],['Círculo tachado','Anular (queda registrado como Anulado, no se borra).'],['Anular los N En carga','Aparece con el filtro En carga: anula todos los de la lista.']],
+  extra:`<div class="blk"><h2>Anular desde el listado</h2><a class="shot" data-z="img/13_presupuestos_anulados.jpg"><img src="img/13_presupuestos_anulados.jpg" alt="Presupuestos anulados" loading="lazy"></a><div class="shotcap">Filtro Anulado: los presupuestos anulados quedan registrados, no se borran.</div></div>`,
+  ojo:['Estados: <b>En carga</b> → (Grabar) → <b>Pendiente</b> → <b>Aceptado</b> (se convirtió en venta) · <b>Rechazado</b> · <b>Vencido</b> · <b>Anulado</b>.',
+    'Un presupuesto <b>Anulado</b> no se modifica ni se reabre: si lo necesitan de nuevo, se duplica. No cuenta en la efectividad.',
+    'Si el presupuesto viene de un <b>pedido web</b> con descuento por monto, ese % ya viene puesto en cada producto (columna Desc.) y el descuento general del pie queda libre para sumar otro.',
     'La lista abre filtrada en <b>Pendientes</b>: los que esperan respuesta del cliente.',
     'Un presupuesto grabado se modifica con ' + B('Modificar','s') + ': mismo número, versión nueva (se ve <b>v2</b> en la grilla, en el PDF y en la página del cliente). Mantiene los precios que tenía. Si querés los precios de hoy, usá ' + B('Duplicar','s') + '.',
     'Los descuentos se aplican <b>en cascada</b>, uno sobre el otro: primero el de la línea, después el propio del cliente y al final el general. Ejemplo: $ 1.000 con 10 % de cliente y 5 % general = $ 855 (no $ 850).',
     'En el PDF y en la página que ve el cliente aparece el mismo detalle del recuadro <b>En precio final</b>: subtotal sin descuentos, cada descuento en pesos, el total de descuentos con su % y el TOTAL.',
-    'Las tarjetas de arriba muestran la <b>Efectividad</b>: aceptados sobre enviados.'] },
+    'Las tarjetas de arriba muestran la <b>Efectividad</b>: aceptados sobre enviados (sin contar En carga ni Anulados).'] },
 
 { id:'ventas', g:'Ventas', t:'Ventas y notas', shot:'20_venta_cc', cap:'Venta en carga: encabezado, productos y botón Confirmar venta.',
   para:'Acá se hace una venta en mostrador y se consultan todas las ventas, notas de crédito (NC) y notas de débito (ND).',
@@ -295,28 +302,30 @@ const S = [
   botones:[['Ojo','Estado de cuenta.'],['Billete verde','Cobrar.'],['WhatsApp','Recordatorio de saldo.']] },
 
 { id:'pedidos', g:'Ventas', t:'Pedidos web', shot:'p_pedidos', cap:'Pedidos que llegan del catálogo.',
-  para:'Los pedidos que hacen los clientes desde el catálogo. Se guardan solos y el cliente avisa por WhatsApp. Acá se confirman (se emite la venta), se editan o se cancelan.',
-  pasos:['Por defecto se ven los pedidos <b>Abiertos</b>. Cada uno muestra nombre, celular, total y hasta cuándo vence (48 h).',
-    'Tocá el ojo para ver el detalle: productos, precio y si hay disponible (en rojo si falta stock).',
+  para:'Los pedidos que hacen los clientes desde el catálogo (pestaña Mayorista o Minorista). Se guardan solos y el cliente avisa por WhatsApp. Acá se confirman (se emite la venta), se pasan a presupuesto, se editan o se cancelan.',
+  pasos:['Por defecto se ven los pedidos <b>Abiertos</b>. Cada uno muestra nombre, celular, <b>DNI</b>, la <b>Lista</b> (Mayorista o Minorista), total y hasta cuándo vence (48 h).',
+    'Tocá el ojo para ver el detalle: productos con precio e importe, si hay disponible (en rojo si falta stock) y abajo <b>Subtotal → Descuento % → TOTAL</b> cuando el pedido llegó a un descuento por monto.',
+    '<b>Pasar a presupuesto:</b> el botón <b>Pasar a presupuesto</b> (en la fila o dentro del pedido) arma un presupuesto <b>En carga</b> con los productos y precios del pedido, y el pedido queda cerrado. Si el pedido tenía descuento por monto, ese % va a <b>cada producto</b> y el descuento general del pie queda libre. Después se edita y se graba como cualquier presupuesto.',
     'Si el cliente cambia algo, tocá el lápiz: cambiá cantidades, sacá productos con el tacho o agregá con el buscador, escribí el <b>Motivo del cambio</b> y ' + B('Guardar') + '.',
     'Para venderlo tocá el tilde verde: elegí Contado o Cuenta corriente, Recargo y Envío si corresponde, factura ARCA y ' + B('Continuar') + '. Si es contado pasa a la ventana de cobro.',
     'Si no se concreta, tocá el círculo tachado y escribí el motivo: queda cancelado y libera el stock reservado.'],
   ojo:['Mientras el pedido está abierto, su mercadería queda <b>reservada</b>: no se puede vender a otro.',
     'Los productos que ya estaban en el pedido mantienen su precio; los que se agregan al editar toman el precio de hoy.',
-    'Si nadie lo confirma en 48 h, vence solo.'] },
+    'Si nadie lo confirma en 48 h, vence solo.',
+    'El cliente se identifica por el <b>DNI o CUIT</b>: dos clientes pueden tener el mismo celular. Cada cliente puede tener <b>un solo pedido abierto</b>; no hay tope de pedidos por día.'] },
 
 { id:'compras', g:'Compras', d:1, t:'Compras', shot:'50_compra', cap:'Carga de una factura de compra.',
-  para:'Facturas de proveedores. Suman stock y actualizan el costo de los productos, y con el costo se recalculan los precios. Cada factura queda con su remito.',
+  para:'Facturas de proveedores. Suman stock y actualizan el costo de los productos (uso interno: los precios de venta no cambian). Cada factura queda con su remito.',
   pasos:['Tocá ' + B('+ Nueva compra') + '.',
     '<b>Paso 1 · Encabezado.</b> Elegí el <b>Proveedor</b>, la <b>Fecha de la factura</b> y la <b>Condición</b>: Cuenta corriente (se paga después) o Contado (se paga ahora).',
     '<b>Si la mercadería ya había llegado con remito</b>, al elegir el proveedor aparece un recuadro azul con sus <b>remitos sin facturar</b>. Tildá los que corresponden a esta factura: sus productos se cargan solos (dicen <b>DEL REMITO</b>) y solo tenés que poner el costo. Si no aparece nada, la factura da entrada al stock y genera su remito sola.',
     'Completá <b>Letra</b>, <b>Punto de venta</b> y <b>Número</b> tal como dice la factura.',
     'Si la factura tiene bonificación, flete o percepciones, cargalos. En <b>IVA que dice la factura</b> podés poner el IVA impreso para controlar que coincida.',
-    'Dejá tildado <b>Actualizar el costo de los productos</b> para que los precios se recalculen con este costo.',
+    'Dejá tildado <b>Actualizar el costo de los productos</b> para que quede como costo nuevo del producto (sirve para la ganancia y el valor del stock; no cambia los precios de venta).',
     '<b>Paso 2 · Productos.</b> Elegí el producto: el costo actual aparece solo. Poné cantidad y <b>Costo neto unit.</b> de la factura y tocá ' + B('+ Agregar') + '. Si el producto pide lote y vencimiento, completalos.',
     'Revisá el total de abajo contra la factura y tocá ' + B('Registrar compra') + '. Si es contado se abre la ventana de pago.'],
   campos:[['Proveedor','Del buscador.','Sí'],['Fecha de la factura','La de la factura.','No'],['Condición','Cuenta corriente o Contado.','Sí'],['Letra','A, B, C o X.','No'],['Punto de venta','Ej: 0001.','No'],['Número','Ej: 00001234.','Sí'],
-    ['Bonificación / Flete (neto)','Sin IVA.','No'],['Percepción IVA / IIBB','Importe de cada percepción.','No'],['IVA que dice la factura','Solo para control.','No'],['Actualizar el costo','Tildado = los precios se recalculan.','No'],
+    ['Bonificación / Flete (neto)','Sin IVA.','No'],['Percepción IVA / IIBB','Importe de cada percepción.','No'],['IVA que dice la factura','Solo para control.','No'],['Actualizar el costo','Tildado = el costo del producto pasa a ser el de esta factura. No cambia los precios de venta.','No'],
     ['Producto, Cantidad, Costo neto unit.','Una línea por renglón de la factura.','Sí'],['Lote / vence','Solo en productos que lo piden.','A veces']],
   botones:[['Billete verde','Pagar la factura.'],['Flecha amarilla','Nota de crédito o débito del proveedor: por devolución de mercadería (elegís cantidades) o por importe (neto y alícuota).'],['Círculo tachado','Anular la compra: solo para errores de carga. Saca del stock lo que entró y vuelve el costo anterior. No se puede si esa mercadería ya se vendió o si la factura tiene pagos.']],
   ojo:['Si la factura no coincide con los remitos tildados (otra cantidad o un producto de más), el sistema te muestra la diferencia y pregunta. Si confirmás, el stock queda <b>como dice la factura</b>.',
@@ -380,25 +389,35 @@ const S = [
     B('Depositar efectivo','s') + ': saca efectivo de la caja y lo pone en la cuenta.',
     B('Movimiento manual','s') + ': gastos bancarios, intereses o ajustes; Tipo, Importe y Descripción obligatoria.'] },
 
-{ id:'productos', g:'Stock', t:'Productos y precios', shot:'60_productos', cap:'Listado de productos con stock y precios.',
-  para:'El catálogo de productos: stock, disponible y precios de cada lista. Lo que se carga acá es lo que ve el cliente en el catálogo web.',
-  pasos:['Buscá por código o nombre, filtrá por categoría, o tildá <b>Bajo mínimo</b> o <b>Sin stock</b>.',
-    'Columnas: Stock, <b>Disponible</b> (stock menos lo reservado en pedidos web), Costo (solo dueño), precio <b>Público final</b> y <b>Mayorista neto</b>.',
+{ id:'productos', g:'Stock', t:'Productos y precios', shot:'60_productos', cap:'Listado de productos con sus precios de venta.',
+  para:'El catálogo de productos con sus precios de venta. Lo que se carga acá es lo que ve el cliente en el catálogo web. Los precios se cargan ya finales (lo que paga el cliente) en cada producto.',
+  pasos:['Buscá por <b>ID</b>, código o nombre, filtrá por categoría, o tildá <b>Bajo mínimo</b> o <b>Sin stock</b>.',
+    'Columnas: <b>ID</b> (el código interno con el que la base guarda el producto; no cambia nunca), Código, Producto, Categoría, Stock, Disponible (stock menos lo reservado en pedidos web), Costo (solo dueño), <b>Minorista</b>, <b>Mayorista</b>, <b>Lista 3</b>, <b>Bulto</b>, <b>Display</b> y Estado.',
+    '<b>Elegir qué columnas ver:</b> ' + B('Columnas','s') + ' → tildá lo que querés ver y ' + B('Aplicar') + '. Queda guardado en esa computadora. Por defecto están ocultas Stock, Disponible y Lista 3. Excel y PDF bajan las columnas que se ven.',
+    '<b>Cambiar precios de uno en uno, sin entrar a la ficha (solo dueño):</b> tocá el <b>lápiz</b> de la fila. La línea se abre con Costo, Minorista, Mayorista, Lista 3, Bulto y Display. Escribí y apretá <b>Enter</b>: guarda y abre la línea de abajo en la misma columna, para seguir de corrido. <b>Esc</b> cancela. El botón de la hoja abre la <b>ficha completa</b> (nombre, fotos, descripción, etc.).',
     'Ojo: ficha del producto con precios vigentes por lista, historial de costos y movimientos de stock de 12 meses.',
-    '<b>Alta (solo dueño):</b> ' + B('+ Nuevo') + ', completá los campos y ' + B('Guardar') + '. Los precios se calculan al guardar.',
-    '<b>Cambiar el precio de un producto:</b> editalo y cambiá el <b>Costo neto</b>. La lista base y la mayorista se recalculan solas.',
+    '<b>Alta (solo dueño):</b> ' + B('+ Nuevo') + ', completá los campos (al menos el precio minorista o el mayorista) y ' + B('Guardar') + '.',
     '<b>Cambiar muchos precios juntos (solo dueño):</b> ' + B('Cambiar precios','y') + ' arriba. Dos formas:',
-    '· <b>Subir o bajar por %</b>: elegí la <b>Categoría</b> y/o el <b>Proveedor</b> (vacío = todos), poné el <b>Porcentaje</b> (10 sube 10 %, −5 baja 5 %) y tocá ' + B('Ver cómo quedan','s') + '. Revisá la lista con el costo actual y el nuevo, y tocá ' + B('Aplicar a los … productos') + ' → Confirmar.',
-    '· <b>Importar lista de costos (Excel)</b>: elegí el archivo (.xlsx, .xls o .csv). El sistema busca solo las columnas del <b>código</b> y del <b>costo neto</b>; si no las acierta, elegilas en las listas. Tocá ' + B('Revisar cambios','s') + ': ves cuántos cambian, cuántos quedan igual, los códigos que no existen (no se dan de alta) y las filas con error. Si un costo cambia más de 50 % aparece en rojo para que lo revises. Tocá ' + B('Aplicar … cambios') + ' → Confirmar.',
+    '· <b>Subir o bajar por %</b>: elegí <b>Qué cambiar</b> (minorista, mayorista, lista 3 o costo), la <b>Categoría</b> y/o el <b>Proveedor</b> (vacío = todos), el <b>Porcentaje</b> (10 sube 10 %, −5 baja 5 %) y el <b>redondeo</b>. Tocá ' + B('Ver cómo quedan','s') + ', revisá y ' + B('Aplicar a los … productos') + ' → Confirmar.',
+    '· <b>Importar lista de precios (Excel)</b>: un archivo con el <b>código</b> y las columnas de precio que quieras cambiar (minorista, mayorista, lista 3 y/o costo). ' + B('Revisar cambios','s') + ' muestra cuántos cambian, los códigos que no existen y las filas con error; los cambios de más de 50 % salen en rojo. ' + B('Aplicar … cambios') + ' → Confirmar.',
+    '<b>Planilla completa (solo dueño):</b> ' + B('Planilla','s') + ' → ' + B('Bajar planilla','g') + ' baja todos los productos con su <b>ID (no tocar)</b>, código, nombre, categoría, costo, precios, bulto, display y estado. Modificala en Excel (también el código visible) y subila en <b>Subir la planilla modificada</b>: antes de aplicar ves qué cambia en cada producto y qué filas tienen error. Celdas vacías: precio vacío = sin precio en esa lista; costo vacío = no cambia; bulto vacío = sin bulto. Los productos nuevos no se dan de alta por planilla.',
+    '<b>Control de stock y IVA en masa (solo dueño):</b> ' + B('Control de stock','s') + ' tilda o destilda “controla stock” en todos o en una categoría; ' + B('IVA','s') + ' cambia la alícuota de todos o de una categoría, con la opción de ajustar el costo interno.',
     '<b>Baja:</b> círculo tachado. Deja de aparecer en el catálogo y en las ventas; no se borra.'],
-  campos:[['Código','Único. Ej: PA0600.','Sí'],['Nombre','Como lo ve el cliente.','Sí'],['Categoría','Rubro del catálogo.','Sí'],['Costo neto del proveedor','Sin IVA. Sin costo no hay precio.','Sí al crear'],
-    ['IVA','Alícuota, normalmente 21%.','Sí'],['Unidad de venta','Unidad, caja, etc.','Sí'],['Unidades por bulto','Para mayoristas.','No'],['Proveedor principal','Del buscador.','No'],['Stock mínimo','Debajo de esto avisa en Inicio.','No'],
-    ['Código de barras','Para buscar con lector.','No'],['Uso','Venta libre o Uso profesional.','No'],['Edad mínima','Años.','No'],['Descripción','Texto del catálogo.','No'],['Video (link de YouTube)','Opcional. En el catálogo aparece “Ver más · video” y el video se ve en la ficha.','No'],['Información adicional','Opcional. Se ve en la ficha del catálogo: duración, efectos, recomendaciones.','No'],
+  campos:[['Código','Único. Ej: PA0600. Se puede cambiar; el ID no.','Sí'],['Nombre','Como lo ve el cliente.','Sí'],['Categoría','Rubro del catálogo.','Sí'],
+    ['Precio minorista (venta)','Precio final. Lo usan la pestaña Minorista y la lista Público.','Uno de los dos'],['Precio mayorista (venta)','Precio final de la pestaña Mayorista.','Uno de los dos'],['Precio lista 3 (venta)','Opcional, por si usan otra lista.','No'],
+    ['Costo del proveedor (uso interno)','No cambia los precios: sirve para la ganancia y el valor del stock.','No'],
+    ['IVA','Alícuota.','Sí'],['Unidad de venta','Unidad, caja, etc.','Sí'],['Unidades por bulto','Se informa en el catálogo Mayorista (“Bulto: 300 unidades”). No multiplica el precio: se vende por unidad.','No'],
+    ['Display (presentación del bulto)','Texto libre, ej. “10 displays de 12 unidades”. Se ve en el catálogo Mayorista.','No'],['Proveedor principal','Del buscador.','No'],['Stock mínimo','Debajo de esto avisa en Inicio.','No'],
+    ['Código de barras','Para buscar con lector.','No'],['Uso','Venta libre o Uso profesional.','No'],['Edad mínima','Años.','No'],['Descripción','Texto del catálogo.','No'],['Video (link de YouTube)','Opcional. En el catálogo aparece “Ver más · video”.','No'],['Información adicional','Opcional. Se ve en “Ver más”: duración, efectos, recomendaciones.','No'],
     ['Controla stock','Destildar para servicios o conceptos.','No'],['Pide lote y vencimiento','Al comprar pide lote y fecha.','No'],['Nuevo / Destacado / Outlet','Etiquetas del catálogo.','No'],['Envío por correo','Si se puede mandar por correo.','No'],
-    ['Fotos','Tocá <b>Subir fotos</b> y elegilas del celular o la computadora (o sacalas con la cámara). Se achican solas y se guardan en el sistema. La estrella elige la principal (la del catálogo); la cruz quita una. Se guardan al tocar Guardar.','No']],
-  extra:`<div class="blk"><h2>Cambiar precios por %</h2><a class="shot" data-z="img/62_precios_masivo.jpg"><img src="img/62_precios_masivo.jpg" alt="Cambio masivo de precios" loading="lazy"></a><div class="shotcap">Vista previa de un aumento del 10 % antes de aplicarlo.</div></div>
-  <div class="blk"><h2>Importar la lista de costos</h2><a class="shot" data-z="img/63_importar_costos.jpg"><img src="img/63_importar_costos.jpg" alt="Importar lista de costos" loading="lazy"></a><div class="shotcap">Revisión del archivo: cuántos cambian, cuáles no existen y los costos nuevos.</div></div>`,
-  ojo:['Todos los cambios de costo quedan en el historial del producto (ojo → Historial de costos). Nada se pierde.',
+    ['Fotos','Tocá <b>Subir fotos</b> y elegilas del celular o la computadora. Se achican solas. La estrella elige la principal; la cruz quita una. Se guardan al tocar Guardar.','No']],
+  extra:`<div class="blk"><h2>Editar en la grilla</h2><a class="shot" data-z="img/14_grilla_edicion.jpg"><img src="img/14_grilla_edicion.jpg" alt="Edición en la grilla" loading="lazy"></a><div class="shotcap">Línea abierta con el lápiz: Enter guarda y pasa a la de abajo.</div></div>
+  <div class="blk"><h2>Columnas</h2><a class="shot" data-z="img/19_columnas.jpg"><img src="img/19_columnas.jpg" alt="Columnas visibles" loading="lazy"></a><div class="shotcap">Grilla sin Categoría y con Stock, elegido desde el botón Columnas.</div></div>
+  <div class="blk"><h2>Planilla de Excel</h2><a class="shot" data-z="img/20_planilla.jpg"><img src="img/20_planilla.jpg" alt="Planilla de productos" loading="lazy"></a><div class="shotcap">Revisión antes de aplicar: qué cambia (código, display, precio) y qué fila tiene error.</div></div>
+  <div class="blk"><h2>Cambiar precios por %</h2><a class="shot" data-z="img/62_precios_masivo.jpg"><img src="img/62_precios_masivo.jpg" alt="Cambio masivo de precios" loading="lazy"></a><div class="shotcap">Vista previa de un aumento del 10 % antes de aplicarlo.</div></div>
+  <div class="blk"><h2>Importar la lista de precios</h2><a class="shot" data-z="img/63_importar_costos.jpg"><img src="img/63_importar_costos.jpg" alt="Importar lista de precios" loading="lazy"></a><div class="shotcap">Revisión del archivo: cuántos cambian, cuáles no existen y los valores nuevos.</div></div>`,
+  ojo:['Todos los cambios de precio y de costo quedan en el historial. Nada se pierde.',
+       'Si un producto queda sin precio minorista ni mayorista, no se puede vender: el sistema no deja guardarlo así.',
        'El stock no se edita acá: se mueve con compras, ventas, notas de crédito y remitos (menú Remitos y stock).','El operador ve los productos pero no los puede modificar ni ve costos.'] },
 
 { id:'stock', g:'Stock', t:'Remitos y stock', shot:'90_operador', cap:'Listado de remitos: uno para autorizar y uno ya facturado.',
@@ -423,21 +442,21 @@ const S = [
   pasos:['Buscá por nombre, celular o documento; filtrá por tipo o tildá <b>Solo con deuda</b>.',
     B('+ Nuevo') + ': completá los campos y ' + B('Guardar') + '. También se crean desde una venta o presupuesto.',
     'Lápiz para editar, ojo para la cuenta corriente, WhatsApp para escribirle.'],
-  campos:[['Tipo','Consumidor o Mayorista. Define la lista de precios por defecto.','Sí'],['Nombre / Razón social','','Sí'],['Celular (WhatsApp)','Con código de área: 387 474-9807. No se puede repetir.','No'],['Email','','No'],
-    ['Tipo y N° de documento','DNI, CUIT o CUIL.','No'],['Condición IVA','Consumidor final por defecto.','Sí'],['Lista de precios','Solo el dueño. Vacío = según el tipo.','No'],['Dirección / Localidad','','No'],['Código postal','Para los envíos.','No'],
+  campos:[['Tipo','Consumidor o Mayorista. Define la lista de precios por defecto.','Sí'],['Nombre / Razón social','','Sí'],['Celular (WhatsApp)','Con código de área: 387 474-9807. Puede repetirse entre clientes.','No'],['Email','','No'],
+    ['Tipo y N° de documento','DNI, CUIT o CUIL. No se puede repetir: es lo que identifica al cliente en los pedidos web.','No'],['Condición IVA','Consumidor final por defecto.','Sí'],['Lista de precios','Solo el dueño. Vacío = según el tipo.','No'],['Dirección / Localidad','','No'],['Código postal','Para los envíos.','No'],
     ['Descuento del cliente %','Solo el dueño. Se aplica solo en sus presupuestos y ventas, además de los otros descuentos (no en el catálogo web).','No'],
     ['Límite de crédito','Solo el dueño. 0 = sin límite.','No'],['Notas','','No']],
   ojo:['El operador puede crear clientes y corregir sus datos de contacto; tipo, lista, descuento, límite y baja los cambia el dueño.',
-    'Un cliente con tipo <b>Mayorista</b> usa la lista Mayorista (lista base − 30 %) y, desde el catálogo mayorista, sus pedidos se registran a su nombre si usa el celular que tiene cargado.'] },
+    'Un cliente con tipo <b>Mayorista</b> usa la lista Mayorista en presupuestos y ventas. En el catálogo, los pedidos se asocian al cliente por su <b>DNI o CUIT</b>; si no existe, se crea solo.'] },
 
 { id:'maestros', g:'Maestros', t:'Proveedores, categorías y demás tablas', shot:'p_categorias', cap:'Pantalla de Categorías: todas las tablas maestras funcionan igual.',
   para:'Las tablas que alimentan los buscadores y listas desplegables. Todas funcionan igual: ' + B('+ Nuevo') + ', lápiz para editar, círculo tachado para dar de baja y flecha verde para reactivar. Las altas y cambios las hace el dueño.',
   extra:`<div class="blk"><h2>Qué tiene cada una</h2><div class="tw"><table><thead><tr><th>Pantalla</th><th>Campos</th><th>Para qué</th></tr></thead><tbody>
   <tr><td>Proveedores <span class="chip d">dueño</span></td><td>Razón social*, CUIT, Condición IVA, Teléfono, Email, Dirección, Plazo de pago (días), Notas</td><td>Compras y pagos. El libro abre su cuenta corriente.</td></tr>
   <tr><td>Categorías</td><td>Nombre*, Orden en el catálogo</td><td>Rubros del catálogo. Orden 1 sale primero.</td></tr>
-  <tr><td>Listas de precios <span class="chip d">dueño</span></td><td>Código* (solo al crear), Nombre*, <b>Se calcula desde</b> (el costo con margen, u otra lista), Descuento % sobre esa lista, Margen %, Redondear a múltiplos de $ (0,01 = sin redondeo), Redondear el precio final con IVA</td><td><b>Público</b> es la lista base (precio sugerido) = costo × (1 + margen), redondeada sobre el precio final. <b>Mayorista</b> = Público − 30 %. Si cambia el margen de la base, la mayorista se recalcula sola. El reloj muestra el historial de márgenes. Público y Mayorista no se pueden desactivar.</td></tr>
+
   <tr><td>Ofertas</td><td>Producto*, Lista*, Precio de oferta NETO*, Desde*, Hasta*</td><td>Precio especial por fechas. Muestra si está programada, vigente o terminó.</td></tr>
-  <tr><td>Descuentos por monto <span class="chip d">dueño</span></td><td>Lista*, Monto neto desde*, Descuento %*, Vigente desde, Vigente hasta</td><td>Descuento automático en el catálogo según el total. Ej: 5% desde $100.000 neto.</td></tr>
+  <tr><td>Descuentos por monto <span class="chip d">dueño</span></td><td>Lista*, Monto neto desde*, Descuento %*, Vigente desde, Vigente hasta</td><td>Descuento automático en el catálogo según el total del pedido. Hoy, lista Mayorista: 10 % desde $ 100.000, 20 % desde $ 200.000, 30 % desde $ 300.000.</td></tr>
   <tr><td>Tipos de gasto</td><td>Nombre*</td><td>Grupos: Servicios, Sueldos, Impuestos…</td></tr>
   <tr><td>Conceptos de gasto</td><td>Tipo de gasto*, Concepto*</td><td>Lo que se elige al cargar un gasto: Luz, Internet…</td></tr>
   <tr><td>Medios de pago <span class="chip d">dueño</span></td><td>Nombre*, Tipo*, Comisión %, Cuenta donde acredita</td><td>La comisión se registra sola como gasto. Efectivo, Cheque y Cuenta corriente son del sistema: solo se les cambia nombre, comisión o cuenta.</td></tr>
@@ -456,26 +475,29 @@ const S = [
 { id:'sistema', g:'Sistema', t:'Usuarios, empresa y contraseña', shot:'p_usuarios', cap:'Usuarios del sistema.',
   para:'Quién entra al sistema, los datos de la empresa que salen en los PDF y en el catálogo, y tu contraseña.',
   pasos:['<b>Usuarios</b> (dueño): ' + B('+ Nuevo') + ' → Usuario (sin espacios, ej. <code>caja1</code>), Nombre, Rol y Contraseña (mínimo 8). Para cambiar la clave de alguien o darlo de baja, lápiz → Nueva contraseña o Estado Inactivo.',
-    '<b>Datos de la empresa</b> (dueño): razón social, nombre de fantasía, CUIT, condición IVA, dirección, horarios, <b>WhatsApp para pedidos</b> (a donde llegan los pedidos del catálogo), email, redes, vencimiento de pedidos web (horas), máximo de pedidos por celular por día, validez de presupuestos (días) y la leyenda de precios del catálogo. ' + B('Guardar') + '.',
+    '<b>Datos de la empresa</b> (dueño): razón social, nombre de fantasía, CUIT, condición IVA, dirección, horarios, <b>WhatsApp para pedidos</b> (a donde llegan los pedidos del catálogo), email, redes, vencimiento de pedidos web (horas), <b>compra mínima con precios minoristas</b> y <b>con precios mayoristas</b> ($; 0 = sin mínimo), validez de presupuestos (días) y la leyenda de precios del catálogo. ' + B('Guardar') + '.',
     '<b>Mi contraseña</b> (todos): contraseña actual, la nueva dos veces y ' + B('Cambiar') + '.'],
   ojo:['No podés quitarte el rol de dueño ni desactivarte a vos mismo.','Las contraseñas se guardan encriptadas: nadie, ni el sistema, puede leerlas. Si alguien la olvida, el dueño le pone una nueva.'] },
 
-{ id:'catalogo', g:'Catálogo web', t:'Catálogo para clientes', shot:'05_carrito', cap:'Carrito con el formulario de envío del pedido.',
-  para:'La tienda web que reemplaza a Tiendanube. El cliente arma el pedido y lo manda por WhatsApp; el pedido queda guardado en el panel.',
+{ id:'catalogo', g:'Catálogo web', t:'Catálogo para clientes', shot:'05_carrito', cap:'Carrito en la pestaña Mayorista con el formulario de envío del pedido.',
+  para:'La tienda web que reemplaza a Tiendanube. Es abierta, sin usuario: el cliente elige la pestaña Mayorista o Minorista, arma el pedido y lo manda por WhatsApp; el pedido queda guardado en el panel.',
   pasos:[`Dirección: <a href="${CATALOGO}" target="_blank">${CATALOGO}</a>`,
-    'El cliente elige categoría o busca, ajusta la cantidad con − y + y toca ' + B('Agregar') + '.',
-    'Si el producto tiene video o información adicional, aparece <b>Ver más</b> debajo del precio: abre una ficha con el video, las fotos y la información, y desde ahí también se agrega al pedido.',
-    'Toca ' + B('MI PEDIDO','y') + ' (abajo a la derecha): ve los productos, cambia cantidades o los saca. Si hay descuento por monto, le avisa cuánto le falta para obtenerlo.',
-    'Completa <b>Nombre y apellido</b>, <b>Celular</b> y si quiere un <b>Comentario</b>, y toca ' + B('Enviar pedido') + '.',
-    'El pedido se guarda con su número y se abre WhatsApp con el detalle completo: cada producto con código, cantidad, precio unitario y subtotal, el total, nombre, celular y comentario. El cliente toca enviar.',
-    'Vos lo ves en el panel en <b>Pedidos web</b> para confirmarlo.'],
-  extra:`<div class="blk"><h2>Ficha del producto (Ver más)</h2><a class="shot" data-z="img/04_ficha_video.jpg"><img src="img/04_ficha_video.jpg" alt="Ficha con video" loading="lazy"></a><div class="shotcap">El video y la información se cargan en Productos (campos Video e Información adicional).</div></div>
-  <div class="blk"><h2>Mayoristas</h2><a class="shot" data-z="img/07_catalogo_mayorista.jpg"><img src="img/07_catalogo_mayorista.jpg" alt="Catálogo mayorista" loading="lazy"></a><div class="shotcap">Con el usuario mayorista los precios se ven netos + IVA.</div>
-  <ol class="pasos" style="margin-top:12px"><li><div>Botón ${B('Mayoristas','s')} arriba a la derecha (en el celular, el segundo ícono al lado del buscador).</div></li>
-  <li><div>Usuario y contraseña de mayorista (los crea el dueño en Usuarios con rol Mayorista).</div></li>
-  <li><div>Los precios pasan a la lista Mayorista (lista base − 30 %), netos + IVA, y debajo de cada uno se ve el <b>Precio sugerido de venta</b> (la lista base). El pedido funciona igual y el WhatsApp sale con neto, IVA y total.</div></li>
-  <li><div>El botón ${B('Lista','s')} (solo con usuario mayorista) descarga la lista en Excel: código, producto, bulto, precio neto, IVA, precio con IVA, precio sugerido, oferta y stock.</div></li></ol></div>`,
-  ojo:['El precio queda reservado 48 h hasta que lo confirmes.','Cada celular puede hacer un máximo de pedidos por día (se configura en Datos de la empresa).'] },
+    'Abre en la pestaña <b>Mayorista</b> (precio mayorista y, debajo, el <b>Precio sugerido de venta</b> = precio minorista). Al lado está la pestaña <b>Minorista</b> (precio minorista).',
+    'La banda de arriba muestra la <b>compra mínima</b> de la pestaña elegida y los descuentos por monto.',
+    'El cliente elige categoría o busca, ajusta la cantidad con − y + y toca ' + B('Agregar') + '. Se vende por unidad.',
+    'En Mayorista, debajo del precio se informa el <b>Bulto</b> (cuántas unidades trae) y el <b>Display</b> si están cargados. Son datos informativos: no cambian el precio.',
+    'Si el producto tiene video, descripción o información adicional, aparece <b>Ver más</b>: abre una ficha con el video, las fotos y la información, y desde ahí también se agrega al pedido.',
+    'Toca ' + B('MI PEDIDO','y') + ' (abajo a la derecha): ve los productos, cambia cantidades o los saca. Si llegó a un descuento por monto ve <b>Subtotal → Descuento % → Total</b>; si no, le avisa cuánto le falta. Si no llega a la compra mínima, le dice cuánto falta y no lo deja enviar.',
+    'Completa <b>Nombre y apellido</b>, <b>Celular</b>, <b>DNI o CUIT</b> (obligatorio) y si quiere un <b>Comentario</b>, y toca ' + B('Enviar pedido') + '.',
+    'El pedido se guarda con su número y se abre WhatsApp con el detalle completo. El cliente toca enviar.',
+    'En la pestaña Mayorista, el botón ' + B('Lista','s') + ' descarga la lista en Excel: código, producto, bulto, precio, precio sugerido, oferta y stock.',
+    'Vos lo ves en el panel en <b>Pedidos web</b> para confirmarlo o pasarlo a presupuesto.'],
+  extra:`<div class="blk"><h2>Bulto y display (pestaña Mayorista)</h2><a class="shot" data-z="img/18_bulto_info.jpg"><img src="img/18_bulto_info.jpg" alt="Bulto y display" loading="lazy"></a><div class="shotcap">“Bulto: 12 unidades” y “Display: …” debajo del precio. Se cargan en Productos (grilla o ficha).</div></div>
+  <div class="blk"><h2>Ficha del producto (Ver más)</h2><a class="shot" data-z="img/17_display.jpg"><img src="img/17_display.jpg" alt="Ficha del producto" loading="lazy"></a><div class="shotcap">El video, la información y el display se cargan en Productos.</div></div>`,
+  ojo:['El precio queda reservado 48 h hasta que lo confirmes.',
+    'Compra mínima: se cambia en <b>Datos de la empresa</b>. Hoy: Minorista $ 60.000 y Mayorista $ 100.000. Se mide sobre el subtotal <b>antes</b> del descuento por monto, así que un pedido que llega a $ 100.000 y recibe el 10 % se puede enviar.',
+    'El cliente se identifica por el DNI o CUIT. Puede tener un solo pedido abierto a la vez; no hay tope por día.',
+    'En lo que ve el cliente no aparece la palabra IVA: todos los precios son finales.'] },
 
 { id:'problemas', g:'Ayuda', t:'Problemas frecuentes',
   para:'Qué significa cada aviso rojo común y cómo seguir.',
@@ -485,12 +507,15 @@ const S = [
     ['“Lo cargado no coincide con el total”','En la ventana de cobro la suma de los medios tiene que dar exacto. Mirá el número de FALTA.'],
     ['Me equivoqué en una venta','No se edita. Hacé una nota de crédito (devuelve o bonifica) y, si hace falta, una venta nueva.'],
     ['Me equivoqué en una compra','Si fue error de carga, anulala y cargala de nuevo. Si el proveedor devolvió o bonificó, nota de crédito del proveedor.'],
-    ['Un producto dice “sin precio”','Le falta el costo. Editalo y cargá el Costo neto.'],
+    ['Un producto dice “sin precio”','Le falta el precio minorista o mayorista. Tocá el lápiz de la fila en Productos y cargalo.'],
     ['No me deja poner descuento','Los descuentos y precios especiales los autoriza el dueño: entrá con su usuario.'],
-    ['“Ya hay un cliente con ese celular”','El cliente ya existe: buscalo por el celular.'],
+    ['“Ya hay un cliente con ese DNI”','El cliente ya existe: buscalo por el DNI o el nombre.'],
+    ['El cliente dice “Ya tenés un pedido abierto”','Tiene un pedido sin confirmar: confirmalo, pasalo a presupuesto o cancelalo en Pedidos web.'],
+    ['El catálogo no deja enviar el pedido','No llega a la compra mínima de esa pestaña. El carrito dice cuánto falta.'],
+    ['Tengo muchos presupuestos En carga','Filtrá por En carga y tocá Anular los N En carga de esta lista.'],
     ['Supera el límite de crédito','El cliente debe más de lo permitido. Cobrá primero o pedile al dueño que suba el límite.'],
     ['Olvidé la contraseña','El dueño entra a Usuarios, lápiz, y te pone una nueva.'],
-    ['El mayorista no puede entrar al panel','Es correcto: el mayorista solo usa el catálogo.']] }
+    ['Un cliente mayorista pregunta por su usuario','Ya no hace falta: el catálogo es abierto, entra directo a la pestaña Mayorista.']] }
 ];
 
 /* ---------- estado ---------- */

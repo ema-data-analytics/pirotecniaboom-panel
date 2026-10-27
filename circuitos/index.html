@@ -78,6 +78,7 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
     <div class="flujo"><span class="r">El cliente confirma</span><div class="fl">→</div><div class="p"><b>Convertir en venta</b><span>Contado (cobro) o cuenta corriente, con los precios del presupuesto.</span></div><div class="fl">→</div><div class="p fin"><b>Aceptado</b><span>Queda unido a su venta.</span></div></div>
     <div class="flujo"><span class="r">No acepta</span><div class="fl">→</div><div class="p malo"><b>Rechazado</b><span>Con motivo.</span></div></div>
     <div class="flujo"><span class="r">Pasa la validez</span><div class="fl">→</div><div class="p malo"><b>Vencido</b><span>Automático. Para retomarlo: Modificar (mismos precios, versión nueva) o Duplicar (precios de hoy).</span></div></div>
+    <div class="flujo"><span class="r">No sirve más</span><div class="fl">→</div><div class="p malo"><b>Anulado</b><span>Desde el listado, sin entrar: uno por fila o todos los En carga de una vez. Queda registrado, no se borra.</span></div></div>
   </div>
   <h3>Qué mueve</h3>
   <div class="tw"><table><thead><tr><th>Paso</th><th>Stock</th><th>Caja / banco</th><th>Cuenta corriente</th></tr></thead><tbody>
@@ -91,6 +92,9 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
     <li><code>P4</code><span>Un presupuesto grabado (Pendiente o Vencido) se <b>modifica</b> con el botón Modificar: mismo número, <b>versión nueva</b> (v2, v3…), y se graba otra vez. Los convertidos en venta y los rechazados no se modifican: se duplican.</span></li>
     <li><code>P5</code><span>El operador puede presupuestar, pero <b>no poner descuentos ni precios especiales</b>. El descuento propio del cliente sí se aplica solo.</span></li>
     <li><code>P6</code><span>El <b>descuento general</b> va <b>al pie</b>, en % o en $, antes de grabar. En pantalla, en el PDF y en la página del cliente se ve el detalle: cada descuento en pesos, el total de descuentos con su % y el total final.</span></li>
+    <li><code>P7</code><span>Se puede <b>anular</b> uno En carga, Pendiente o Vencido (nunca uno que ya es venta). El anulado no se modifica: se duplica. No cuenta en la efectividad.</span></li>
+    <li><code>P8</code><span>Al salir de un presupuesto <b>En carga con productos</b>, el sistema pregunta: Grabar, Dejar en carga o Anular.</span></li>
+    <li><code>P9</code><span>La <b>fecha</b> del presupuesto se puede cambiar (la del día que se entregó) mientras está En carga o Pendiente. No puede ser futura; hacia atrás, libre.</span></li>
   </ul>
 </section>
 
@@ -127,12 +131,13 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 <section id="w">
   <h2><span class="cod">W</span>Pedido web (catálogo)</h2>
   <div class="flujo">
-    <div class="p"><b>Cliente arma el carrito</b><span>En el catálogo, sin registrarse.</span></div><div class="fl">→</div>
-    <div class="p"><b>Enviar pedido</b><span>Nombre y celular. Se guarda con número y se abre WhatsApp con el detalle.</span></div><div class="fl">→</div>
+    <div class="p"><b>Cliente arma el carrito</b><span>En el catálogo, sin registrarse, en la pestaña Mayorista o Minorista.</span></div><div class="fl">→</div>
+    <div class="p"><b>Enviar pedido</b><span>Nombre, celular y DNI/CUIT. Se guarda con número y se abre WhatsApp con el detalle.</span></div><div class="fl">→</div>
     <div class="p est"><b>Abierto</b><span>Reserva el stock 48 h. Aparece en Pedidos web.</span></div>
   </div>
   <div class="ramas">
     <div class="flujo"><span class="r">Lo confirmás</span><div class="fl">→</div><div class="p"><b>Confirmar</b><span>Contado o cta. cte., recargo y envío.</span></div><div class="fl">→</div><div class="p fin"><b>Confirmado = venta</b><span>Con los precios del pedido.</span></div></div>
+    <div class="flujo"><span class="r">Hay que ajustarlo</span><div class="fl">→</div><div class="p"><b>Pasar a presupuesto</b><span>Queda En carga con los precios del pedido; el descuento por monto va a cada producto.</span></div><div class="fl">→</div><div class="p fin"><b>Presupuesto</b><span>Circuito P.</span></div></div>
     <div class="flujo"><span class="r">El cliente cambia algo</span><div class="fl">→</div><div class="p"><b>Editar</b><span>Con motivo. Lo agregado toma precio de hoy.</span></div></div>
     <div class="flujo"><span class="r">No se concreta</span><div class="fl">→</div><div class="p malo"><b>Cancelado</b><span>Libera el stock.</span></div></div>
     <div class="flujo"><span class="r">Pasan 48 h</span><div class="fl">→</div><div class="p malo"><b>Vencido</b><span>Automático, libera el stock.</span></div></div>
@@ -141,10 +146,13 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
   <ul class="reg">
     <li><code>W1</code><span>El pedido <b>reserva stock</b> mientras está abierto.</span></li>
     <li><code>W2</code><span>Vence a las <b>48 horas</b> (Datos de la empresa).</span></li>
-    <li><code>W3</code><span>Máximo <b>5 pedidos por celular por día</b>.</span></li>
+    <li><code>W3</code><span>El cliente se identifica por el <b>DNI o CUIT</b> (obligatorio); el celular puede repetirse. <b>Un pedido abierto por cliente</b>; no hay tope por día.</span></li>
     <li><code>W4</code><span>El WhatsApp llega al número de <b>Datos de la empresa</b> (se cambia ahí cuando quieran).</span></li>
-    <li><code>W5</code><span>Mayoristas: entran con el usuario de mayoristas, ven su precio (base − 30 %) neto + IVA y el <b>precio sugerido</b>. El pedido toma precio mayorista <b>solo si el celular es de un cliente cargado como Mayorista</b>; si no, va a precio público y se avisa.</span></li>
-    <li><code>W6</code><span>La <b>lista en Excel</b> se descarga solo con el usuario de mayoristas. <b>Ver más</b> abre la ficha con video e información del producto.</span></li>
+    <li><code>W5</code><span>Catálogo <b>abierto, sin usuario</b>: abre en la pestaña <b>Mayorista</b> (precio mayorista + precio sugerido) y tiene la pestaña <b>Minorista</b>. El pedido toma el precio de la pestaña elegida.</span></li>
+    <li><code>W6</code><span><b>Compra mínima</b> (Datos de la empresa): Minorista $ 60.000, Mayorista $ 100.000. Se mide <b>antes</b> del descuento por monto.</span></li>
+    <li><code>W7</code><span><b>Descuentos por monto</b> en Mayorista: 10 % desde $ 100.000, 20 % desde $ 200.000, 30 % desde $ 300.000. El carrito muestra Subtotal → Descuento → Total.</span></li>
+    <li><code>W8</code><span>En Mayorista se informan el <b>bulto</b> y el <b>display</b> (sin precio por bulto); se vende por unidad. La <b>lista en Excel</b> se baja desde la pestaña Mayorista.</span></li>
+    <li><code>W9</code><span>Al <b>pasar a presupuesto</b>, el % del descuento por monto va a cada producto y el descuento general queda libre para sumar otro.</span></li>
   </ul>
 </section>
 
@@ -277,36 +285,37 @@ a:focus-visible{outline:2px solid var(--amarillo);outline-offset:2px}
 </section>
 
 <section id="r">
-  <h2><span class="cod">R</span>Precios <span class="nuevo">nuevo</span></h2>
+  <h2><span class="cod">R</span>Precios <span class="nuevo">cambió</span></h2>
   <div class="flujo">
-    <div class="p"><b>Costo neto</b><span>Del producto, de la última compra, de un cambio masivo o de la lista importada.</span></div><div class="fl">×</div>
-    <div class="p"><b>1 + margen</b><span>De la lista base (Público).</span></div><div class="fl">→</div>
-    <div class="p fin"><b>Lista base = precio sugerido</b><span>Redondeada al precio final con IVA. Es lo que ve el público.</span></div><div class="fl">→</div>
-    <div class="p fin"><b>Mayorista = base − 30 %</b><span>Neto + IVA, sin redondeo.</span></div>
+    <div class="p fin"><b>Precio minorista</b><span>Cargado en el producto, final. Pestaña Minorista y lista Público.</span></div>
+    <div class="p fin"><b>Precio mayorista</b><span>Cargado en el producto, final. Pestaña Mayorista.</span></div>
+    <div class="p fin"><b>Precio lista 3</b><span>Opcional, por si usan otra lista.</span></div>
+    <div class="p"><b>Costo</b><span>Solo uso interno (ganancia y valor del stock). No cambia los precios.</span></div>
   </div>
-  <h3>Cómo se cambian los precios (siempre por el costo)</h3>
+  <h3>Cómo se cambian los precios</h3>
   <div class="ramas">
-    <div class="flujo"><span class="r">Un producto</span><div class="fl">→</div><div class="p"><b>Editar el producto</b><span>Cambiar el costo neto.</span></div></div>
-    <div class="flujo"><span class="r">Muchos por %</span><div class="fl">→</div><div class="p"><b>Cambiar precios → por %</b><span>Todos, una categoría o un proveedor. Vista previa y después aplicar.</span></div></div>
-    <div class="flujo"><span class="r">Lista del proveedor</span><div class="fl">→</div><div class="p"><b>Cambiar precios → Importar Excel</b><span>Código + costo neto. Vista previa: cambian, iguales, no existen, con error.</span></div></div>
-    <div class="flujo"><span class="r">Todo el margen</span><div class="fl">→</div><div class="p"><b>Listas de precios → Público</b><span>Cambiar el margen. La mayorista se recalcula sola.</span></div></div>
+    <div class="flujo"><span class="r">Uno por uno</span><div class="fl">→</div><div class="p"><b>Productos → lápiz</b><span>Se abre la línea; Enter guarda y pasa a la siguiente.</span></div></div>
+    <div class="flujo"><span class="r">Muchos por %</span><div class="fl">→</div><div class="p"><b>Cambiar precios → por %</b><span>Minorista, mayorista, lista 3 o costo; todos, una categoría o un proveedor; con redondeo. Vista previa y aplicar.</span></div></div>
+    <div class="flujo"><span class="r">Lista en Excel</span><div class="fl">→</div><div class="p"><b>Cambiar precios → Importar</b><span>Código + las columnas de precio que vengan.</span></div></div>
+    <div class="flujo"><span class="r">Todo junto</span><div class="fl">→</div><div class="p"><b>Planilla</b><span>Bajar con el ID, modificar en Excel (también código, nombre, categoría, bulto, display, estado) y subir.</span></div></div>
   </div>
   <h3>Descuentos (se aplican en cascada, uno sobre el otro)</h3>
   <div class="tw"><table><thead><tr><th>Descuento</th><th>Dónde se pone</th><th>Dónde aplica</th></tr></thead><tbody>
     <tr><td>Por línea %</td><td>Al cargar el producto (dueño)</td><td>Presupuesto y venta</td></tr>
     <tr><td>Del cliente %</td><td>Ficha del cliente (dueño)</td><td>Presupuesto y venta (solo, automático)</td></tr>
     <tr><td>General en % o $</td><td>Al pie, antes de grabar o confirmar (dueño, con motivo)</td><td>Presupuesto y venta</td></tr>
-    <tr><td>Por monto</td><td>Descuentos por monto</td><td>Catálogo web (como estaba)</td></tr></tbody></table></div>
+    <tr><td>Por monto</td><td>Descuentos por monto (hoy, lista Mayorista)</td><td>Catálogo web; al pasar a presupuesto va a cada línea</td></tr></tbody></table></div>
   <h3>Reglas actuales</h3>
   <ul class="reg">
-    <li><code>R1</code><span>La <b>lista base</b> (Público) es el <b>precio sugerido</b>: costo × (1 + margen), redondeado al final con IVA.</span></li>
-    <li><code>R2</code><span>La <b>Mayorista sale de la base con 30 % de descuento</b>. Si cambia la base, se recalcula sola. El % se cambia en Listas de precios.</span></li>
-    <li><code>R3</code><span>Todo cambio de costo o margen <b>queda en el historial</b>.</span></li>
-    <li><code>R4</code><span>La lista importada <b>no da de alta productos</b>: los códigos que no existen se informan. Los cambios de más de 50 % se marcan en rojo.</span></li>
+    <li><code>R1</code><span>Los precios de venta se cargan <b>en cada producto, ya finales</b>. Vacío = el producto no tiene precio en esa lista.</span></li>
+    <li><code>R2</code><span>Un producto activo necesita <b>al menos precio minorista o mayorista</b>.</span></li>
+    <li><code>R3</code><span>Todo cambio de precio o costo <b>queda en el historial</b>.</span></li>
+    <li><code>R4</code><span>La importación y la planilla <b>no dan de alta productos</b>. Muestran antes qué cambia y qué tiene error; los cambios de más de 50 % se marcan en rojo.</span></li>
     <li><code>R5</code><span>Descuentos <b>en cascada</b>: $ 1.000 con 10 % de cliente y 5 % general = $ 855.</span></li>
     <li><code>R6</code><span>El <b>descuento del cliente</b> no aplica en el catálogo web (ahí rigen los descuentos por monto).</span></li>
     <li><code>R7</code><span><b>Ofertas</b>: precio especial por producto y lista, entre dos fechas.</span></li>
-    <li><code>R8</code><span>Los márgenes y costos actuales son <b>de prueba</b>: hay que cargar los reales.</span></li>
+    <li><code>R8</code><span>La pantalla <b>Listas de precios</b> está apagada: todo se maneja desde Productos.</span></li>
+    <li><code>R9</code><span>Lo que ve el cliente <b>no dice IVA</b>: todos los precios son finales.</span></li>
   </ul>
 </section>
 
