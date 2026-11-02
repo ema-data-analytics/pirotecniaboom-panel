@@ -50,7 +50,7 @@ function editorPintarHdr() {
   const d = ED.det || {}; const esV = ED.modo === 'venta'; const ed = editorEditable();
   const bdg = e => esV ? badgeEstado(e) : badgePre(e);
   $('ed_est').innerHTML = d.numero ? `<b class="mono">${esc(d.numero)}</b>${d.version > 1 ? ` <span class="badge bw">versión ${d.version}</span>` : ''} ${bdg(d.estado)}` : (d.estado ? bdg(d.estado) : '<span class="badge bw">sin guardar</span>');
-  const listas = (M.listas || []).map(l => `<option value="${l.id}" ${l.id === d.lista_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
+  const listas = (M.listas || []).filter(l => LISTAS_ELEGIBLES.includes(l.codigo) || l.id === d.lista_id).map(l => `<option value="${l.id}" ${l.id === d.lista_id ? 'selected' : ''}>${esc(l.nombre)}</option>`).join('');
   $('ed_hdr').innerHTML = `<div class="fr4">
     <div class="fg" style="grid-column:span 2"><label class="fl req">Cliente</label><div class="flex gap2"><div id="ed_cli_w" class="f1"></div>${ed ? '<button class="btn btn-s" title="Nuevo cliente" onclick="editorClienteNuevo()"><i class="fas fa-user-plus"></i></button>' : ''}</div></div>
     <div class="fg"><label class="fl">Lista de precios</label><select id="ed_lista" class="fs" ${ed ? '' : 'disabled'}><option value="">La del cliente</option>${listas}</select></div>

@@ -9,7 +9,7 @@ function formHtml(campos, v = {}, pref = 'fm') {
     const id = pref + '_' + c.k; const x = v[c.k];
     const lab = `<label class="fl ${c.req ? 'req' : ''}">${c.l}</label>`;
     let inp;
-    if (c.t === 'sel') inp = `<select id="${id}" class="fs">${c.vacio !== false ? `<option value="">${c.vacio || 'Elegí…'}</option>` : ''}${(typeof c.op === 'function' ? c.op() : c.op).map(o => `<option value="${esc(o[0])}" ${String(x ?? c.def ?? '') === String(o[0]) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
+    if (c.t === 'sel') inp = `<select id="${id}" class="fs">${c.vacio !== false ? `<option value="">${c.vacio || 'Elegí…'}</option>` : ''}${selOpciones(c, x).map(o => `<option value="${esc(o[0])}" ${String(x ?? c.def ?? '') === String(o[0]) ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
     else if (c.t === 'bool') return `<div class="fg" style="${c.ancho ? 'grid-column:1/-1' : ''}"><label class="chk"><input type="checkbox" id="${id}" ${(x ?? c.def) ? 'checked' : ''}> ${c.l}</label>${c.ayuda ? `<div class="ss">${c.ayuda}</div>` : ''}</div>`;
     else if (c.t === 'fotos') return `<div class="fg" style="grid-column:1/-1"><label class="fl">${c.l}</label><div id="${id}" class="fotos-w"></div>${c.ayuda ? `<div class="ss">${c.ayuda}</div>` : ''}</div>`;
     else if (c.t === 'area') inp = `<textarea id="${id}" class="ft">${esc(x ?? '')}</textarea>`;
@@ -57,10 +57,20 @@ function verFicha(titulo, filas, cls = 'md-lg', extra = '') {
 }
 
 /* ---------- ABM genérico ---------- */
+const LISTAS_ELEGIBLES = ['MINORISTA', 'MAYORISTA'];
+// Opciones de un select; si el registro ya tiene un valor que no está entre las opciones (ej. una lista que ya no se ofrece), se agrega para no perderlo
+function selOpciones(c, x) {
+  const op = typeof c.op === 'function' ? c.op() : c.op;
+  if (x == null || x === '' || !c.opTodas || op.some(o => String(o[0]) === String(x))) return op;
+  const extra = c.opTodas().find(o => String(o[0]) === String(x));
+  return extra ? op.concat([extra]) : op;
+}
 const OPC = {
   estado2: [['activo', 'Activo'], ['inactivo', 'Inactivo']],
   estadoA: [['activa', 'Activa'], ['inactiva', 'Inactiva']],
-  listas: () => (M.listas || []).map(l => [l.id, l.nombre]),
+  // Listas que se eligen a mano: solo Minorista y Mayorista (las demás siguen existiendo pero no se ofrecen)
+  listas: () => (M.listas || []).filter(l => LISTAS_ELEGIBLES.includes(l.codigo)).map(l => [l.id, l.nombre]),
+  listasTodas: () => (M.listas || []).map(l => [l.id, l.nombre]),
   condIva: () => (M.condiciones_iva || []).map(c => [c.id, c.nombre]),
   tiposGasto: () => (M.tipos_gasto || []).map(c => [c.id, c.nombre]),
   cuentas: () => (M.cuentas || []).map(c => [c.id, c.nombre]),
@@ -92,7 +102,7 @@ const ABM = {
     campos: [{ k: 'nombre', l: 'Nombre', req: 1 }, { k: 'tipo', l: 'Tipo', t: 'sel', op: [['banco', 'Banco'], ['billetera', 'Billetera virtual'], ['caja_fuerte', 'Caja fuerte']], req: 1 }, { k: 'banco', l: 'Banco / empresa' }, { k: 'cbu_alias', l: 'CBU / Alias' }] },
   descuentos: { tabla: 'descuentos_monto', titulo: 'Descuentos por monto', icono: 'tag', sub: 'Descuento automático según el total del pedido', est: ['activo', 'anulado'],
     cols: [{ t: 'Lista', k: 'lista' }, { t: 'Desde (neto)', k: 'monto_desde', f: 'm', cls: 'tr' }, { t: 'Descuento', k: 'porcentaje', f: 'p', cls: 'tr' }, { t: 'Vigente desde', k: 'vigente_desde', f: 'd' }, { t: 'Hasta', k: 'vigente_hasta', f: 'd' }, { t: 'Estado', k: 'estado', f: 'e' }],
-    campos: [{ k: 'lista_id', l: 'Lista', t: 'sel', op: OPC.listas, req: 1 }, { k: 'monto_desde', l: 'Monto neto desde', t: 'num', req: 1 }, { k: 'porcentaje', l: 'Descuento %', t: 'num', req: 1 }, { k: 'vigente_desde', l: 'Vigente desde', t: 'date', def: hoy() }, { k: 'vigente_hasta', l: 'Vigente hasta (vacío = sin fin)', t: 'date' }] },
+    campos: [{ k: 'lista_id', l: 'Lista', t: 'sel', op: OPC.listas, opTodas: OPC.listasTodas, req: 1 }, { k: 'monto_desde', l: 'Monto neto desde', t: 'num', req: 1 }, { k: 'porcentaje', l: 'Descuento %', t: 'num', req: 1 }, { k: 'vigente_desde', l: 'Vigente desde', t: 'date', def: hoy() }, { k: 'vigente_hasta', l: 'Vigente hasta (vacío = sin fin)', t: 'date' }] },
 };
 async function abmPagina(clave) {
   const cfg = ABM[clave]; const tabla = cfg.tabla || clave;
@@ -140,7 +150,7 @@ const CAMPOS_CLIENTE = [
   { k: 'documento_tipo', l: 'Tipo de documento', t: 'sel', op: [['DNI', 'DNI'], ['CUIT', 'CUIT'], ['CUIL', 'CUIL']], vacio: '—' },
   { k: 'documento_nro', l: 'N° documento' },
   { k: 'condicion_iva_id', l: 'Condición IVA', t: 'sel', op: OPC.condIva, vacio: false, def: 3 },
-  { k: 'lista_id', l: 'Lista de precios', t: 'sel', op: OPC.listas, vacio: 'Según el tipo', dueno: 1 },
+  { k: 'lista_id', l: 'Lista de precios', t: 'sel', op: OPC.listas, opTodas: OPC.listasTodas, vacio: 'Según el tipo', dueno: 1 },
   { k: 'direccion', l: 'Dirección' }, { k: 'localidad', l: 'Localidad' }, { k: 'codigo_postal', l: 'Código postal', ph: '4400' },
   { k: 'descuento_pct', l: 'Descuento del cliente %', t: 'num', def: 0, dueno: 1, ayuda: 'Se aplica solo en presupuestos y ventas, además de los otros descuentos.' },
   { k: 'limite_credito', l: 'Límite de crédito (0 = sin límite)', t: 'num', def: 0, dueno: 1 },
