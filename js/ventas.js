@@ -60,11 +60,13 @@ function editorPintarHdr() {
     ${esV ? `<div class="fg"><label class="fl">Recargo (neto)</label><input id="ed_rec" type="number" step="0.01" min="0" class="fi mono" value="${d.recargo_neto || 0}" ${ed ? '' : 'disabled'}></div><div class="fg"><label class="fl">Envío (neto)</label><input id="ed_env" type="number" step="0.01" min="0" class="fi mono" value="${d.envio_neto || 0}" ${ed ? '' : 'disabled'}></div>`
           : `${presupuestoFechaCampo(d, ed)}<div class="fg" style="grid-column:span 3"><label class="fl">Nota para el cliente</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div>`}
   </div>${esV ? `<div class="fr"><div class="fg"><label class="fl">Nota</label><input id="ed_nota" class="fi" value="${esc(d.nota || '')}" ${ed ? '' : 'disabled'}></div><div class="fg"><label class="fl">N° de factura ARCA (si se emitió aparte)</label><input id="ed_fact" class="fi" value="${esc(d.factura_externa || '')}" ${ed ? '' : 'disabled'}></div></div>` : ''}
+  ${(d.items || []).some(i => i.es_oferta) ? `<div class="alert al-w mb3" id="ed_of_w" style="display:flex;gap:10px;align-items:center"><label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:0"><input type="checkbox" id="ed_dof" ${d.descuento_en_ofertas ? 'checked' : ''} ${ed ? '' : 'disabled'} style="width:18px;height:18px"> <b>Aplicar descuentos también a los productos en oferta</b></label><span class="ss">${d.descuento_en_ofertas ? 'Los productos en oferta llevan los descuentos (cliente, general y por monto).' : 'Sin tildar: los productos en oferta van solo al precio de la oferta. Los demás llevan sus descuentos.'}</span></div>` : ''}
   ${ed ? `<button class="btn btn-p" id="ed_hdr_ok"><i class="fas fa-floppy-disk"></i> ${ED.id ? 'Guardar cambios del encabezado' : 'Guardar encabezado y cargar productos'}</button>` : ''}`;
   const cli = d.cliente_id ? { id: d.cliente_id, label: typeof d.cliente === 'object' ? d.cliente.nombre : d.cliente } : null;
   const inp = buscador('ed_cli_w', { tipo: 'cliente', id: 'ed_cli', valor: cli, placeholder: 'Nombre, celular o documento…', onSelect: c => { if (!ED.id) { const s = $('ed_lista'); if (s) s.value = ''; } } });
   if (!ed && inp) inp.disabled = true;
   if (ed) $('ed_hdr_ok').onclick = editorGuardarHdr;
+  if (ed && $('ed_dof')) $('ed_dof').onchange = async e => { const v = e.target.checked; try { await rpc('doc_descuento_ofertas', { p_tipo: ED.modo === 'venta' ? 'venta' : 'presupuesto', p_id: ED.id, p_valor: v }); toast(v ? 'Los productos en oferta llevan descuentos' : 'Los productos en oferta van sin descuento', 'g'); } finally { await editorRecargar(); } };
   if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_dsc').innerHTML = ''; $('ed_fin').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
   else $('ed_lin_p').style.opacity = 1;
 }
@@ -101,7 +103,7 @@ function editorPintarLineas() {
       <div class="fg" style="margin:0"><label class="fl">Precio neto unit.</label><input id="ed_pu" type="number" step="0.01" class="fi mono" ${ES_DUENO ? '' : 'disabled'} placeholder="de la lista"></div>
       <div class="fg" style="margin:0"><label class="fl">Desc. línea %</label><input id="ed_dl" type="number" step="0.01" min="0" max="99" class="fi mono" value="0" ${ES_DUENO ? '' : 'disabled'}></div>
       <div><button class="btn btn-p" id="ed_add"><i class="fas fa-plus"></i> <span id="ed_add_t">Agregar</span></button></div></div><div id="ed_prod_info" class="ss mb3"></div>` : '';
-  $('ed_lin').innerHTML = fila + grilla('g_ed', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' },
+  $('ed_lin').innerHTML = fila + grilla('g_ed', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto', f: r => esc(r.producto) + (r.es_oferta ? ' <span class="badge br">Oferta</span>' : ''), xf: r => r.producto }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' },
     { t: 'Precio unit. neto', k: 'precio_neto_unit', f: r => fmt(r.precio_neto_unit) + (r.precio_manual ? ' <span class="badge bw">especial</span>' : ''), cls: 'tr' },
     { t: 'Precio unit. final', k: 'pf', f: r => fmt(Number(r.precio_neto_unit) * (1 + Number(r.iva_pct) / 100)), cls: 'tr' },
     { t: 'Desc.', k: 'descuento_pct', f: r => Number(r.descuento_pct) ? fmtP(r.descuento_pct) : '', cls: 'tr' },
@@ -124,7 +126,7 @@ function editorPintarLineas() {
   if (!t || !t.error) $('ed_tot').innerHTML = `<div class="row"><span>Subtotal neto</span><b class="mono">${fmt(t.subtotal_neto)}</b></div>${Number(t.descuento_neto) ? `<div class="row"><span>Descuentos${detDesc ? `<br><small class="tdim">incluye ${detDesc}</small>` : ''}</span><b class="mono">- ${fmt(t.descuento_neto)}</b></div>` : ''}${Number(t.recargo_neto) ? `<div class="row"><span>Recargo</span><b class="mono">${fmt(t.recargo_neto)}</b></div>` : ''}${Number(t.envio_neto) ? `<div class="row"><span>Envío</span><b class="mono">${fmt(t.envio_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(t.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(t.total)}</span></div>`;
   ED.total = Number(t.total || 0);
   // desglose de descuentos en precio final, al lado de los totales
-  $('ed_fin').innerHTML = items.length && t && !t.error ? desgloseHtml(desgloseDesc({ items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), total: t.total,
+  $('ed_fin').innerHTML = items.length && t && !t.error ? desgloseHtml(desgloseDesc({ items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), dofer: !!d.descuento_en_ofertas, total: t.total,
       recargo: esV ? Number(d.recargo_neto || 0) : 0, envio: esV ? Number(d.envio_neto || 0) : 0 })) : '';
   // descuento general al pie (en % o en $), antes de grabar / confirmar
   $('ed_dsc').innerHTML = !items.length ? '' : (ed ? `<div class="panel" style="min-width:290px;max-width:340px;margin:0"><div class="ph"><span class="pt"><span class="paso">3</span>Descuento general</span></div><div class="pb">
@@ -320,14 +322,15 @@ async function presupuestoPdf(id) {
 }
 // Totales del presupuesto: subtotal de las líneas, descuento del cliente + general en $, IVA y total
 /* ---- Desglose de descuentos en pesos (precio final con IVA, o neto). Cierra exacto con el total del comprobante. ---- */
-function desgloseDesc({ items, dcli = 0, dgen = 0, total, neto = false, recargo = 0, envio = 0 }) {
+function desgloseDesc({ items, dcli = 0, dgen = 0, dofer = true, total, neto = false, recargo = 0, envio = 0 }) {
   const r2 = x => Math.round(x * 100) / 100;
   const k = i => neto ? 1 : 1 + Number(i.iva_pct ?? 0) / 100;
   let s0 = 0, s1 = 0, s2 = 0, ext = [];
   for (const i of items || []) {
     const q = Number(i.cantidad), p = Number(i.precio_neto_unit), dl = Number(i.descuento_pct || 0) / 100;
     if (/^CONC-/.test(i.codigo || '')) { ext.push([i.producto, r2(q * p * k(i))]); continue; }
-    s0 += r2(q * p * k(i)); s1 += r2(q * p * (1 - dl) * k(i)); s2 += r2(q * p * (1 - dl) * (1 - dcli / 100) * k(i));
+    const dc = i.es_oferta && !dofer ? 0 : dcli; // producto en oferta sin el tilde: sin descuento del cliente ni general
+    s0 += r2(q * p * k(i)); s1 += r2(q * p * (1 - dl) * k(i)); s2 += r2(q * p * (1 - dl) * (1 - dc / 100) * k(i));
   }
   if (recargo) ext.push(['Recargo', r2(recargo * (neto ? 1 : 1.21))]);
   if (envio) ext.push(['Envío', r2(envio * (neto ? 1 : 1.21))]);
@@ -356,9 +359,9 @@ function desglosePdf(x, extraNeto) {
 // Totales del presupuesto para el PDF
 function presupuestoTotales(d, ri) {
   if (ri) { const neto = Number(d.subtotal_neto) - Number(d.descuento_neto);
-    const x = desgloseDesc({ items: d.items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), total: neto, neto: true });
+    const x = desgloseDesc({ items: d.items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), dofer: !!d.descuento_en_ofertas, total: neto, neto: true });
     return desglosePdf(x).concat([['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]); }
-  const x = desgloseDesc({ items: d.items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), total: d.total });
+  const x = desgloseDesc({ items: d.items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), dofer: !!d.descuento_en_ofertas, total: d.total });
   return desglosePdf(x).concat([['TOTAL', fmt(d.total), 1]]);
 }
 async function presupuestoWa(id) {
@@ -552,11 +555,20 @@ function pedidoTotalesHtml(d) {
   const desc = Math.round((sub - Number(d.total)) * 100) / 100;
   return `<div class="tot-box mt3" style="margin-left:auto;max-width:320px">${desc >= 1 ? `<div class="row"><span>Subtotal</span><b class="mono">${fmt(sub)}</b></div><div class="row"><span>Descuento ${fmtP(desc * 100 / sub)}</span><b class="mono td">- ${fmt(desc)}</b></div>` : ''}<div class="row big"><span>TOTAL</span><span class="mono">${fmt(d.total)}</span></div></div>`;
 }
+// Tilde del pedido: solo si tiene productos en oferta
+function pedidoTildeOfertas(d, modo) {
+  if (!(d.items || []).some(i => i.es_oferta)) return '';
+  return `<div class="alert al-w mt3" style="display:flex;gap:10px;align-items:center"><label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin:0"><input type="checkbox" class="ped-dof" ${d.descuento_en_ofertas ? 'checked' : ''} ${d.estado === 'abierto' ? '' : 'disabled'} style="width:18px;height:18px" onchange="pedidoDofer(${d.id}, this.checked, '${modo}', this)"> <b>Aplicar descuentos también a los productos en oferta</b></label><span class="ss">${d.descuento_en_ofertas ? 'Los productos en oferta llevan el descuento por monto.' : 'Sin tildar: los productos en oferta van solo al precio de la oferta.'}</span></div>`;
+}
+async function pedidoDofer(id, v, modo, el) {
+  try { const r = await rpc('doc_descuento_ofertas', { p_tipo: 'pedido', p_id: id, p_valor: v }); toast('Total del pedido: ' + fmt(r.total), 'g'); }
+  finally { closeModal(el); if (typeof pedidosCargar === 'function' && $('ped_g')) pedidosCargar(); if (modo === 'pc') pedidoConfirmar(id); else verPedido(id); }
+}
 async function verPedido(id) {
   const d = await rpc('pedido_detalle', { p_id: id });
   showModal(modalHdr('Pedido ' + esc(d.numero)) + `<div class="mb2"><div class="grid-2 mb3"><div class="kv"><b>Fecha</b><span>${fmtDT(d.fecha)}</span><b>Nombre</b><span>${esc(d.nombre)}</span><b>Celular</b><span>${esc(d.celular)}</span>${d.documento ? `<b>DNI</b><span>${esc(d.documento)}</span>` : ''}<b>Canal</b><span>${esc(d.canal)} · ${esc(d.lista)}</span></div><div class="kv"><b>Estado</b><span>${badgeEstado(d.estado)}</span><b>Vence</b><span>${fmtDT(d.vence_at)}</span>${d.nota ? `<b>Nota</b><span>${esc(d.nota)}</span>` : ''}${d.motivo_cierre ? `<b>Cierre</b><span>${esc(d.motivo_cierre)}</span>` : ''}</div></div>
-    ${grilla('g_pi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto' }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'P. unit. final', k: 'precio_final_unit', f: 'm', cls: 'tr' }, { t: 'Importe', k: 'importe', f: r => fmt(Number(r.cantidad) * Number(r.precio_final_unit)), cls: 'tr' }, { t: 'Disponible', k: 'disponible', f: r => r.disponible == null ? '—' : `<span class="${Number(r.disponible) < Number(r.cantidad) ? 'td' : ''}">${fmtN(r.disponible)}</span>`, cls: 'tr' }], d.items)}
-    ${pedidoTotalesHtml(d)}</div>
+    ${grilla('g_pi', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto', f: r => esc(r.producto) + (r.es_oferta ? ' <span class="badge br">Oferta</span>' : ''), xf: r => r.producto }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' }, { t: 'P. unit. final', k: 'precio_final_unit', f: 'm', cls: 'tr' }, { t: 'Importe', k: 'importe', f: r => fmt(Number(r.cantidad) * Number(r.precio_final_unit)), cls: 'tr' }, { t: 'Disponible', k: 'disponible', f: r => r.disponible == null ? '—' : `<span class="${Number(r.disponible) < Number(r.cantidad) ? 'td' : ''}">${fmtN(r.disponible)}</span>`, cls: 'tr' }], d.items)}
+    ${pedidoTildeOfertas(d, 'vp')}${pedidoTotalesHtml(d)}</div>
     <div class="mf">${d.estado === 'abierto' ? `<button class="btn btn-s" onclick="closeModal(this);pedidoAPresupuesto(${d.id})"><i class="fas fa-file-pen"></i> Pasar a presupuesto</button><button class="btn btn-g" onclick="closeModal(this);pedidoConfirmar(${d.id})"><i class="fas fa-check"></i> Confirmar</button>` : ''}${d.presupuesto ? `<button class="btn btn-b" onclick="closeModal(this);editorDoc('presupuesto', ${d.presupuesto.id})"><i class="fas fa-eye"></i> Ver presupuesto ${esc(d.presupuesto.numero)}</button>` : ''}${d.venta ? `<button class="btn btn-b" onclick="closeModal(this);verComprobante(${d.venta.id})"><i class="fas fa-eye"></i> Ver venta</button>` : ''}<button class="btn btn-s" onclick="closeModal(this)">Cerrar</button></div>`, 'md-lg');
 }
 async function pedidoEditar(id) {
@@ -573,7 +585,7 @@ async function pedidoEditar(id) {
 }
 async function pedidoConfirmar(id) {
   const d = await rpc('pedido_detalle', { p_id: id }); const mid = 'pf' + uid();
-  const o = showModal(modalHdr('Confirmar pedido ' + esc(d.numero)) + `<div class="mb2"><div class="alert al-g">Se emite la venta a <b>${esc(d.nombre)}</b> por <b>${fmt(d.total)}</b> con los precios del pedido.</div>
+  const o = showModal(modalHdr('Confirmar pedido ' + esc(d.numero)) + `<div class="mb2"><div class="alert al-g">Se emite la venta a <b>${esc(d.nombre)}</b> por <b>${fmt(d.total)}</b> con los precios del pedido.</div>${pedidoTildeOfertas(d, 'pc')}
     <div class="fg"><label class="fl">Condición</label><select id="${mid}_c" class="fs"><option value="contado">Contado (cobro ahora)</option><option value="cuenta_corriente">Cuenta corriente</option></select></div>
     <div class="fr"><div class="fg"><label class="fl">Recargo (neto)</label><input id="${mid}_r" type="number" step="0.01" class="fi mono" value="0"></div><div class="fg"><label class="fl">Envío (neto)</label><input id="${mid}_e" type="number" step="0.01" class="fi mono" value="0"></div></div>
     <div class="fg"><label class="fl">N° de factura ARCA (si se emitió aparte)</label><input id="${mid}_f" class="fi"></div></div>
