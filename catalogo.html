@@ -68,6 +68,7 @@ footer{background:var(--vino);color:#f3dcd3;font-size:13px;padding:18px 14px;tex
 footer a{color:var(--amarillo)}
 .vacio{text-align:center;color:var(--dim);padding:40px}
 .sug{font-size:11px;color:var(--dim)}.sug b{color:var(--vino)}
+.quien{display:flex;gap:8px;margin:8px 0 4px}.quien .bt{flex:1;padding:10px 6px}
 .blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:block;width:fit-content}.it .t small{color:var(--dim)}
 .mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
 .mas i{margin-right:4px}
@@ -233,35 +234,58 @@ function ficha(id) {
   $('fi-a').onclick = () => { CARRO[id] = Math.max(1, Math.floor(Number($('fi-q').value) || 1)) * bu(p); guardar(); cerrar(); pintar(); pintarCarro(); toastFab(); };
 }
 function toastFab() { $('fab').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 300 }); }
+// Los productos en oferta no llevan el descuento por monto ni suman para alcanzarlo (solo el precio de la oferta)
 function totales() {
-  let neto = 0, fin = 0;
-  for (const [id, q] of Object.entries(CARRO)) { const p = PROD.find(x => x.producto_id == id); if (!p) continue; neto += q * Number(p.precio_neto); fin += q * Number(p.precio_neto) * (1 + Number(p.iva_pct) / 100); }
-  const d = (T.descuentos || []).filter(x => neto >= Number(x.desde)).pop();
+  let neto = 0, fin = 0, base = 0, finDto = 0, hayOf = false;
+  for (const [id, q] of Object.entries(CARRO)) { const p = PROD.find(x => x.producto_id == id); if (!p) continue; const n = q * Number(p.precio_neto), f = n * (1 + Number(p.iva_pct) / 100); neto += n; fin += f; if (p.es_oferta) hayOf = true; else { base += n; finDto += f; } }
+  const d = (T.descuentos || []).filter(x => base >= Number(x.desde)).pop();
   const pct = d ? Number(d.porcentaje) : 0;
-  return { neto, fin, pct, total: fin * (1 - pct / 100), cant: Object.values(CARRO).reduce((a, b) => a + b, 0) };
+  return { neto, base, fin, pct, hayOf, total: fin - finDto * pct / 100, cant: Object.values(CARRO).reduce((a, b) => a + b, 0) };
 }
 function pintarCarro() {
   const t = totales(); $('fab-n').textContent = Object.keys(CARRO).length;
-  const its = Object.entries(CARRO).map(([id, q]) => { const p = PROD.find(x => x.producto_id == id); return p ? `<div class="it">${p.fotos && p.fotos[0] ? `<img src="${esc(p.fotos[0])}">` : '<img src="img/logo.png" style="object-fit:contain">'}<div class="t"><b>${esc(p.nombre)}</b>${fmt(p.precio)} c/u${bu(p) > 1 ? `<br><small>${q / bu(p)} bulto${q / bu(p) > 1 ? 's' : ''} x${bu(p)} = ${q} u. · ${fmt(p.precio * q)}</small>` : ''}</div><div class="qty"><button onclick="cambiar(${id},-1)">−</button><input value="${q / bu(p)}" onchange="fijar(${id},this.value)"><button onclick="cambiar(${id},1)">+</button></div><button class="bt bt-s" onclick="cambiar(${id},-9999)" title="Quitar"><i class="fas fa-trash"></i></button></div>` : ''; }).join('');
+  const its = Object.entries(CARRO).map(([id, q]) => { const p = PROD.find(x => x.producto_id == id); return p ? `<div class="it">${p.fotos && p.fotos[0] ? `<img src="${esc(p.fotos[0])}">` : '<img src="img/logo.png" style="object-fit:contain">'}<div class="t"><b>${esc(p.nombre)}</b>${p.es_oferta ? '<span class="b-of" style="margin-right:4px">Oferta</span>' : ''}${fmt(p.precio)} c/u${bu(p) > 1 ? `<br><small>${q / bu(p)} bulto${q / bu(p) > 1 ? 's' : ''} x${bu(p)} = ${q} u. · ${fmt(p.precio * q)}</small>` : ''}</div><div class="qty"><button onclick="cambiar(${id},-1)">−</button><input value="${q / bu(p)}" onchange="fijar(${id},this.value)"><button onclick="cambiar(${id},1)">+</button></div><button class="bt bt-s" onclick="cambiar(${id},-9999)" title="Quitar"><i class="fas fa-trash"></i></button></div>` : ''; }).join('');
   $('dr-b').innerHTML = its || '<div class="vacio">Tu pedido está vacío.<br>Agregá productos del catálogo.</div>';
-  const sig = (T.descuentos || []).find(x => t.neto < Number(x.desde));
+  const sig = (T.descuentos || []).find(x => t.base < Number(x.desde));
   $('dr-f').innerHTML = !its ? '' : `${t.pct ? `<div class="tot"><span>Subtotal</span><b>${fmt(t.fin)}</b></div><div class="tot"><span>Descuento ${nf.format(t.pct)}%</span><b>- ${fmt(t.fin - t.total)}</b></div>` : ''}<div class="tot g"><span>Total</span><span>${fmt(t.total)}</span></div>
-    ${sig ? `<div class="msg m-w">Sumá ${fmt(Number(sig.desde) - t.neto)} más y obtenés ${nf.format(sig.porcentaje)}% OFF</div>` : ''}
-    ${t.fin < minimo() ? `<div class="msg m-w" id="dr-min">Compra mínima con precios ${esMin() ? 'minoristas' : 'mayoristas'}: <b>${fmt(minimo())}</b>. Te faltan <b>${fmt(minimo() - t.fin)}</b>.</div>` : ''}<div id="dr-err"></div><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"><label>DNI (o CUIT) *</label><input class="fi" id="p-d" inputmode="numeric" placeholder="Solo números" autocomplete="off"><label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional">
+    ${sig ? `<div class="msg m-w">Sumá ${fmt(Number(sig.desde) - t.base)} más${t.hayOf ? ' (sin contar ofertas)' : ''} y obtenés ${nf.format(sig.porcentaje)}% OFF</div>` : ''}
+    ${t.hayOf && (T.descuentos || []).length ? '<div class="msg" id="dr-of" style="font-size:12px">Los productos en oferta van al precio de la oferta, sin descuento adicional.</div>' : ''}
+    ${t.fin < minimo() ? `<div class="msg m-w" id="dr-min">Compra mínima con precios ${esMin() ? 'minoristas' : 'mayoristas'}: <b>${fmt(minimo())}</b>. Te faltan <b>${fmt(minimo() - t.fin)}</b>.</div>` : ''}<div id="dr-err"></div><div class="quien" id="p-q"><button type="button" class="bt ${NUEVO === true ? 'bt-r' : 'bt-s'}" data-n="1">Soy cliente nuevo</button><button type="button" class="bt ${NUEVO === false ? 'bt-r' : 'bt-s'}" data-n="0">Ya soy cliente</button></div>
+    <div id="p-campos" style="${NUEVO === null ? 'display:none' : ''}"><label>DNI (o CUIT) *</label><input class="fi" id="p-d" inputmode="numeric" placeholder="Solo números" autocomplete="off"><div id="p-dmsg"></div>
+    <div id="p-alta" style="${NUEVO ? '' : 'display:none'}"><label>Nombre y apellido *</label><input class="fi" id="p-n" autocomplete="name"><label>Celular (WhatsApp) *</label><input class="fi" id="p-c" inputmode="tel" placeholder="387 4123456" autocomplete="tel"></div>
+    <label>Comentario</label><input class="fi" id="p-o" placeholder="Opcional"></div>
     <button class="bt bt-r" style="width:100%;margin-top:12px;padding:13px" id="p-ok"><i class="fab fa-whatsapp"></i> Enviar pedido</button><div style="font-size:11px;color:var(--dim);margin-top:6px">El precio queda reservado por ${T.plazo_horas || 48} h hasta que lo confirmemos por WhatsApp. Envío y forma de pago se coordinan por WhatsApp.</div>`;
-  if (its) { $('p-ok').onclick = enviar; if (t.fin < minimo()) $('p-ok').disabled = true; }
+  if (its) { $('p-ok').onclick = enviar; if (t.fin < minimo() || NUEVO === null) $('p-ok').disabled = true;
+    $('p-q').querySelectorAll('[data-n]').forEach(b => b.onclick = () => { NUEVO = b.dataset.n === '1'; const d = $('p-d').value; pintarCarro(); $('p-d').value = d; if (d) dniRevisar(); $('p-d').focus(); });
+    $('p-d').onblur = dniRevisar; $('p-d').oninput = () => { $('p-dmsg').innerHTML = ''; }; }
 }
 function cambiar(id, d) { const n = (CARRO[id] || 0) + d * bu(PROD.find(x => x.producto_id == id)); if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); pintar(); }
 function fijar(id, v) { const n = Math.floor(Number(v) || 0) * bu(PROD.find(x => x.producto_id == id)); if (n <= 0) delete CARRO[id]; else CARRO[id] = n; guardar(); pintarCarro(); }
+// ¿Cliente nuevo o ya registrado? Al escribir el DNI se revisa si existe o si está dado de baja
+let NUEVO = null;
+function waBaja(dni) { return 'https://wa.me/' + String(T.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(`Hola! No puedo cargar el pedido en la web: me dice que mi DNI está dado de baja. DNI: ${dni}`); }
+function msgBaja(dni) { return `<div class="msg m-r"><b>Ese DNI está dado de baja.</b> Escribinos por WhatsApp para habilitarlo.</div><a class="bt bt-w" style="display:block;text-align:center;margin-top:6px" href="${waBaja(dni)}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> Avisar por WhatsApp</a>`; }
+async function dniRevisar() {
+  const dni = ($('p-d') ? $('p-d').value : '').replace(/\D/g, ''); const box = $('p-dmsg'); if (!box || !dni) return;
+  if (!(dni.length === 7 || dni.length === 8 || dni.length === 11)) { box.innerHTML = '<div class="msg m-r">El DNI tiene 7 u 8 números (el CUIT, 11).</div>'; return; }
+  const { data: e } = await sb.rpc('catalogo_dni_estado', { p_dni: dni });
+  if (e === 'baja') box.innerHTML = msgBaja(dni);
+  else if (NUEVO && e === 'cliente') box.innerHTML = '<div class="msg m-w">Ese DNI ya está registrado: tocá <b>Ya soy cliente</b>.</div>';
+  else if (NUEVO === false && e === 'nuevo') box.innerHTML = '<div class="msg m-w">No encontramos ese DNI: si es tu primera compra tocá <b>Soy cliente nuevo</b>.</div>';
+  else if (e === 'cliente' && NUEVO === false) box.innerHTML = '<div class="msg m-g">DNI registrado ✓</div>';
+  else box.innerHTML = '';
+}
 async function enviar() {
-  const nom = $('p-n').value.trim(), cel = $('p-c').value.trim(), dni = $('p-d').value.replace(/\D/g, ''); const err = $('dr-err');
-  if (!nom || !cel || !dni) { err.innerHTML = '<div class="msg m-r">Completá nombre, celular y DNI.</div>'; return; }
+  const nom = NUEVO ? $('p-n').value.trim() : '', cel = NUEVO ? $('p-c').value.trim() : '', dni = $('p-d').value.replace(/\D/g, ''); const err = $('dr-err');
+  if (NUEVO === null) { err.innerHTML = '<div class="msg m-r">Elegí si sos cliente nuevo o ya sos cliente.</div>'; return; }
+  if (NUEVO && (!nom || !cel || !dni)) { err.innerHTML = '<div class="msg m-r">Completá nombre, celular y DNI.</div>'; return; }
+  if (!dni) { err.innerHTML = '<div class="msg m-r">Escribí tu DNI.</div>'; return; }
   if (!(dni.length === 7 || dni.length === 8 || dni.length === 11)) { err.innerHTML = '<div class="msg m-r">El DNI tiene 7 u 8 números (el CUIT, 11).</div>'; return; }
   $('p-ok').disabled = true;
   const items = Object.entries(CARRO).map(([id, q]) => ({ producto_id: Number(id), cantidad: q }));
-  const { data, error } = await sb.rpc('pedido_web', { p: { nombre: nom, celular: cel, dni, items, nota: $('p-o').value.trim() || null, lista: LISTA } });
+  const { data, error } = await sb.rpc('pedido_web', { p: { nombre: nom || null, celular: cel || null, dni, items, nota: $('p-o').value.trim() || null, lista: LISTA, nuevo: NUEVO } });
   $('p-ok').disabled = false;
-  if (error) { err.innerHTML = `<div class="msg m-r">${esc(error.message)}</div>`; return; }
+  if (error) { err.innerHTML = /dado de baja/.test(error.message) ? msgBaja(dni) : `<div class="msg m-r">${esc(error.message)}</div>`; return; }
   const r = data[0]; const nota = $('p-o').value.trim();
   // Detalle con los precios que grabó la base (no los de la pantalla)
   let det = null; try { const v = await sb.rpc('ver_pedido', { p_token: r.token }); if (!v.error) det = v.data; } catch (e) {}
@@ -281,7 +305,7 @@ async function enviar() {
   }
   let tot = '';
   tot = `${Math.abs(sub - Number(r.total)) >= 1 ? `Subtotal: ${fmt(sub)}\nDescuento: - ${fmt(sub - Number(r.total))}\n` : ''}*TOTAL: ${fmt(Number(r.total))}*`;
-  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : ' (minorista)'}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom}\nCelular: ${cel}\nDNI: ${dni}${nota ? `\nComentario: ${nota}` : ''}`;
+  const txt = `Hola! Hice el pedido *${r.numero}* en la web${may ? ' (mayorista)' : ' (minorista)'}.\n\n*Detalle:*\n${lineas}\n\n${tot}\n\nNombre: ${nom || (det && det.nombre) || ''}${cel ? `\nCelular: ${cel}` : ''}\nDNI: ${dni}${nota ? `\nComentario: ${nota}` : ''}`;
   const wa = 'https://wa.me/' + String(T.whatsapp || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(txt);
   CARRO = {}; guardar(); pintar();
   $('fab-n').textContent = 0;
