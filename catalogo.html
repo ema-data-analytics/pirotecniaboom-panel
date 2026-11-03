@@ -127,7 +127,6 @@ footer a{color:var(--amarillo)}
   <div class="top">
     <a class="logo" href="catalogo.html"><img src="img/logo.png" alt="Pirotecnia Boom"></a>
     <div class="busq"><i class="fas fa-search"></i><input id="q" placeholder="Buscar productos…" autocomplete="off"></div>
-    <button class="tb" id="b-xls" title="Descargar lista de precios" style="display:none"><i class="fas fa-file-excel"></i><span>Lista</span></button>
   </div>
   <div class="tabs" id="tabs"><button data-l="MAYORISTA"><i class="fas fa-store"></i> Mayorista</button><button data-l="MINORISTA"><i class="fas fa-tag"></i> Minorista</button></div>
   <div class="cats" id="cats"></div>
@@ -145,7 +144,6 @@ footer a{color:var(--amarillo)}
 <div class="mod" id="mod-fi"><div class="ficha" id="fi"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 'use strict';
 const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -182,7 +180,7 @@ async function cargar() {
   for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
   ajustarBultos(); guardar();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.l === LISTA));
-  $('b-xls').style.display = esMin() ? 'none' : '';
+
   $('banda').innerHTML = (esMin() ? '<i class="fas fa-tag"></i> Precios minoristas · ' : '<i class="fas fa-store"></i> Precios mayoristas · ') + (minimo() ? `Compra mínima ${fmt(minimo())} · ` : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
   const cats = [...new Map(PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria)).map(x => [x.categoria, 1])).keys()];
   $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
@@ -318,17 +316,6 @@ function abrirCarro(v) { $('dr').classList.toggle('on', v); $('ov').classList.to
 $('fab').onclick = () => { pintarCarro(); abrirCarro(true); }; $('dr-x').onclick = () => abrirCarro(false); $('ov').onclick = () => abrirCarro(false);
 $('q').oninput = pintar; $('orden').onchange = pintar;
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = async () => { if (LISTA === b.dataset.l) return; LISTA = b.dataset.l; await cargar(); pintarCarro(); });
-// Lista de precios en Excel: en la pestaña Mayorista (precio mayorista y precio sugerido de venta = minorista)
-$('b-xls').onclick = () => {
-  if (esMin()) return;
-  const r2 = n => Math.round(Number(n) * 100) / 100;
-  const filas = PROD.slice().sort((a, b) => a.categoria_orden - b.categoria_orden || a.nombre.localeCompare(b.nombre))
-    .map(p => [p.categoria, p.codigo, p.nombre, p.bulto || '', r2(p.precio), p.precio_sugerido ? r2(p.precio_sugerido) : '', p.es_oferta ? 'OFERTA' : '', p.sin_stock ? 'Sin stock' : '']);
-  const hoyTxt = new Date().toLocaleDateString('es-AR');
-  const ws = XLSX.utils.aoa_to_sheet([[`${T.nombre || ''} · Lista de precios mayorista · ${hoyTxt}`], [], ['Categoría', 'Código', 'Producto', 'Bulto', 'Precio mayorista', 'Precio sugerido de venta', 'Oferta', 'Stock'], ...filas]);
-  ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 42 }, { wch: 7 }, { wch: 16 }, { wch: 22 }, { wch: 8 }, { wch: 10 }];
-  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Lista de precios'); XLSX.writeFile(wb, 'Lista_mayorista_' + hoyTxt.replace(/\//g, '-') + '.xlsx');
-};
 // ---- Banners del inicio (con las fotos de los productos; se actualizan solos)
 const SLIDES = [
   { cats: ['Tortas grandes', 'Tortas medianas'], k: 'Tortas', t: 'Tortas para el gran final', p: 'Grandes y medianas, de muchos tiros y colores, para cerrar tu festejo a lo grande.' },
