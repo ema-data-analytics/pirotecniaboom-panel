@@ -704,9 +704,31 @@ PAGINAS.empresa = async () => {
     { k: 'whatsapp_pedidos', l: 'WhatsApp para pedidos', ph: '+5493874749807' }, { k: 'email_pedidos', l: 'Email' }, { k: 'instagram', l: 'Instagram' }, { k: 'facebook', l: 'Facebook' }, { k: 'tiktok', l: 'TikTok' },
     { k: 'plazo_pedido_horas', l: 'Vencimiento de pedidos web (horas)', t: 'num' }, { k: 'minimo_compra_minorista', l: 'Compra mínima con precios minoristas ($)', t: 'num', ayuda: 'Pedido mínimo para comprar desde la pestaña Minorista del catálogo.' }, { k: 'minimo_compra_mayorista', l: 'Compra mínima con precios mayoristas ($)', t: 'num', ayuda: 'Pedido mínimo para comprar desde la pestaña Mayorista del catálogo. 0 = sin mínimo.' }, { k: 'validez_presupuesto_dias', l: 'Validez de presupuestos (días)', t: 'num' }, { k: 'leyenda_precios', l: 'Leyenda de precios (catálogo)', t: 'area', ancho: 1 }];
   pagina({ titulo: 'Datos de la empresa', icono: 'building', sub: 'Aparecen en los PDF y en el catálogo',
-    cuerpo: `<div class="panel pb">${formHtml(campos, e, 'emp')}<div class="flex gap2 mt3"><button class="btn btn-p" id="emp_ok"><i class="fas fa-floppy-disk"></i> Guardar</button></div></div>` });
+    cuerpo: `<div class="panel pb">${formHtml(campos, e, 'emp')}<div class="flex gap2 mt3"><button class="btn btn-p" id="emp_ok"><i class="fas fa-floppy-disk"></i> Guardar</button></div></div><div id="avisos_box"></div>` });
   $('emp_ok').onclick = async () => { let p; try { p = formLeer(campos, {}, 'emp'); } catch (x) { return toast(x.message, 'r'); } if (p.condicion_iva_id) p.condicion_iva_id = Number(p.condicion_iva_id); await rpc('abm_guardar', { p_tabla: 'config_empresa', p }); await cargarMaestros(); toast('Datos guardados', 'g'); };
+  if (ES_DUENO) avisosPintar();
 };
+
+/* ---------- Avisos de pedidos nuevos (WhatsApp por TextMeBot + mail por Resend) ---------- */
+async function avisosPintar() {
+  let c; try { c = await rpc('notif_config_ver', {}, { silencio: true }); } catch (e) { return; }
+  if (!c) return;
+  const clave = (ok, fin) => ok ? `<span class="badge bg">cargada ···${esc(fin)}</span>` : '<span class="badge br">sin cargar</span>';
+  const ult = (c.ultimos || []).map(u => `<tr><td>${esc(u.fecha)}</td><td>${u.canal === 'whatsapp' ? 'WhatsApp' : 'Mail'}</td><td>${esc(u.pedido || 'prueba')}</td><td>${/^enviado/.test(u.resultado) ? '<span class="badge bg">enviado</span>' : esc(u.resultado)}</td></tr>`).join('');
+  $('avisos_box').innerHTML = `<div class="panel pb mt3"><h3 style="margin:0 0 4px"><i class="fas fa-bell"></i> Avisos de pedidos nuevos</h3>
+    <p style="margin:0 0 12px;color:#5d4a43;font-size:13px">Cada pedido que entra por la tienda manda el detalle automáticamente, aunque el cliente no envíe su WhatsApp.</p>
+    <div class="fg"><label class="fl"><input type="checkbox" id="av_wa_on" ${c.whatsapp_activo ? 'checked' : ''}> Avisar por WhatsApp (TextMeBot)</label></div>
+    <div class="fg"><label class="fl">Número que recibe el aviso</label><input id="av_wa_num" class="fi" placeholder="+5493874749807" value="${esc(c.whatsapp_numero || '')}"></div>
+    <div class="fg"><label class="fl">Clave de TextMeBot (ApiKey) ${clave(c.textmebot_cargada, c.textmebot_fin)}</label><input id="av_wa_key" class="fi" type="password" autocomplete="off" placeholder="${c.textmebot_cargada ? 'Dejar vacío para no cambiarla' : 'Pegá la clave que llegó por mail'}"></div>
+    <div class="fg"><label class="fl"><input type="checkbox" id="av_em_on" ${c.email_activo ? 'checked' : ''}> Avisar por mail (Resend)</label></div>
+    <div class="fg"><label class="fl">Mail que recibe el aviso</label><input id="av_em_to" class="fi" placeholder="nombre@hotmail.com" value="${esc(c.email_destino || '')}"></div>
+    <div class="fg"><label class="fl">Clave de Resend (API key) ${clave(c.resend_cargada, c.resend_fin)}</label><input id="av_em_key" class="fi" type="password" autocomplete="off" placeholder="${c.resend_cargada ? 'Dejar vacío para no cambiarla' : 're_...'}"></div>
+    <div class="flex gap2 mt3"><button class="btn btn-p" id="av_ok"><i class="fas fa-floppy-disk"></i> Guardar avisos</button><button class="btn" id="av_test"><i class="fas fa-paper-plane"></i> Mandar aviso de prueba</button></div>
+    ${ult ? `<h4 style="margin:16px 0 6px">Últimos avisos</h4><div class="tw"><table><thead><tr><th>Fecha</th><th>Canal</th><th>Pedido</th><th>Resultado</th></tr></thead><tbody>${ult}</tbody></table></div>` : ''}</div>`;
+  const leer = () => ({ whatsapp_activo: $('av_wa_on').checked, whatsapp_numero: $('av_wa_num').value.trim(), textmebot_apikey: $('av_wa_key').value.trim(), email_activo: $('av_em_on').checked, email_destino: $('av_em_to').value.trim(), resend_apikey: $('av_em_key').value.trim() });
+  $('av_ok').onclick = async () => { await rpc('notif_config_guardar', { p: leer() }); toast('Avisos guardados', 'g'); avisosPintar(); };
+  $('av_test').onclick = async () => { await rpc('notif_config_guardar', { p: leer() }); await rpc('notif_probar'); toast('Aviso de prueba enviado. Revisá el celular y el mail en un minuto.', 'g'); setTimeout(avisosPintar, 4000); };
+}
 PAGINAS.miclave = async () => {
   pagina({ titulo: 'Mi contraseña', icono: 'key', sub: 'Cambiá tu contraseña de ingreso',
     cuerpo: `<div class="panel pb" style="max-width:460px"><div class="fg"><label class="fl req">Contraseña actual</label><input id="mc_a" type="password" class="fi"></div><div class="fg"><label class="fl req">Nueva contraseña (mínimo 8)</label><input id="mc_n" type="password" class="fi"></div><div class="fg"><label class="fl req">Repetí la nueva</label><input id="mc_r" type="password" class="fi"></div><button class="btn btn-p" id="mc_ok"><i class="fas fa-key"></i> Cambiar</button></div>` });

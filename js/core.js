@@ -459,6 +459,38 @@ async function iniciarApp() {
   armarMenu(); cargarLogo();
   await ir((location.hash || '#inicio').slice(1));
   actualizarBadges();
+  vigilarPedidos(); setInterval(vigilarPedidos, 30000);
+  document.addEventListener('click', () => { try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch (e) { } }, { once: true });
+}
+
+/* ---------- Aviso de pedido nuevo: suena, muestra la notificación y un cartel (cada 30 s) ---------- */
+let ULT_PEDIDO = null;
+function sonarAviso() {
+  try {
+    const c = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.25, 0.5].forEach(t => { const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, c.currentTime + t); g.gain.exponentialRampToValueAtTime(0.5, c.currentTime + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + t + 0.2);
+      o.connect(g); g.connect(c.destination); o.start(c.currentTime + t); o.stop(c.currentTime + t + 0.22); });
+  } catch (e) { }
+}
+async function vigilarPedidos() {
+  let rows; try { rows = await rpc('listado_pedidos', { f: {} }, { silencio: true }); } catch (e) { return; }
+  if (!Array.isArray(rows)) return;
+  const max = rows.reduce((m, r) => Math.max(m, Number(r.id) || 0), 0);
+  if (ULT_PEDIDO === null) { ULT_PEDIDO = max; return; }
+  const nuevos = rows.filter(r => Number(r.id) > ULT_PEDIDO).sort((a, b) => a.id - b.id);
+  if (!nuevos.length) return;
+  ULT_PEDIDO = max; sonarAviso(); actualizarBadges();
+  nuevos.forEach(p => {
+    const txt = `${p.nombre || ''} · Total ${fmt(p.total)}`;
+    try { if (window.Notification && Notification.permission === 'granted') { const n = new Notification('Nuevo pedido ' + p.numero, { body: txt, icon: 'img/favicon.png', tag: 'ped' + p.id, requireInteraction: true }); n.onclick = () => { window.focus(); ir('pedidos'); n.close(); }; } } catch (e) { }
+  });
+  let cart = $('aviso_ped');
+  if (!cart) { cart = document.createElement('div'); cart.id = 'aviso_ped'; cart.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:9999;max-width:360px;background:#d10000;color:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 8px 30px rgba(0,0,0,.35);cursor:pointer;font-weight:600'; document.body.appendChild(cart); }
+  const lista = nuevos.map(p => `<div style="margin-top:6px"><b>${esc(p.numero)}</b> · ${esc(p.nombre || '')} · ${esc(fmt(p.total))}</div>`).join('');
+  cart.innerHTML = `<div style="font-size:16px"><i class="fas fa-bell"></i> ${nuevos.length > 1 ? nuevos.length + ' pedidos nuevos' : 'Pedido nuevo'}</div>${lista}<div style="margin-top:8px;font-size:12px;opacity:.9">Tocá para ver los pedidos</div>`;
+  cart.onclick = () => { cart.remove(); ir('pedidos'); };
+  if (location.hash === '#pedidos' && typeof pedidosCargar === 'function') pedidosCargar();
 }
 async function actualizarBadges() {
   try {
