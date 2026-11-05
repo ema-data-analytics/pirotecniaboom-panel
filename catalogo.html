@@ -177,7 +177,7 @@ async function cargar() {
   const D = new Map((dsp || []).map(x => [x.producto_id, x.display])); const BI = new Set((bim || []).map(x => x.producto_id)); const NS = new Set((nsa || []).map(x => x.producto_id)); PROD.forEach(q => { q.display = D.get(q.producto_id) || null; q.bajo_impacto = BI.has(q.producto_id); q.no_salta = NS.has(q.producto_id); });
   const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => { const x = X.get(q.producto_id); if (x) { q.video_url = x.video_url; q.info_adicional = x.info_adicional; } });
   heroArmar();
-  for (const k of Object.keys(CARRO)) if (!PROD.find(x => x.producto_id == k)) delete CARRO[k];
+  for (const k of Object.keys(CARRO)) { const q = PROD.find(x => x.producto_id == k); if (!q || q.sin_stock) delete CARRO[k]; }
   ajustarBultos(); guardar();
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.l === LISTA));
 
@@ -199,7 +199,7 @@ function pintar() {
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card${p.no_salta ? ' ns' : ''}"><div class="ph">${foto(p)}${p.no_salta ? '<div class="b-ns">No disponible en Salta</div>' : ''}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.bajo_impacto ? '<span class="b-bi">Bajo impacto</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
     <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
-    <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
+    <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
   else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
 }
