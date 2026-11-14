@@ -36,7 +36,7 @@ async function editorDoc(modo, id) {
     botones: `<button class="btn btn-s" onclick="editorVolver()"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span><span id="ed_est"></span></div><div class="pb" id="ed_hdr"></div></div>
       <div class="panel mb3" id="ed_lin_p"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span><span class="ss" id="ed_lista_txt"></span></div><div class="pb" id="ed_lin"></div></div>
-      <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div id="ed_fin"></div><div class="tot-box" id="ed_tot"></div></div></div>` });
+      <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div id="ed_fin"></div><div class="tot-box" id="ed_tot"></div><div id="ed_ofe"></div></div></div>` });
   if (id) await editorRecargar(); else editorPintarHdr();
 }
 async function editorRecargar() {
@@ -67,7 +67,7 @@ function editorPintarHdr() {
   if (!ed && inp) inp.disabled = true;
   if (ed) $('ed_hdr_ok').onclick = editorGuardarHdr;
   if (ed && $('ed_dof')) $('ed_dof').onchange = async e => { const v = e.target.checked; try { await rpc('doc_descuento_ofertas', { p_tipo: ED.modo === 'venta' ? 'venta' : 'presupuesto', p_id: ED.id, p_valor: v }); toast(v ? 'Los productos en oferta llevan descuentos' : 'Los productos en oferta van sin descuento', 'g'); } finally { await editorRecargar(); } };
-  if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_dsc').innerHTML = ''; $('ed_fin').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
+  if (!ED.id) { $('ed_lin_p').style.opacity = .45; $('ed_lin').innerHTML = '<div class="tdim">Guardá el encabezado para empezar a cargar productos.</div>'; $('ed_tot').innerHTML = ''; $('ed_dsc').innerHTML = ''; $('ed_fin').innerHTML = ''; $('ed_ofe').innerHTML = ''; $('ed_acc').innerHTML = ''; setTimeout(() => $('ed_cli') && $('ed_cli').focus(), 50); }
   else $('ed_lin_p').style.opacity = 1;
 }
 async function editorDescuento() {
@@ -102,14 +102,15 @@ function editorPintarLineas() {
       <div class="fg" style="margin:0"><label class="fl">Cantidad</label><input id="ed_cant" type="number" min="0.001" step="any" class="fi mono" value="1"></div>
       <div class="fg" style="margin:0"><label class="fl">Precio neto unit.</label><input id="ed_pu" type="number" step="0.01" class="fi mono" ${ES_DUENO ? '' : 'disabled'} placeholder="de la lista"></div>
       <div class="fg" style="margin:0"><label class="fl">Desc. línea %</label><input id="ed_dl" type="number" step="0.01" min="0" max="99" class="fi mono" value="0" ${ES_DUENO ? '' : 'disabled'}></div>
-      <div><button class="btn btn-p" id="ed_add"><i class="fas fa-plus"></i> <span id="ed_add_t">Agregar</span></button></div></div><div id="ed_prod_info" class="ss mb3"></div>` : '';
-  $('ed_lin').innerHTML = fila + grilla('g_ed', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto', f: r => esc(r.producto) + (r.es_oferta ? ' <span class="badge br">Oferta</span>' : ''), xf: r => r.producto }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' },
+      <div><button class="btn btn-p" id="ed_add"><i class="fas fa-plus"></i> <span id="ed_add_t">Agregar</span></button></div></div>
+      <label class="chk mb2" title="Solo cambia algo si el producto está en oferta"><input type="checkbox" id="ed_sinof"> Si está en oferta, cobrarlo al <b>precio normal</b> (sin la oferta)</label><div id="ed_prod_info" class="ss mb3"></div>` : '';
+  $('ed_lin').innerHTML = fila + grilla('g_ed', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto', f: r => esc(r.producto) + (r.es_oferta ? ' <span class="badge br">Oferta</span>' : '') + (r.sin_oferta ? ' <span class="badge bw">sin oferta</span>' : ''), xf: r => r.producto }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' },
     { t: 'Precio unit. neto', k: 'precio_neto_unit', f: r => fmt(r.precio_neto_unit) + (r.precio_manual ? ' <span class="badge bw">especial</span>' : ''), cls: 'tr' },
     { t: 'Precio unit. final', k: 'pf', f: r => fmt(Number(r.precio_neto_unit) * (1 + Number(r.iva_pct) / 100)), cls: 'tr' },
     { t: 'Desc.', k: 'descuento_pct', f: r => Number(r.descuento_pct) ? fmtP(r.descuento_pct) : '', cls: 'tr' },
     { t: 'Desc. $', k: 'dpes', f: r => Number(r.descuento_pct) ? '- ' + fmt(Number(r.cantidad) * Number(r.precio_neto_unit) * Number(r.descuento_pct) / 100 * (1 + Number(r.iva_pct) / 100)) : '', cls: 'tr' },
     { t: 'Total final', k: 'tf', f: r => fmt(Number(r.cantidad) * Number(r.precio_neto_unit) * (1 - Number(r.descuento_pct) / 100) * (1 + Number(r.iva_pct) / 100)), cls: 'tr' }], items,
-    { vacio: 'Todavía no hay productos', acciones: ed ? (r => `<button class="btn btn-xs btn-b" title="Modificar" onclick="editorEditarLinea(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-d" title="Quitar" onclick="editorQuitarLinea(${r.id})"><i class="fas fa-trash"></i></button>`) : null });
+    { vacio: 'Todavía no hay productos', acciones: ed ? (r => `${r.es_oferta ? `<button class="btn btn-xs btn-y" title="Sacar precio de oferta" onclick="editorOferta(${r.id},true)"><i class="fas fa-tag"></i> Sacar oferta</button>` : r.sin_oferta ? `<button class="btn btn-xs btn-g" title="Volver al precio de oferta" onclick="editorOferta(${r.id},false)"><i class="fas fa-tag"></i> Poner oferta</button>` : ''}<button class="btn btn-xs btn-b" title="Modificar" onclick="editorEditarLinea(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-d" title="Quitar" onclick="editorQuitarLinea(${r.id})"><i class="fas fa-trash"></i></button>`) : null });
   if (ed) {
     buscador('ed_prod_w', { tipo: 'producto', id: 'ed_prod', lista: () => d.lista_id, placeholder: 'Código, nombre o categoría…', onSelect: p => {
       $('ed_prod_info').innerHTML = `Precio lista: neto <b>${p.precio_neto != null ? fmt(p.precio_neto) : 'sin precio'}</b> · final <b>${p.precio_final != null ? fmt(p.precio_final) : '—'}</b>${p.controla_stock ? ' · disponible <b>' + fmtN(p.disponible) + '</b>' : ''}`;
@@ -126,6 +127,7 @@ function editorPintarLineas() {
   if (!t || !t.error) $('ed_tot').innerHTML = `<div class="row"><span>Subtotal neto</span><b class="mono">${fmt(t.subtotal_neto)}</b></div>${Number(t.descuento_neto) ? `<div class="row"><span>Descuentos${detDesc ? `<br><small class="tdim">incluye ${detDesc}</small>` : ''}</span><b class="mono">- ${fmt(t.descuento_neto)}</b></div>` : ''}${Number(t.recargo_neto) ? `<div class="row"><span>Recargo</span><b class="mono">${fmt(t.recargo_neto)}</b></div>` : ''}${Number(t.envio_neto) ? `<div class="row"><span>Envío</span><b class="mono">${fmt(t.envio_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(t.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(t.total)}</span></div>`;
   ED.total = Number(t.total || 0);
   // desglose de descuentos en precio final, al lado de los totales
+  $('ed_ofe').innerHTML = resumenOfertasHtml(items);
   $('ed_fin').innerHTML = items.length && t && !t.error ? desgloseHtml(desgloseDesc({ items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), dofer: !!d.descuento_en_ofertas, total: t.total,
       recargo: esV ? Number(d.recargo_neto || 0) : 0, envio: esV ? Number(d.envio_neto || 0) : 0 })) : '';
   // descuento general al pie (en % o en $), antes de grabar / confirmar
@@ -157,7 +159,7 @@ function editorPintarLineas() {
 async function editorAgregarLinea() {
   const pid = Number($('ed_prod').dataset.id || 0); if (!pid) return toast('Elegí un producto.', 'r');
   const cant = numIn('ed_cant'); if (!cant || cant <= 0) return toast('Cantidad inválida.', 'r');
-  const p = { id: ED.lineaEdit, producto_id: pid, cantidad: cant, precio_neto_unit: ES_DUENO && $('ed_pu').value !== '' ? numIn('ed_pu') : null, descuento_pct: ES_DUENO ? (numIn('ed_dl') || 0) : 0 };
+  const p = { id: ED.lineaEdit, producto_id: pid, cantidad: cant, precio_neto_unit: ES_DUENO && $('ed_pu').value !== '' ? numIn('ed_pu') : null, descuento_pct: ES_DUENO ? (numIn('ed_dl') || 0) : 0, sin_oferta: !!($('ed_sinof') && $('ed_sinof').checked) };
   if (ED.modo === 'venta') { p.borrador_id = ED.id; await rpc('borrador_item_guardar', { p }); } else { p.presupuesto_id = ED.id; await rpc('presupuesto_item_guardar', { p }); }
   ED.lineaEdit = null; await editorRecargar(); setTimeout(() => $('ed_prod') && $('ed_prod').focus(), 50);
 }
@@ -165,7 +167,15 @@ function editorEditarLinea(id) {
   const r = ED.det.items.find(x => x.id === id); ED.lineaEdit = id;
   $('ed_prod').fijar({ id: r.producto_id, label: r.codigo + ' · ' + r.producto }); $('ed_cant').value = r.cantidad;
   if (ES_DUENO) { $('ed_pu').value = r.precio_manual ? r.precio_neto_unit : ''; $('ed_dl').value = r.descuento_pct; }
+  if ($('ed_sinof')) $('ed_sinof').checked = !!r.sin_oferta;
   $('ed_add_t').textContent = 'Guardar línea'; $('ed_cant').focus();
+}
+// Sacar o volver a poner el precio de oferta en una línea
+async function editorOferta(id, sin) {
+  const r = ED.det.items.find(x => x.id === id);
+  const p = { id, producto_id: r.producto_id, cantidad: Number(r.cantidad), precio_neto_unit: null, descuento_pct: ES_DUENO ? Number(r.descuento_pct || 0) : 0, sin_oferta: sin };
+  if (ED.modo === 'venta') { p.borrador_id = ED.id; await rpc('borrador_item_guardar', { p }); } else { p.presupuesto_id = ED.id; await rpc('presupuesto_item_guardar', { p }); }
+  await editorRecargar(); toast(r.producto + (sin ? ': precio normal, sin la oferta' : ': vuelve al precio de oferta'), 'g');
 }
 async function editorQuitarLinea(id) {
   if (ED.modo === 'venta') await rpc('borrador_item_quitar', { p_item: id }); else await rpc('presupuesto_item_quitar', { p_item: id });
@@ -227,14 +237,19 @@ function comprobanteTotalesPdf(d, ri) {
   if (ri) return desglosePdf(desgloseDesc({ items: d.items, total: neto, neto: true })).concat([['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]);
   return desglosePdf(desgloseDesc({ items: d.items, total: d.total })).concat([['TOTAL', fmt(d.total), 1]]);
 }
+// Ítems de los comprobantes impresos: marca OFERTA y muestra la cantidad por display
+function pdfItems(items, ri) {
+  return {
+    cols: ['Código', 'Producto', 'Cant.', 'Cant. x display', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
+    filas: items.map(i => [i.codigo || '', i.producto + (i.es_oferta ? '  · OFERTA' : ''), fmtN(i.cantidad), i.display || '', fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
+    colStyles: { 2: { halign: 'right' }, 3: { halign: 'center' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } } };
+}
 async function pdfComprobante(id) {
   const d = await rpc('comprobante_detalle', { p_id: id }); const ri = false; // al cliente: siempre precio final, sin texto de IVA
   const doc = pdfDocumento({ titulo: d.tipo_nombre.toUpperCase(), numero: d.numero, fecha: fmtD(d.fecha), sub: 'Comprobante interno · no válido como factura',
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     extra: { titulo: 'Condiciones', lineas: [d.condicion === 'contado' ? 'Contado' : 'Cuenta corriente', 'Lista: ' + d.lista, d.origen ? 'Origen: ' + d.origen.numero : '', d.factura_externa ? 'Factura ARCA: ' + d.factura_externa : '', d.pedido ? 'Pedido: ' + d.pedido : '', d.presupuesto ? 'Presupuesto: ' + d.presupuesto : ''] },
-    cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
-    filas: d.items.map(i => [i.codigo || '', i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
-    colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+    ...pdfItems(d.items, ri),
     totales: comprobanteTotalesPdf(d, ri),
     notas: [d.motivo ? 'Motivo / nota: ' + d.motivo : '', d.tipo !== 'NC' && Number(d.saldo) > 0 ? 'Saldo pendiente: ' + fmt(d.saldo) : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero.replace(/\s+/g, '_'));
@@ -313,9 +328,7 @@ async function presupuestoPdf(id) {
   const d = await rpc('presupuesto_detalle', { p_id: id }); const ri = false; // al cliente: siempre precio final, sin texto de IVA
   const doc = pdfDocumento({ titulo: 'PRESUPUESTO', numero: d.numero + (d.version > 1 ? ' · v' + d.version : ''), fecha: fmtD(d.fecha), sub: (d.version > 1 ? 'Versión ' + d.version + ' · ' : '') + 'Válido hasta: ' + fmtD(d.valido_hasta),
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
-    cols: ['Código', 'Producto', 'Cant.', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
-    filas: d.items.map(i => [i.codigo, i.producto, fmtN(i.cantidad), fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
-    colStyles: { 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+    ...pdfItems(d.items, ri),
     totales: presupuestoTotales(d, ri),
     notas: [d.nota || '', 'Presupuesto válido hasta el ' + fmtD(d.valido_hasta) + '. Precios sujetos a disponibilidad de stock.', (M.empresa || {}).whatsapp ? 'Consultas y pedidos por WhatsApp: ' + M.empresa.whatsapp : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero);
@@ -346,6 +359,16 @@ function desgloseDesc({ items, dcli = 0, dgen = 0, dofer = true, total, neto = f
   const ahorro = r2(dLin + dCli + Math.max(dGen, 0));
   return { filas, ahorro, pctAhorro: s0 ? ahorro * 100 / s0 : 0, total: Number(total), subtotal: s0 };
 }
+// Cuadro aparte: solo los productos en oferta (cantidad y total a precio de oferta, precio final)
+function resumenOfertasHtml(items) {
+  const of = (items || []).filter(i => i.es_oferta && i.estado !== 'anulado');
+  if (!of.length) return '';
+  const tot = of.reduce((a, i) => a + Number(i.cantidad) * Number(i.precio_neto_unit) * (1 - Number(i.descuento_pct || 0) / 100) * (1 + Number(i.iva_pct || 0) / 100), 0);
+  const uni = of.reduce((a, i) => a + Number(i.cantidad), 0);
+  return `<div class="tot-box" style="border:2px solid #d10000;background:#fff5f5"><div class="ss mb2" style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d10000"><i class="fas fa-tag"></i> Productos en oferta</div>
+    <div class="row"><span>Productos</span><b class="mono">${of.length}</b></div><div class="row"><span>Unidades</span><b class="mono">${fmtN(uni)}</b></div>
+    <div class="row big" style="color:#d10000"><span>TOTAL OFERTAS</span><span class="mono">${fmt(tot)}</span></div></div>`;
+}
 function desgloseHtml(x, titulo = 'En precio final') {
   return `<div class="tot-box"><div class="ss mb2" style="font-weight:700;text-transform:uppercase;letter-spacing:.5px">${titulo}</div>${x.filas.map(f => `<div class="row"><span>${esc(f.l)}</span><b class="mono ${f.t === 'd' ? 'td' : ''}">${f.v < 0 ? '- ' + fmt(-f.v) : fmt(f.v)}</b></div>`).join('')}
     ${x.ahorro >= 0.01 ? `<div class="row" style="border-top:1px dashed #d9ccc6;padding-top:4px"><span><b>Total de descuentos</b></span><b class="mono td">- ${fmt(x.ahorro)} (${fmtP(x.pctAhorro)})</b></div>` : ''}
@@ -353,7 +376,6 @@ function desgloseHtml(x, titulo = 'En precio final') {
 }
 function desglosePdf(x, extraNeto) {
   const rows = x.filas.map(f => [f.l, f.v < 0 ? '- ' + fmt(-f.v) : fmt(f.v)]);
-  if (x.ahorro >= 0.01) rows.push(['Total de descuentos (' + fmtP(x.pctAhorro) + ')', '- ' + fmt(x.ahorro)]);
   return rows.concat(extraNeto || []);
 }
 // Totales del presupuesto para el PDF
