@@ -199,7 +199,7 @@ function pintar() {
   $('cuenta').textContent = l.length + ' productos';
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card${p.no_salta ? ' ns' : ''}"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.bajo_impacto ? '<span class="b-bi">Bajo impacto</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
-    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.no_salta ? '<div class="ns-txt ns-card"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
+    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.no_salta ? '<div class="ns-txt ns-card"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
     <button class="sh" data-s="${p.producto_id}" title="Compartir este producto"><i class="fas fa-share-nodes"></i> Compartir</button>
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
@@ -223,7 +223,7 @@ function ficha(id) {
     ${yt ? `<div class="vid"><iframe src="${yt}" title="Video de ${esc(p.nombre)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>` : ''}
     ${(p.fotos || []).length ? `<div class="ffotos">${p.fotos.map(f => `<img src="${esc(f)}" alt="">`).join('')}</div>` : ''}
     <div class="cod">${esc(p.codigo)} · ${esc(p.categoria)}${p.bajo_impacto ? ' · <span class="bi-txt">Bajo impacto</span>' : ''}</div>
-    ${p.no_salta ? '<div class="ns-txt"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}<div class="pr" style="margin:6px 0">${fmt(p.precio)}</div>${infoBulto(p)}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}
+    ${p.no_salta ? '<div class="ns-txt"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}<div class="pr" style="margin:6px 0">${fmt(p.precio)}</div>${infoBulto(p)}
     ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
     ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
     ${p.video_url && !yt ? `<p style="margin-top:10px"><a href="${esc(p.video_url)}" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Ver video</a></p>` : ''}
@@ -242,7 +242,7 @@ function linkProducto(p) { return location.origin + location.pathname + '?p=' + 
 function textoProducto(p) {
   const b = [Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + (Number(p.displays_por_bulto) === 1 ? ' display' : ' displays') : '', Number(p.bulto) >= 1 ? p.bulto + (Number(p.bulto) === 1 ? ' unidad' : ' unidades') : ''].filter(Boolean).join(' · ');
   return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}: *${fmt(p.precio)}*`,
-    !esMin() && b ? `Bulto: ${b}` : '', !esMin() && p.display ? `Display: ${p.display}` : '', p.precio_sugerido ? `Precio sugerido de venta: ${fmt(p.precio_sugerido)}` : '',
+    !esMin() && b ? `Bulto: ${b}` : '', !esMin() && p.display ? `Display: ${p.display}` : '',
     p.no_salta ? '⚠️ No disponible en Salta' : '', p.sin_stock ? 'Sin stock por el momento' : '', p.descripcion ? p.descripcion : ''].filter(Boolean).join('\n');
 }
 async function compartir(id) {
