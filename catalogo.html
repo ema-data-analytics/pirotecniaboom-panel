@@ -71,6 +71,7 @@ footer a{color:var(--amarillo)}
 .sug{font-size:11px;color:var(--dim)}.sug b{color:var(--vino)}
 .quien{display:flex;gap:8px;margin:8px 0 4px}.quien .bt{flex:1;padding:10px 6px}
 .blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:block;width:fit-content}.it .t small{color:var(--dim)}
+.sh{display:inline-flex;align-items:center;gap:5px;border:1px solid #25d366;background:#effcf3;color:#128c3e;font-weight:700;font-size:12px;border-radius:14px;padding:3px 10px;cursor:pointer;margin:6px 0 2px;align-self:flex-start}.sh:hover{background:#25d366;color:#fff}
 .mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
 .mas i{margin-right:4px}
 .ficha{max-width:640px!important;max-height:92vh;overflow-y:auto;padding:0!important}
@@ -199,6 +200,7 @@ function pintar() {
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card${p.no_salta ? ' ns' : ''}"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.bajo_impacto ? '<span class="b-bi">Bajo impacto</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
     <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.no_salta ? '<div class="ns-txt ns-card"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.precio_sugerido ? `<div class="sug">Precio sugerido de venta: <b>${fmt(p.precio_sugerido)}</b></div>` : ''}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
+    <button class="sh" data-s="${p.producto_id}" title="Compartir este producto"><i class="fas fa-share-nodes"></i> Compartir</button>
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
   else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
@@ -206,6 +208,7 @@ function pintar() {
 $('lista').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.f) return ficha(Number(b.dataset.f));
+  if (b.dataset.s) return compartir(Number(b.dataset.s));
   const id = b.dataset.m || b.dataset.p || b.dataset.a; const inp = $('c' + id);
   if (b.dataset.m) inp.value = Math.max(1, Number(inp.value || 1) - 1);
   if (b.dataset.p) inp.value = Number(inp.value || 0) + 1;
@@ -224,13 +227,29 @@ function ficha(id) {
     ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
     ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
     ${p.video_url && !yt ? `<p style="margin-top:10px"><a href="${esc(p.video_url)}" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Ver video</a></p>` : ''}
+    <button class="sh" id="fi-s" style="margin-top:10px"><i class="fas fa-share-nodes"></i> Compartir este producto</button>
     <div class="add" style="margin-top:14px"><div class="qty"><button id="fi-m">−</button><input id="fi-q" value="${enBultos(id) || 1}" inputmode="numeric"><button id="fi-p">+</button></div><button class="bt bt-r" id="fi-a" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : 'Agregar al pedido'}</button></div></div>`;
   $('mod-fi').classList.add('on');
   const cerrar = () => { $('mod-fi').classList.remove('on'); $('fi').innerHTML = ''; };
   $('fi-x').onclick = cerrar; $('mod-fi').onclick = e => { if (e.target === $('mod-fi')) cerrar(); };
   $('fi-m').onclick = () => $('fi-q').value = Math.max(1, Number($('fi-q').value || 1) - 1);
   $('fi-p').onclick = () => $('fi-q').value = Number($('fi-q').value || 0) + 1;
+  $('fi-s').onclick = () => compartir(id);
   $('fi-a').onclick = () => { CARRO[id] = Math.max(1, Math.floor(Number($('fi-q').value) || 1)) * bu(p); guardar(); cerrar(); pintar(); pintarCarro(); toastFab(); };
+}
+// Compartir un producto: texto con los datos + link directo que abre el producto en el catálogo
+function linkProducto(p) { return location.origin + location.pathname + '?p=' + encodeURIComponent(p.codigo) + (esMin() ? '&l=min' : ''); }
+function textoProducto(p) {
+  const b = [Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + (Number(p.displays_por_bulto) === 1 ? ' display' : ' displays') : '', Number(p.bulto) >= 1 ? p.bulto + (Number(p.bulto) === 1 ? ' unidad' : ' unidades') : ''].filter(Boolean).join(' · ');
+  return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}: *${fmt(p.precio)}*`,
+    !esMin() && b ? `Bulto: ${b}` : '', !esMin() && p.display ? `Display: ${p.display}` : '', p.precio_sugerido ? `Precio sugerido de venta: ${fmt(p.precio_sugerido)}` : '',
+    p.no_salta ? '⚠️ No disponible en Salta' : '', p.sin_stock ? 'Sin stock por el momento' : '', p.descripcion ? p.descripcion : ''].filter(Boolean).join('\n');
+}
+async function compartir(id) {
+  const p = PROD.find(x => x.producto_id === id); if (!p) return;
+  const url = linkProducto(p), txt = textoProducto(p);
+  if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) { try { await navigator.share({ title: p.nombre, text: txt, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt + '\n\nVer en el catálogo: ' + url), '_blank');
 }
 function toastFab() { $('fab').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 300 }); }
 // Los productos en oferta no llevan el descuento por monto ni suman para alcanzarlo (solo el precio de la oferta)
@@ -351,7 +370,12 @@ $('hero').onclick = e => {
 $('hero').onmouseenter = () => clearInterval(HERO_T); $('hero').onmouseleave = heroAuto;
 { let x0 = null; $('hero').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
   $('hero').addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { heroIr(HERO_I + (dx < 0 ? 1 : -1)); heroAuto(); } x0 = null; }); }
-cargar();
+(async () => {
+  const qs = new URLSearchParams(location.search);
+  if (qs.get('l') === 'min') LISTA = 'MINORISTA';
+  await cargar();
+  const cod = qs.get('p'); if (cod) { const p = PROD.find(x => String(x.codigo).toLowerCase() === cod.toLowerCase()); if (p) ficha(p.producto_id); }
+})();
 </script>
 </body>
 </html>
