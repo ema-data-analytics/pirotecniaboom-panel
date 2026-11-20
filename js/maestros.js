@@ -187,7 +187,7 @@ const CAMPOS_PRODUCTO = [
   { k: 'categoria_id', l: 'Categoría', t: 'sel', op: OPC.categorias, req: 1 },
   { k: 'categoria2_id', l: 'Categoría 2 (opcional)', t: 'sel', op: OPC.categorias, ayuda: 'Si la elegís, el producto aparece también en esa categoría del catálogo. Los reportes usan la categoría principal.' },
   { k: 'precio_minorista', l: 'Precio minorista (venta)', t: 'num', dueno: 1, ayuda: 'Precio final que paga el cliente. Lo usan las listas Minorista y Público.' },
-  { k: 'precio_por_minorista', l: 'Precio minorista por', ph: 'Ej: cajita, unidad, bolsita, display', ayuda: 'Se ve en la pestaña Minorista del catálogo: “PRECIO POR CAJITA:”. Vacío = sale solo el precio.' },
+  { k: 'precio_por_minorista', l: 'Unidad de venta (catálogo minorista)', ph: 'Ej: Cajita x5u', ayuda: 'Se ve en la pestaña Minorista del catálogo así: “PRECIO: Cajita x5u”. Vacío = sale solo el precio.' },
   { k: 'precio_mayorista', l: 'Precio mayorista (venta)', t: 'num', dueno: 1, ayuda: 'Precio final que paga el cliente mayorista.' },
   { k: 'precio_lista3', l: 'Precio lista 3 (venta)', t: 'num', dueno: 1, ayuda: 'Opcional, por si usan otra lista. Vacío = el producto no tiene precio en la Lista 3.' },
   { k: 'costo', l: 'Costo del proveedor (uso interno)', t: 'num', dueno: 1, ayuda: 'No cambia los precios de venta: sirve para la ganancia y el valor del stock. Sin IVA si el producto tiene IVA 21 % o 10,5 %; con el IVA incluido si tiene IVA 0 %.' },

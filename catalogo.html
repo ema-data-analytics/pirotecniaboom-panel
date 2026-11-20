@@ -72,7 +72,7 @@ footer a{color:var(--amarillo)}
 .quien{display:flex;gap:8px;margin:8px 0 4px}.quien .bt{flex:1;padding:10px 6px}
 .blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:block;width:fit-content}.it .t small{color:var(--dim)}
 .sh{display:inline-flex;align-items:center;gap:5px;border:1px solid #25d366;background:#effcf3;color:#128c3e;font-weight:700;font-size:12px;border-radius:14px;padding:3px 10px;cursor:pointer;margin:6px 0 2px;align-self:flex-start}.sh:hover{background:#25d366;color:#fff}h2 .shc{margin:0 0 0 10px;vertical-align:middle;font-size:12px}
-.ppor{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#555;margin-top:4px}
+.ppor{font-size:12px;font-weight:800;color:#555;margin-top:4px}.ppor b{color:#222}
 .mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
 .mas i{margin-right:4px}
 .ficha{max-width:640px!important;max-height:92vh;overflow-y:auto;padding:0!important}
@@ -243,11 +243,11 @@ function ficha(id) {
   $('fi-a').onclick = () => { CARRO[id] = Math.max(1, Math.floor(Number($('fi-q').value) || 1)) * bu(p); guardar(); cerrar(); pintar(); pintarCarro(); toastFab(); };
 }
 // Compartir un producto: texto con los datos + link directo que abre el producto en el catálogo
-const precioPor = p => esMin() && p.precio_por ? `<div class="ppor">Precio por ${esc(p.precio_por)}:</div>` : '';
+const precioPor = p => esMin() && p.precio_por ? `<div class="ppor">PRECIO: <b>${esc(p.precio_por)}</b></div>` : '';
 function linkProducto(p) { return location.origin + location.pathname + '?p=' + encodeURIComponent(p.codigo) + (esMin() ? '&l=min' : ''); }
 function textoProducto(p) {
   const b = [Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + (Number(p.displays_por_bulto) === 1 ? ' display' : ' displays') : '', Number(p.bulto) >= 1 ? p.bulto + (Number(p.bulto) === 1 ? ' unidad' : ' unidades') : ''].filter(Boolean).join(' · ');
-  return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}${esMin() && p.precio_por ? ' por ' + p.precio_por : ''}: *${fmt(p.precio)}*`,
+  return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}${esMin() && p.precio_por ? ' (' + p.precio_por + ')' : ''}: *${fmt(p.precio)}*`,
     !esMin() && b ? `Bulto: ${b}` : '', !esMin() && p.display ? `Display: ${p.display}` : '',
     p.no_salta ? '⚠️ No disponible en Salta' : '', p.sin_stock ? 'Sin stock por el momento' : '', p.descripcion ? p.descripcion : ''].filter(Boolean).join('\n');
 }
