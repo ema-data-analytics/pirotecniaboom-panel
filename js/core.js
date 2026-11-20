@@ -209,7 +209,7 @@ async function cargarClientes(forzar = false) {
 // Presentación del producto para distinguir los que tienen el mismo nombre
 function presentacionProd(p) {
   const b = Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + ' displays' : Number(p.bulto) >= 1 ? p.bulto + ' u.' : '';
-  return (p.display ? ' · Display ' + p.display : '') + (b ? ' · Bulto ' + b : '') + (p.proveedor ? ' · Prov. ' + p.proveedor : '');
+  return (p.display ? ' · Display ' + p.display : '') + (b ? ' · Bulto ' + b : '') + (p.proveedor ? ' · ' + p.proveedor : '');
 }
 async function fuenteBuscador(tipo, q, opt) {
   const n = norm(q);
