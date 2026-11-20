@@ -224,7 +224,8 @@ async function fuenteBuscador(tipo, q, opt) {
   if (tipo === 'producto') {
     const r = await rpc('buscar_productos', { p_texto: q || '', p_lista: opt.lista ? opt.lista() : null }, { silencio: true });
     return r.map(p => ({ id: p.id, label: p.codigo + ' · ' + p.nombre,
-      sub: (p.precio_final != null ? fmt(opt.neto ? p.precio_neto : p.precio_final) + (opt.neto ? ' neto' : '') : 'sin precio') + (p.controla_stock ? ' · disp. ' + fmtN(p.disponible) : '') + (p.oferta ? ' · OFERTA' : '') + presentacionProd(p), raw: p }));
+      cols: [p.proveedor || '', p.display || '', Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + ' disp.' : Number(p.bulto) >= 1 ? 'x' + p.bulto : ''],
+      sub: (p.oferta ? 'OFERTA · ' : '') + (p.precio_final != null ? fmt(opt.neto ? p.precio_neto : p.precio_final) + (opt.neto ? ' neto' : '') : 'sin precio') + (p.controla_stock ? ' · disp. ' + fmtN(p.disponible) : ''), raw: p }));
   }
   if (tipo === 'lista') return (opt.items || []).filter(x => !n || norm(x.label).includes(n));
   return [];
@@ -239,7 +240,7 @@ function buscador(contenedor, opt) {
   const cerrar = () => { if (lista) { lista.remove(); lista = null; } };
   const pintar = () => {
     cerrar(); lista = document.createElement('div'); lista.className = 'bq-list';
-    lista.innerHTML = items.length ? items.map((x, i) => `<div class="bq-it ${i === sel ? 'on' : ''}" data-i="${i}"><span>${esc(x.label)}</span><small>${esc(x.sub || '')}</small></div>`).join('') : '<div class="bq-none">Sin resultados</div>';
+    lista.innerHTML = items.length ? items.map((x, i) => x.cols ? `<div class="bq-it bq-c ${i === sel ? 'on' : ''}" data-i="${i}"><span>${esc(x.label)}</span>${x.cols.map(c => `<span class="bq-col">${esc(c || '')}</span>`).join('')}<small class="bq-pr">${esc(x.sub || '')}</small></div>` : `<div class="bq-it ${i === sel ? 'on' : ''}" data-i="${i}"><span>${esc(x.label)}</span><small>${esc(x.sub || '')}</small></div>`).join('') : '<div class="bq-none">Sin resultados</div>';
     lista.onmousedown = e => { const it = e.target.closest('.bq-it'); if (it) { e.preventDefault(); elegir(items[Number(it.dataset.i)]); } };
     box.appendChild(lista);
   };
