@@ -71,7 +71,7 @@ footer a{color:var(--amarillo)}
 .sug{font-size:11px;color:var(--dim)}.sug b{color:var(--vino)}
 .quien{display:flex;gap:8px;margin:8px 0 4px}.quien .bt{flex:1;padding:10px 6px}
 .blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:block;width:fit-content}.it .t small{color:var(--dim)}
-.sh{display:inline-flex;align-items:center;gap:5px;border:1px solid #25d366;background:#effcf3;color:#128c3e;font-weight:700;font-size:12px;border-radius:14px;padding:3px 10px;cursor:pointer;margin:6px 0 2px;align-self:flex-start}.sh:hover{background:#25d366;color:#fff}
+.sh{display:inline-flex;align-items:center;gap:5px;border:1px solid #25d366;background:#effcf3;color:#128c3e;font-weight:700;font-size:12px;border-radius:14px;padding:3px 10px;cursor:pointer;margin:6px 0 2px;align-self:flex-start}.sh:hover{background:#25d366;color:#fff}h2 .shc{margin:0 0 0 10px;vertical-align:middle;font-size:12px}
 .mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
 .mas i{margin-right:4px}
 .ficha{max-width:640px!important;max-height:92vh;overflow-y:auto;padding:0!important}
@@ -154,7 +154,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const nf = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const fmt = n => '$ ' + nf.format(Number(n || 0));
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-let PROD = [], T = {}, CAT = '', CARRO = {};
+let PROD = [], T = {}, CAT = '', CARRO = {}, CATORD = {};
+const catsDe = p => p.cats || [p.categoria];
 try { CARRO = JSON.parse(localStorage.getItem('pb_carro') || '{}'); } catch (e) { CARRO = {}; }
 // Lista que se está viendo: el catálogo abre siempre en Mayorista (sin usuario)
 let LISTA = 'MAYORISTA';
@@ -168,14 +169,14 @@ function ajustarBultos() { for (const id of Object.keys(CARRO)) { const b = bu(P
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
 
 async function cargar() {
-  const [{ data: t }, { data: p, error }, { data: ex }, { data: dsp }, { data: bim }, { data: nsa }, { data: dpb }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle'), sb.rpc('catalogo_display'), sb.rpc('catalogo_bajo_impacto'), sb.rpc('catalogo_no_salta'), sb.rpc('catalogo_bulto')]);
+  const [{ data: t }, { data: p, error }, { data: ex }, { data: dsp }, { data: bim }, { data: nsa }, { data: dpb }, { data: ct2 }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle'), sb.rpc('catalogo_display'), sb.rpc('catalogo_bajo_impacto'), sb.rpc('catalogo_no_salta'), sb.rpc('catalogo_bulto'), sb.rpc('catalogo_cat2')]);
   if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
   T = t || {}; PROD = p || [];
   T.descuentos = (T.descuentos_listas || {})[LISTA] || []; // descuentos por monto de la lista que se ve
   // Precios siempre finales (IVA incluido), también para mayoristas: no se muestra el IVA en ningún lado
   const r2f = n => Math.round(Number(n) * 100) / 100;
   PROD.forEach(x => { if (x.muestra_iva_aparte) { const k = 1 + Number(x.iva_pct) / 100; x.precio = r2f(Number(x.precio) * k); if (x.precio_anterior) x.precio_anterior = r2f(Number(x.precio_anterior) * k); x.muestra_iva_aparte = false; } });
-  const D = new Map((dsp || []).map(x => [x.producto_id, x.display])); const BI = new Set((bim || []).map(x => x.producto_id)); const NS = new Set((nsa || []).map(x => x.producto_id)); const DPB = new Map((dpb || []).map(x => [x.producto_id, x.displays_por_bulto])); PROD.forEach(q => { q.displays_por_bulto = DPB.get(q.producto_id) || null; q.display = D.get(q.producto_id) || null; q.bajo_impacto = BI.has(q.producto_id); q.no_salta = NS.has(q.producto_id); });
+  const D = new Map((dsp || []).map(x => [x.producto_id, x.display])); const BI = new Set((bim || []).map(x => x.producto_id)); const NS = new Set((nsa || []).map(x => x.producto_id)); const DPB = new Map((dpb || []).map(x => [x.producto_id, x.displays_por_bulto])); const C2 = new Map((ct2 || []).map(x => [x.producto_id, x])); CATORD = {}; PROD.forEach(q => { const c2 = C2.get(q.producto_id); q.cats = [q.categoria]; CATORD[q.categoria] = q.categoria_orden; if (c2 && c2.categoria !== q.categoria) { q.cats.push(c2.categoria); CATORD[c2.categoria] = c2.categoria_orden; } q.displays_por_bulto = DPB.get(q.producto_id) || null; q.display = D.get(q.producto_id) || null; q.bajo_impacto = BI.has(q.producto_id); q.no_salta = NS.has(q.producto_id); });
   const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => { const x = X.get(q.producto_id); if (x) { q.video_url = x.video_url; q.info_adicional = x.info_adicional; } });
   heroArmar();
   for (const k of Object.keys(CARRO)) { const q = PROD.find(x => x.producto_id == k); if (!q || q.sin_stock) delete CARRO[k]; }
@@ -183,7 +184,8 @@ async function cargar() {
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.l === LISTA));
 
   $('banda').innerHTML = (esMin() ? '<i class="fas fa-tag"></i> Precios minoristas · ' : '<i class="fas fa-store"></i> Precios mayoristas · ') + (minimo() ? `Compra mínima ${fmt(minimo())} · ` : '') + esc(T.leyenda || '') + (T.descuentos && T.descuentos.length ? ' · ' + T.descuentos.map(d => `${nf.format(d.porcentaje)}% OFF desde ${fmt(d.desde)}`).join(' · ') : '');
-  const cats = [...new Map(PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria)).map(x => [x.categoria, 1])).keys()];
+  PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria));
+  const cats = [...new Set(PROD.flatMap(catsDe))].sort((a, b) => (CATORD[a] ?? 999) - (CATORD[b] ?? 999) || a.localeCompare(b));
   $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
   document.querySelectorAll('.cat').forEach(c => c.onclick = () => { CAT = c.dataset.c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x === c)); pintar(); });
   $('pie').innerHTML = `<b>${esc(T.nombre)}</b>${T.direccion ? ' · ' + esc(T.direccion) : ''}${T.horarios ? '<br>' + esc(T.horarios) : ''}${T.whatsapp ? `<br>WhatsApp: <a href="https://wa.me/${String(T.whatsapp).replace(/\D/g, '')}" target="_blank">${esc(T.whatsapp)}</a>` : ''}${T.instagram ? ` · <a href="https://instagram.com/${esc(String(T.instagram).replace('@', ''))}" target="_blank">Instagram</a>` : ''}<br><a href="como-pedir.html">¿Cómo hago mi pedido?</a><br><small>Venta exclusiva a mayores de 18 años. Precios sujetos a stock.</small>`;
@@ -192,7 +194,7 @@ async function cargar() {
 function foto(p) { return p.fotos && p.fotos[0] ? `<img src="${esc(p.fotos[0])}" alt="${esc(p.nombre)}" loading="lazy">` : '<img class="nofoto" src="img/logo.png" alt="">'; }
 function pintar() {
   const q = norm($('q').value); const o = $('orden').value;
-  let l = PROD.filter(p => (!CAT || (CAT === '__of' ? p.es_oferta : p.categoria === CAT)) && (!q || norm(p.nombre + ' ' + p.codigo + ' ' + p.categoria + ' ' + (p.descripcion || '')).includes(q)));
+  let l = PROD.filter(p => (!CAT || (CAT === '__of' ? p.es_oferta : catsDe(p).includes(CAT))) && (!q || norm(p.nombre + ' ' + p.codigo + ' ' + catsDe(p).join(' ') + ' ' + (p.descripcion || '')).includes(q)));
   if (o === 'menor') l.sort((a, b) => a.precio - b.precio); else if (o === 'mayor') l.sort((a, b) => b.precio - a.precio); else if (o === 'nombre') l.sort((a, b) => a.nombre.localeCompare(b.nombre));
   else l.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria) || (b.destacado - a.destacado) || a.nombre.localeCompare(b.nombre));
   $('hero').style.display = !CAT && !q && $('hero').innerHTML ? '' : 'none';
@@ -202,14 +204,16 @@ function pintar() {
     <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.no_salta ? '<div class="ns-txt ns-card"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
     <button class="sh" data-s="${p.producto_id}" title="Compartir este producto"><i class="fas fa-share-nodes"></i> Compartir</button>
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
-  if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => (g[p.categoria] = g[p.categoria] || []).push(p)); $('lista').innerHTML = Object.entries(g).map(([c, ps]) => `<h2>${esc(c)}</h2><div class="grid">${ps.map(card).join('')}</div>`).join(''); }
-  else $('lista').innerHTML = `<div class="grid">${l.map(card).join('')}</div>`;
+  const shc = c => `<button class="sh shc" data-sc="${esc(c)}" title="Compartir el link de esta categoría"><i class="fas fa-share-nodes"></i> Compartir</button>`;
+  if (!CAT && !q && o === 'cat') { const g = {}; l.forEach(p => catsDe(p).forEach(c => (g[c] = g[c] || []).push(p))); $('lista').innerHTML = Object.keys(g).sort((a, b) => (CATORD[a] ?? 999) - (CATORD[b] ?? 999) || a.localeCompare(b)).map(c => `<h2>${esc(c)} ${shc(c)}</h2><div class="grid">${g[c].map(card).join('')}</div>`).join(''); }
+  else $('lista').innerHTML = (CAT && !q ? `<h2>${CAT === '__of' ? '🔥 Ofertas' : esc(CAT)} ${shc(CAT)}</h2>` : '') + `<div class="grid">${l.map(card).join('')}</div>`;
 }
 $('lista').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.f) return ficha(Number(b.dataset.f));
   if (b.dataset.s) return compartir(Number(b.dataset.s));
-  const id = b.dataset.m || b.dataset.p || b.dataset.a; const inp = $('c' + id);
+  if (b.dataset.sc) return compartirCat(b.dataset.sc);
+  const id = b.dataset.m || b.dataset.p || b.dataset.a; const cd = b.closest('.card'); const inp = (cd && cd.querySelector('.qty input')) || $('c' + id);
   if (b.dataset.m) inp.value = Math.max(1, Number(inp.value || 1) - 1);
   if (b.dataset.p) inp.value = Number(inp.value || 0) + 1;
   if (b.dataset.a) { const n = Math.max(1, Math.floor(Number(inp.value) || 1)); CARRO[id] = n * bu(PROD.find(x => x.producto_id == id)); guardar(); b.textContent = '✓'; pintarCarro(); toastFab(); }
@@ -222,7 +226,7 @@ function ficha(id) {
   $('fi').innerHTML = `<div class="fh"><span>${esc(p.nombre)}</span><button id="fi-x" aria-label="Cerrar">&times;</button></div><div class="fb">
     ${yt ? `<div class="vid"><iframe src="${yt}" title="Video de ${esc(p.nombre)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>` : ''}
     ${(p.fotos || []).length ? `<div class="ffotos">${p.fotos.map(f => `<img src="${esc(f)}" alt="">`).join('')}</div>` : ''}
-    <div class="cod">${esc(p.codigo)} · ${esc(p.categoria)}${p.bajo_impacto ? ' · <span class="bi-txt">Bajo impacto</span>' : ''}</div>
+    <div class="cod">${esc(p.codigo)} · ${catsDe(p).map(esc).join(' · ')}${p.bajo_impacto ? ' · <span class="bi-txt">Bajo impacto</span>' : ''}</div>
     ${p.no_salta ? '<div class="ns-txt"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}<div class="pr" style="margin:6px 0">${fmt(p.precio)}</div>${infoBulto(p)}
     ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
     ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
@@ -244,6 +248,16 @@ function textoProducto(p) {
   return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}: *${fmt(p.precio)}*`,
     !esMin() && b ? `Bulto: ${b}` : '', !esMin() && p.display ? `Display: ${p.display}` : '',
     p.no_salta ? '⚠️ No disponible en Salta' : '', p.sin_stock ? 'Sin stock por el momento' : '', p.descripcion ? p.descripcion : ''].filter(Boolean).join('\n');
+}
+// Compartir una categoría: link que abre el catálogo filtrado
+function slugCat(c) { return c === '__of' ? 'ofertas' : norm(c).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+async function compartirCat(c) {
+  const nom = c === '__of' ? 'Ofertas' : c;
+  const url = location.origin + location.pathname + '?c=' + slugCat(c) + (esMin() ? '&l=min' : '');
+  const n = PROD.filter(p => c === '__of' ? p.es_oferta : catsDe(p).includes(c)).length;
+  const txt = `*Pirotecnia Boom · ${nom}*\nMirá ${n === 1 ? 'el producto' : 'los ' + n + ' productos'} de ${nom} en nuestro catálogo ${esMin() ? 'minorista' : 'mayorista'}:`;
+  if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) { try { await navigator.share({ title: 'Pirotecnia Boom · ' + nom, text: txt, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt + '\n' + url), '_blank');
 }
 async function compartir(id) {
   const p = PROD.find(x => x.producto_id === id); if (!p) return;
@@ -374,6 +388,7 @@ $('hero').onmouseenter = () => clearInterval(HERO_T); $('hero').onmouseleave = h
   const qs = new URLSearchParams(location.search);
   if (qs.get('l') === 'min') LISTA = 'MINORISTA';
   await cargar();
+  const ct = qs.get('c'); if (ct) { const c = ct.toLowerCase() === 'ofertas' ? '__of' : [...new Set(PROD.flatMap(catsDe))].find(x => slugCat(x) === slugCat(ct)); if (c) { CAT = c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x.dataset.c === c)); pintar(); const ch = document.querySelector('.cat.on'); if (ch) ch.scrollIntoView({ inline: 'center', block: 'nearest' }); } }
   const cod = qs.get('p'); if (cod) { const p = PROD.find(x => String(x.codigo).toLowerCase() === cod.toLowerCase()); if (p) ficha(p.producto_id); }
 })();
 </script>

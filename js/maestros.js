@@ -185,6 +185,7 @@ async function clienteEstado(id) {
 const CAMPOS_PRODUCTO = [
   { k: 'codigo', l: 'Código', req: 1 }, { k: 'nombre', l: 'Nombre', req: 1 },
   { k: 'categoria_id', l: 'Categoría', t: 'sel', op: OPC.categorias, req: 1 },
+  { k: 'categoria2_id', l: 'Categoría 2 (opcional)', t: 'sel', op: OPC.categorias, ayuda: 'Si la elegís, el producto aparece también en esa categoría del catálogo. Los reportes usan la categoría principal.' },
   { k: 'precio_minorista', l: 'Precio minorista (venta)', t: 'num', dueno: 1, ayuda: 'Precio final que paga el cliente. Lo usan las listas Minorista y Público.' },
   { k: 'precio_mayorista', l: 'Precio mayorista (venta)', t: 'num', dueno: 1, ayuda: 'Precio final que paga el cliente mayorista.' },
   { k: 'precio_lista3', l: 'Precio lista 3 (venta)', t: 'num', dueno: 1, ayuda: 'Opcional, por si usan otra lista. Vacío = el producto no tiene precio en la Lista 3.' },
@@ -329,6 +330,7 @@ function productoEditar(id) {
   const r = { ...r0 }; let W = null;
   const o = modalForm({ titulo: id ? 'Editar producto' : 'Nuevo producto', campos: CAMPOS_PRODUCTO, v: r, cls: 'md-xl', guardar: async p => {
     ['categoria_id', 'alicuota_iva_id', 'unidad_id'].forEach(k => { if (p[k] != null) p[k] = Number(p[k]); });
+    if ('categoria2_id' in p) { p.categoria2_id = p.categoria2_id ? Number(p.categoria2_id) : null; if (p.categoria2_id && p.categoria2_id === Number(p.categoria_id ?? r.categoria_id)) throw new Error('La categoría 2 tiene que ser distinta de la principal.'); }
     if (!id && p.precio_minorista == null && p.precio_mayorista == null) throw new Error('Cargá al menos el precio minorista o el mayorista: sin precio el producto no se puede vender.');
     if (p.video_url && !/^https:\/\//i.test(p.video_url)) throw new Error('El link del video tiene que empezar con https://');
     const nid = await rpc('guardar_producto', { p });
