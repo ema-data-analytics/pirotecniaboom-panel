@@ -206,6 +206,11 @@ async function cargarClientes(forzar = false) {
   if (!CLIENTES || forzar) CLIENTES = await rpc('abm_listar', { p_tabla: 'clientes' });
   return CLIENTES;
 }
+// Presentación del producto para distinguir los que tienen el mismo nombre
+function presentacionProd(p) {
+  const b = Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + ' displays' : Number(p.bulto) >= 1 ? p.bulto + ' u.' : '';
+  return (p.display ? ' · Display ' + p.display : '') + (b ? ' · Bulto ' + b : '');
+}
 async function fuenteBuscador(tipo, q, opt) {
   const n = norm(q);
   const filtra = (arr, campos) => arr.filter(x => !n || campos.some(c => norm(x[c]).includes(n)));
@@ -219,7 +224,7 @@ async function fuenteBuscador(tipo, q, opt) {
   if (tipo === 'producto') {
     const r = await rpc('buscar_productos', { p_texto: q || '', p_lista: opt.lista ? opt.lista() : null }, { silencio: true });
     return r.map(p => ({ id: p.id, label: p.codigo + ' · ' + p.nombre,
-      sub: (p.precio_final != null ? fmt(opt.neto ? p.precio_neto : p.precio_final) + (opt.neto ? ' neto' : '') : 'sin precio') + (p.controla_stock ? ' · disp. ' + fmtN(p.disponible) : '') + (p.oferta ? ' · OFERTA' : ''), raw: p }));
+      sub: (p.precio_final != null ? fmt(opt.neto ? p.precio_neto : p.precio_final) + (opt.neto ? ' neto' : '') : 'sin precio') + (p.controla_stock ? ' · disp. ' + fmtN(p.disponible) : '') + (p.oferta ? ' · OFERTA' : '') + presentacionProd(p), raw: p }));
   }
   if (tipo === 'lista') return (opt.items || []).filter(x => !n || norm(x.label).includes(n));
   return [];

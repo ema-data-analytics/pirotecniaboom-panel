@@ -113,7 +113,7 @@ function editorPintarLineas() {
     { vacio: 'Todavía no hay productos', acciones: ed ? (r => `${r.es_oferta ? `<button class="btn btn-xs btn-y" title="Sacar precio de oferta" onclick="editorOferta(${r.id},true)"><i class="fas fa-tag"></i> Sacar oferta</button>` : r.sin_oferta ? `<button class="btn btn-xs btn-g" title="Volver al precio de oferta" onclick="editorOferta(${r.id},false)"><i class="fas fa-tag"></i> Poner oferta</button>` : ''}<button class="btn btn-xs btn-b" title="Modificar" onclick="editorEditarLinea(${r.id})"><i class="fas fa-pen"></i></button><button class="btn btn-xs btn-d" title="Quitar" onclick="editorQuitarLinea(${r.id})"><i class="fas fa-trash"></i></button>`) : null });
   if (ed) {
     buscador('ed_prod_w', { tipo: 'producto', id: 'ed_prod', lista: () => d.lista_id, placeholder: 'Código, nombre o categoría…', onSelect: p => {
-      $('ed_prod_info').innerHTML = `Precio lista: neto <b>${p.precio_neto != null ? fmt(p.precio_neto) : 'sin precio'}</b> · final <b>${p.precio_final != null ? fmt(p.precio_final) : '—'}</b>${p.controla_stock ? ' · disponible <b>' + fmtN(p.disponible) + '</b>' : ''}`;
+      $('ed_prod_info').innerHTML = (p.display || p.bulto || p.displays_por_bulto ? `<b>${esc(presentacionProd(p).replace(/^ · /, ''))}</b> · ` : '') + `Precio lista: neto <b>${p.precio_neto != null ? fmt(p.precio_neto) : 'sin precio'}</b> · final <b>${p.precio_final != null ? fmt(p.precio_final) : '—'}</b>${p.controla_stock ? ' · disponible <b>' + fmtN(p.disponible) + '</b>' : ''}`;
       if ($('ed_pu') && !ED.lineaEdit) $('ed_pu').value = ''; $('ed_cant').focus(); $('ed_cant').select(); } });
     $('ed_add').onclick = editorAgregarLinea;
     $('ed_cant').onkeydown = e => { if (e.key === 'Enter') editorAgregarLinea(); };
