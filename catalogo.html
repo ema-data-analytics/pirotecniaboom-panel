@@ -72,6 +72,7 @@ footer a{color:var(--amarillo)}
 .quien{display:flex;gap:8px;margin:8px 0 4px}.quien .bt{flex:1;padding:10px 6px}
 .blt{font-size:12px;color:var(--vino);background:#fff4d6;border-radius:6px;padding:3px 7px;margin-top:4px;display:block;width:fit-content}.it .t small{color:var(--dim)}
 .sh{display:inline-flex;align-items:center;gap:5px;border:1px solid #25d366;background:#effcf3;color:#128c3e;font-weight:700;font-size:12px;border-radius:14px;padding:3px 10px;cursor:pointer;margin:6px 0 2px;align-self:flex-start}.sh:hover{background:#25d366;color:#fff}h2 .shc{margin:0 0 0 10px;vertical-align:middle;font-size:12px}
+.ppor{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#555;margin-top:4px}
 .mas{border:none;background:none;color:#1e6fb4;font-weight:700;font-size:12px;cursor:pointer;padding:0;text-align:left}
 .mas i{margin-right:4px}
 .ficha{max-width:640px!important;max-height:92vh;overflow-y:auto;padding:0!important}
@@ -169,14 +170,14 @@ function ajustarBultos() { for (const id of Object.keys(CARRO)) { const b = bu(P
 const guardar = () => { try { localStorage.setItem('pb_carro', JSON.stringify(CARRO)); } catch (e) { } };
 
 async function cargar() {
-  const [{ data: t }, { data: p, error }, { data: ex }, { data: dsp }, { data: bim }, { data: nsa }, { data: dpb }, { data: ct2 }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle'), sb.rpc('catalogo_display'), sb.rpc('catalogo_bajo_impacto'), sb.rpc('catalogo_no_salta'), sb.rpc('catalogo_bulto'), sb.rpc('catalogo_cat2')]);
+  const [{ data: t }, { data: p, error }, { data: ex }, { data: dsp }, { data: bim }, { data: nsa }, { data: dpb }, { data: ct2 }, { data: ppo }] = await Promise.all([sb.rpc('datos_tienda'), sb.rpc('catalogo_lista', { p_codigo: LISTA }), sb.rpc('catalogo_detalle'), sb.rpc('catalogo_display'), sb.rpc('catalogo_bajo_impacto'), sb.rpc('catalogo_no_salta'), sb.rpc('catalogo_bulto'), sb.rpc('catalogo_cat2'), sb.rpc('catalogo_precio_por')]);
   if (error) { $('lista').innerHTML = '<div class="vacio">No pudimos cargar el catálogo. Probá de nuevo en un rato.</div>'; return; }
   T = t || {}; PROD = p || [];
   T.descuentos = (T.descuentos_listas || {})[LISTA] || []; // descuentos por monto de la lista que se ve
   // Precios siempre finales (IVA incluido), también para mayoristas: no se muestra el IVA en ningún lado
   const r2f = n => Math.round(Number(n) * 100) / 100;
   PROD.forEach(x => { if (x.muestra_iva_aparte) { const k = 1 + Number(x.iva_pct) / 100; x.precio = r2f(Number(x.precio) * k); if (x.precio_anterior) x.precio_anterior = r2f(Number(x.precio_anterior) * k); x.muestra_iva_aparte = false; } });
-  const D = new Map((dsp || []).map(x => [x.producto_id, x.display])); const BI = new Set((bim || []).map(x => x.producto_id)); const NS = new Set((nsa || []).map(x => x.producto_id)); const DPB = new Map((dpb || []).map(x => [x.producto_id, x.displays_por_bulto])); const C2 = new Map((ct2 || []).map(x => [x.producto_id, x])); CATORD = {}; PROD.forEach(q => { const c2 = C2.get(q.producto_id); q.cats = [q.categoria]; CATORD[q.categoria] = q.categoria_orden; if (c2 && c2.categoria !== q.categoria) { q.cats.push(c2.categoria); CATORD[c2.categoria] = c2.categoria_orden; } q.displays_por_bulto = DPB.get(q.producto_id) || null; q.display = D.get(q.producto_id) || null; q.bajo_impacto = BI.has(q.producto_id); q.no_salta = NS.has(q.producto_id); });
+  const D = new Map((dsp || []).map(x => [x.producto_id, x.display])); const BI = new Set((bim || []).map(x => x.producto_id)); const NS = new Set((nsa || []).map(x => x.producto_id)); const DPB = new Map((dpb || []).map(x => [x.producto_id, x.displays_por_bulto])); const C2 = new Map((ct2 || []).map(x => [x.producto_id, x])); const PPO = new Map((ppo || []).map(x => [x.producto_id, x.texto])); CATORD = {}; PROD.forEach(q => { q.precio_por = PPO.get(q.producto_id) || null; const c2 = C2.get(q.producto_id); q.cats = [q.categoria]; CATORD[q.categoria] = q.categoria_orden; if (c2 && c2.categoria !== q.categoria) { q.cats.push(c2.categoria); CATORD[c2.categoria] = c2.categoria_orden; } q.displays_por_bulto = DPB.get(q.producto_id) || null; q.display = D.get(q.producto_id) || null; q.bajo_impacto = BI.has(q.producto_id); q.no_salta = NS.has(q.producto_id); });
   const X = new Map((ex || []).map(x => [x.producto_id, x])); PROD.forEach(q => { const x = X.get(q.producto_id); if (x) { q.video_url = x.video_url; q.info_adicional = x.info_adicional; } });
   heroArmar();
   for (const k of Object.keys(CARRO)) { const q = PROD.find(x => x.producto_id == k); if (!q || q.sin_stock) delete CARRO[k]; }
@@ -201,7 +202,7 @@ function pintar() {
   $('cuenta').textContent = l.length + ' productos';
   if (!l.length) { $('lista').innerHTML = '<div class="vacio">No encontramos productos con esa búsqueda.</div>'; return; }
   const card = p => `<div class="card${p.no_salta ? ' ns' : ''}"><div class="ph">${foto(p)}</div><div class="bd">${p.es_oferta ? '<span class="b-of">Oferta</span>' : ''}${p.es_nuevo ? '<span class="b-nu">Nuevo</span>' : ''}${p.bajo_impacto ? '<span class="b-bi">Bajo impacto</span>' : ''}${p.es_outlet ? '<span class="b-ou">Outlet</span>' : ''}${p.sin_stock ? '<span class="b-ss">Sin stock</span>' : ''}</div>
-    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.no_salta ? '<div class="ns-txt ns-card"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
+    <div class="info"><div class="nom">${esc(p.nombre)}</div><div class="cod">${esc(p.codigo)}</div>${p.no_salta ? '<div class="ns-txt ns-card"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${p.precio_anterior ? `<div class="ant">${fmt(p.precio_anterior)}</div>` : ''}${precioPor(p)}<div class="pr">${fmt(p.precio)}</div>${infoBulto(p)}${p.video_url || p.info_adicional || p.descripcion ? `<button class="mas" data-f="${p.producto_id}"><i class="fas fa-${p.video_url ? 'circle-play' : 'circle-info'}"></i>Ver más${p.video_url ? ' · video' : ''}</button>` : ''}
     <button class="sh" data-s="${p.producto_id}" title="Compartir este producto"><i class="fas fa-share-nodes"></i> Compartir</button>
     <div class="add"><div class="qty"><button data-m="${p.producto_id}">−</button><input id="c${p.producto_id}" value="${enBultos(p.producto_id) || 1}" inputmode="numeric" title="${bu(p) > 1 ? 'Cantidad de bultos' : 'Cantidad'}"><button data-p="${p.producto_id}">+</button></div><button class="bt bt-r" data-a="${p.producto_id}" ${p.sin_stock ? 'disabled' : ''}>${p.sin_stock ? 'Sin stock' : CARRO[p.producto_id] ? '✓' : 'Agregar'}</button></div></div></div>`;
   const shc = c => `<button class="sh shc" data-sc="${esc(c)}" title="Compartir el link de esta categoría"><i class="fas fa-share-nodes"></i> Compartir</button>`;
@@ -227,7 +228,7 @@ function ficha(id) {
     ${yt ? `<div class="vid"><iframe src="${yt}" title="Video de ${esc(p.nombre)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>` : ''}
     ${(p.fotos || []).length ? `<div class="ffotos">${p.fotos.map(f => `<img src="${esc(f)}" alt="">`).join('')}</div>` : ''}
     <div class="cod">${esc(p.codigo)} · ${catsDe(p).map(esc).join(' · ')}${p.bajo_impacto ? ' · <span class="bi-txt">Bajo impacto</span>' : ''}</div>
-    ${p.no_salta ? '<div class="ns-txt"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}<div class="pr" style="margin:6px 0">${fmt(p.precio)}</div>${infoBulto(p)}
+    ${p.no_salta ? '<div class="ns-txt"><i class="fas fa-triangle-exclamation"></i> No disponible en Salta</div>' : ''}${precioPor(p)}<div class="pr" style="margin:6px 0">${fmt(p.precio)}</div>${infoBulto(p)}
     ${p.descripcion ? `<p style="margin-top:10px">${esc(p.descripcion)}</p>` : ''}
     ${p.info_adicional ? `<p style="margin-top:10px;white-space:pre-line">${esc(p.info_adicional)}</p>` : ''}
     ${p.video_url && !yt ? `<p style="margin-top:10px"><a href="${esc(p.video_url)}" target="_blank" rel="noopener"><i class="fas fa-circle-play"></i> Ver video</a></p>` : ''}
@@ -242,10 +243,11 @@ function ficha(id) {
   $('fi-a').onclick = () => { CARRO[id] = Math.max(1, Math.floor(Number($('fi-q').value) || 1)) * bu(p); guardar(); cerrar(); pintar(); pintarCarro(); toastFab(); };
 }
 // Compartir un producto: texto con los datos + link directo que abre el producto en el catálogo
+const precioPor = p => esMin() && p.precio_por ? `<div class="ppor">Precio por ${esc(p.precio_por)}:</div>` : '';
 function linkProducto(p) { return location.origin + location.pathname + '?p=' + encodeURIComponent(p.codigo) + (esMin() ? '&l=min' : ''); }
 function textoProducto(p) {
   const b = [Number(p.displays_por_bulto) >= 1 ? p.displays_por_bulto + (Number(p.displays_por_bulto) === 1 ? ' display' : ' displays') : '', Number(p.bulto) >= 1 ? p.bulto + (Number(p.bulto) === 1 ? ' unidad' : ' unidades') : ''].filter(Boolean).join(' · ');
-  return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}: *${fmt(p.precio)}*`,
+  return [`*${p.nombre}*`, `Código: ${p.codigo}`, p.es_oferta ? '🔥 OFERTA' : '', `Precio ${esMin() ? 'minorista' : 'mayorista'}${esMin() && p.precio_por ? ' por ' + p.precio_por : ''}: *${fmt(p.precio)}*`,
     !esMin() && b ? `Bulto: ${b}` : '', !esMin() && p.display ? `Display: ${p.display}` : '',
     p.no_salta ? '⚠️ No disponible en Salta' : '', p.sin_stock ? 'Sin stock por el momento' : '', p.descripcion ? p.descripcion : ''].filter(Boolean).join('\n');
 }
