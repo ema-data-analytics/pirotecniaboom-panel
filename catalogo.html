@@ -21,6 +21,11 @@ header{background:linear-gradient(90deg,var(--vino),var(--rojo));position:sticky
 .tb{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;display:flex;gap:6px;align-items:center}
 .tb:hover{background:rgba(255,255,255,.25)}
 .cats{max-width:1240px;margin:0 auto;display:flex;gap:6px;overflow-x:auto;padding:4px 14px 10px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.catsw{position:relative;max-width:1240px;margin:0 auto}
+.catn{display:none;position:absolute;top:2px;width:34px;height:30px;border:none;border-radius:16px;background:#fff;color:var(--vino);box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer;z-index:2;font-size:14px}
+.catn.izq{left:4px}.catn.der{right:4px}
+@media (hover:hover) and (pointer:fine){.catn.ver{display:block}.cats{padding-left:44px;padding-right:44px;cursor:grab}.cats.arr{cursor:grabbing;user-select:none}}
 .cat{background:rgba(255,255,255,.12);color:#fff;border-radius:16px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1px solid transparent}
 .cat.on{background:var(--amarillo);color:var(--vino)}
 .banda{background:var(--amarillo);color:var(--vino);text-align:center;font-size:13px;font-weight:700;padding:7px 10px}
@@ -131,7 +136,7 @@ footer a{color:var(--amarillo)}
     <div class="busq"><i class="fas fa-search"></i><input id="q" placeholder="Buscar productos…" autocomplete="off"></div>
   </div>
   <div class="tabs" id="tabs"><button data-l="MAYORISTA"><i class="fas fa-store"></i> Mayorista</button><button data-l="MINORISTA"><i class="fas fa-tag"></i> Minorista</button></div>
-  <div class="cats" id="cats"></div>
+  <div class="catsw"><button class="catn izq" id="cat_izq" aria-label="Categorías anteriores"><i class="fas fa-chevron-left"></i></button><div class="cats" id="cats"></div><button class="catn der" id="cat_der" aria-label="Más categorías"><i class="fas fa-chevron-right"></i></button></div>
 </header>
 <div class="banda" id="banda"></div>
 <main><div class="hero" id="hero" style="display:none"></div><div class="barra"><span id="cuenta"></span><select id="orden"><option value="cat">Ordenar por categoría</option><option value="menor">Menor precio</option><option value="mayor">Mayor precio</option><option value="nombre">Nombre</option></select></div><div id="lista"><div class="vacio">Cargando productos…</div></div></main>
@@ -386,6 +391,21 @@ $('hero').onclick = e => {
 $('hero').onmouseenter = () => clearInterval(HERO_T); $('hero').onmouseleave = heroAuto;
 { let x0 = null; $('hero').addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
   $('hero').addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) { heroIr(HERO_I + (dx < 0 ? 1 : -1)); heroAuto(); } x0 = null; }); }
+// Barra de categorías en PC: flechas, rueda del mouse y arrastrar
+(() => {
+  const el = $('cats'), iz = $('cat_izq'), de = $('cat_der');
+  const upd = () => { iz.classList.toggle('ver', el.scrollLeft > 4); de.classList.toggle('ver', el.scrollLeft + el.clientWidth < el.scrollWidth - 4); };
+  iz.onclick = () => el.scrollBy({ left: -el.clientWidth * .7, behavior: 'smooth' });
+  de.onclick = () => el.scrollBy({ left: el.clientWidth * .7, behavior: 'smooth' });
+  el.addEventListener('scroll', upd); window.addEventListener('resize', upd); new MutationObserver(upd).observe(el, { childList: true });
+  el.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) { el.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  let x0 = null, s0 = 0, mov = false;
+  el.addEventListener('mousedown', e => { x0 = e.pageX; s0 = el.scrollLeft; mov = false; });
+  window.addEventListener('mousemove', e => { if (x0 === null) return; const d = e.pageX - x0; if (Math.abs(d) > 5) { mov = true; el.classList.add('arr'); } if (mov) el.scrollLeft = s0 - d; });
+  window.addEventListener('mouseup', () => { x0 = null; setTimeout(() => el.classList.remove('arr'), 0); });
+  el.addEventListener('click', e => { if (mov) { e.stopPropagation(); e.preventDefault(); mov = false; } }, true);
+  upd();
+})();
 (async () => {
   const qs = new URLSearchParams(location.search);
   if (qs.get('l') === 'min') LISTA = 'MINORISTA';
