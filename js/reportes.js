@@ -45,3 +45,23 @@ async function ivaComprasCargar() {
     { t: 'Perc. IVA', k: 'perc_iva', f: 'm', cls: 'tr', sum: 1 }, { t: 'Perc. IIBB', k: 'perc_iibb', f: 'm', cls: 'tr', sum: 1 }, { t: 'Otros', k: 'otros', f: 'm', cls: 'tr', sum: 1 }, { t: 'Total', k: 'total', f: 'm', cls: 'tr', sum: 1 }], rows,
     { vacio: 'No hay compras en el período', acciones: r => `<button class="btn btn-xs btn-s" title="Ver" onclick="verCompra(${r.id})"><i class="fas fa-eye"></i></button>` });
 }
+
+/* ---------- Visitas de la tienda (contador interno) ---------- */
+PAGINAS.visitas = async () => {
+  pagina({ titulo: 'Visitas de la tienda', icono: 'eye', sub: 'Cuánta gente entra al catálogo web y qué mira (sin datos personales)',
+    cuerpo: `<div class="panel mb3">${barraFiltros([{ k: 'desde', t: 'desde', v: iniMes() }, { k: 'hasta', t: 'hasta', v: hoy() }], visitasCargar)}</div>
+      <div class="grid-4 mb3" id="vi_k"></div><div class="panel mb3"><h3 class="mb2">Visitas por día</h3><div id="vi_d"></div></div>
+      <div class="grid-2"><div class="panel"><h3 class="mb2">Productos más vistos</h3><div id="vi_p"></div></div><div class="panel"><h3 class="mb2">Categorías más vistas</h3><div id="vi_c"></div></div></div>` });
+  await visitasCargar();
+};
+async function visitasCargar() {
+  const f = leerFiltros(); const r = await rpc('visitas_resumen', { p_desde: f.desde || iniMes(), p_hasta: f.hasta || hoy() });
+  const dias = r.por_dia || [], dv = r.dispositivos || {}, li = r.listas || {};
+  const prom = dias.length ? Math.round(dias.reduce((a, d) => a + Number(d.visitas), 0) / dias.length) : 0;
+  $('vi_k').innerHTML = kpi('Visitas', fmtN(r.visitas), 'entradas a la tienda', 'b') + kpi('Personas distintas', fmtN(r.visitantes), 'navegadores distintos', 'g')
+    + kpi('Productos abiertos', fmtN(r.vistas_productos), 'veces que tocaron "Ver más"') + kpi('Desde dónde', `${fmtN(dv.celular || 0)} cel · ${fmtN(dv.pc || 0)} PC`, `${fmtN(dv.tablet || 0)} tablet · ${fmtN(li.MAYORISTA || 0)} mayorista / ${fmtN(li.MINORISTA || 0)} minorista`);
+  const max = Math.max(1, ...dias.map(d => Number(d.visitas)));
+  $('vi_d').innerHTML = dias.length ? `<div style="display:flex;flex-direction:column;gap:4px">${dias.map(d => `<div style="display:grid;grid-template-columns:90px 1fr 110px;align-items:center;gap:8px;font-size:12px"><span class="mono">${fmtD(d.dia)}</span><div style="background:#f3ede9;border-radius:4px;height:16px"><div style="width:${Math.max(2, Number(d.visitas) / max * 100)}%;height:100%;background:var(--rojo);border-radius:4px"></div></div><span class="tr"><b>${fmtN(d.visitas)}</b> visitas · ${fmtN(d.visitantes)} pers.</span></div>`).join('')}</div>` : '<div class="ss">Todavía no hay visitas en el período.</div>';
+  $('vi_p').innerHTML = grilla('g_vip', [{ t: 'Código', k: 'codigo', cls: 'mono' }, { t: 'Producto', k: 'producto' }, { t: 'Vistas', k: 'vistas', f: 'n', cls: 'tr' }, { t: 'Personas', k: 'personas', f: 'n', cls: 'tr' }], r.productos || [], { vacio: 'Sin datos todavía' });
+  $('vi_c').innerHTML = grilla('g_vic', [{ t: 'Categoría', k: 'categoria' }, { t: 'Vistas', k: 'vistas', f: 'n', cls: 'tr' }, { t: 'Personas', k: 'personas', f: 'n', cls: 'tr' }], r.categorias || [], { vacio: 'Sin datos todavía' });
+}

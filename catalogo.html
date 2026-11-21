@@ -197,7 +197,7 @@ async function cargar() {
   PROD.sort((a, b) => a.categoria_orden - b.categoria_orden || a.categoria.localeCompare(b.categoria));
   const cats = [...new Set(PROD.flatMap(catsDe))].sort((a, b) => (CATORD[a] ?? 999) - (CATORD[b] ?? 999) || a.localeCompare(b));
   $('cats').innerHTML = `<span class="cat ${!CAT ? 'on' : ''}" data-c="">Todo</span>` + (PROD.some(x => x.es_oferta) ? '<span class="cat" data-c="__of">🔥 Ofertas</span>' : '') + cats.map(c => `<span class="cat ${CAT === c ? 'on' : ''}" data-c="${esc(c)}">${esc(c)}</span>`).join('');
-  document.querySelectorAll('.cat').forEach(c => c.onclick = () => { CAT = c.dataset.c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x === c)); pintar(); });
+  document.querySelectorAll('.cat').forEach(c => c.onclick = () => { CAT = c.dataset.c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x === c)); pintar(); if (CAT) visita('categoria', { categoria: CAT === '__of' ? 'Ofertas' : CAT }); });
   { const n = String(T.whatsapp || '').replace(/\D/g, ''), w = $('wafab'); if (n && w) { w.href = 'https://wa.me/' + n + '?text=' + encodeURIComponent('¡Hola! 👋 Estoy visitando la página web de Pirotecnia BOOM y quisiera realizar una consulta. ¿Podrían ayudarme?'); w.dataset.ok = '1'; w.style.display = $('fab').style.display === 'none' ? 'none' : ''; } }
   $('pie').innerHTML = `<b>${esc(T.nombre)}</b>${T.direccion ? ' · ' + esc(T.direccion) : ''}${T.horarios ? '<br>' + esc(T.horarios) : ''}${T.whatsapp ? `<br>WhatsApp: <a href="https://wa.me/${String(T.whatsapp).replace(/\D/g, '')}" target="_blank">${esc(T.whatsapp)}</a>` : ''}${T.instagram ? ` · <a href="https://instagram.com/${esc(String(T.instagram).replace('@', ''))}" target="_blank">Instagram</a>` : ''}<br><a href="como-pedir.html">¿Cómo hago mi pedido?</a><br><small>Venta exclusiva a mayores de 18 años. Precios sujetos a stock.</small>`;
   pintar(); pintarCarro();
@@ -231,7 +231,17 @@ $('lista').onclick = e => {
 };
 // Ficha del producto: fotos, video, descripción e información adicional
 function ytEmbed(u) { const m = String(u || '').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/); return m ? 'https://www.youtube-nocookie.com/embed/' + m[1] : null; }
+// Contador de visitas (interno): cuenta sin datos personales, con un número al azar por navegador
+function visitante() { try { let v = localStorage.getItem('pb_vis'); if (!v) { v = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('pb_vis', v); } return v; } catch (e) { return null; } }
+function dispositivo() { const w = Math.min(screen.width, innerWidth); return /iPad|Tablet/i.test(navigator.userAgent) || (w >= 600 && w < 1024 && 'ontouchstart' in window) ? 'tablet' : /Mobi|Android|iPhone/i.test(navigator.userAgent) ? 'celular' : 'pc'; }
+const VISTAS = new Set();
+function visita(tipo, extra = {}) {
+  if (/\.online$/.test(location.hostname) && !/visitas=1/.test(location.search)) return; // la copia del sistema no suma visitas
+  const k = tipo + ':' + (extra.producto_id || extra.categoria || ''); if (VISTAS.has(k)) return; VISTAS.add(k);
+  try { sb.rpc('registrar_visita', { p: { tipo, visitante: visitante(), lista: LISTA, dispositivo: dispositivo(), ...extra } }).then(() => {}, () => {}); } catch (e) { }
+}
 function ficha(id) {
+  visita('producto', { producto_id: id });
   const p = PROD.find(x => x.producto_id === id); if (!p) return;
   const yt = ytEmbed(p.video_url);
   $('fi').innerHTML = `<div class="fh"><span>${esc(p.nombre)}</span><button id="fi-x" aria-label="Cerrar">&times;</button></div><div class="fb">
@@ -415,6 +425,7 @@ $('hero').onmouseenter = () => clearInterval(HERO_T); $('hero').onmouseleave = h
   const qs = new URLSearchParams(location.search);
   if (qs.get('l') === 'min') LISTA = 'MINORISTA';
   await cargar();
+  visita('pagina');
   const ct = qs.get('c'); if (ct) { const c = ct.toLowerCase() === 'ofertas' ? '__of' : [...new Set(PROD.flatMap(catsDe))].find(x => slugCat(x) === slugCat(ct)); if (c) { CAT = c; document.querySelectorAll('.cat').forEach(x => x.classList.toggle('on', x.dataset.c === c)); pintar(); const ch = document.querySelector('.cat.on'); if (ch) ch.scrollIntoView({ inline: 'center', block: 'nearest' }); } }
   const cod = qs.get('p'); if (cod) { const p = PROD.find(x => String(x.codigo).toLowerCase() === cod.toLowerCase()); if (p) ficha(p.producto_id); }
 })();
