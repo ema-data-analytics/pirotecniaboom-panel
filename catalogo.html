@@ -52,7 +52,9 @@ h2{font-size:17px;color:var(--vino);margin:14px 0 10px;border-left:4px solid var
 .bt{border:none;border-radius:8px;padding:8px 12px;font-weight:800;cursor:pointer;font-size:13px}
 .bt-r{background:var(--rojo);color:#fff;flex:1}.bt-r:hover{background:var(--rojo2)}.bt-r:disabled{background:#bbb;cursor:not-allowed}
 .bt-w{background:#25d366;color:#fff}.bt-s{background:#f1e9e5;color:var(--vino)}
-.wafab{position:fixed;right:20px;bottom:88px;z-index:29;width:54px;height:54px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.28)}.wafab i{font-size:30px}.wafab:hover{background:#1ebe5a}
+.wafab{position:fixed;right:20px;bottom:88px;z-index:29;width:54px;height:54px;border-radius:50%;background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.28)}.wafab i{font-size:30px}
+/* el ícono de marca de Font Awesome usa la clase .fab, igual que el botón Mi pedido: que no herede su estilo */
+i.fab{position:static;padding:0;margin:0;background:none;box-shadow:none;border-radius:0;display:inline-block;color:inherit;z-index:auto;cursor:inherit}.wafab:hover{background:#1ebe5a}
 .fab{position:fixed;right:16px;bottom:16px;background:var(--rojo);color:#fff;border:none;border-radius:30px;padding:14px 18px;font-weight:800;font-size:15px;box-shadow:0 6px 20px rgba(227,30,36,.45);cursor:pointer;z-index:30;display:flex;gap:8px;align-items:center}
 .fab .n{background:var(--amarillo);color:var(--vino);border-radius:12px;padding:1px 8px;font-size:13px}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:none}.ov.on{display:block}
