@@ -316,8 +316,9 @@ function pdfRecuadro(doc, x, y, w, titulo, lineas) {
 }
 function pdfTotales(doc, y, filas) {
   const W = doc.internal.pageSize.getWidth(); let yy = y + 4;
-  filas.forEach(([l, v, fuerte]) => {
-    doc.setFont('helvetica', fuerte ? 'bold' : 'normal'); doc.setFontSize(fuerte ? 11 : 9); doc.setTextColor(fuerte ? 74 : 40, fuerte ? 10 : 40, fuerte ? 13 : 40);
+  filas.forEach(([l, v, fuerte, color]) => {
+    doc.setFont('helvetica', fuerte ? 'bold' : 'normal'); doc.setFontSize(fuerte ? 11 : 9);
+    if (color) doc.setTextColor(color[0], color[1], color[2]); else doc.setTextColor(fuerte ? 74 : 40, fuerte ? 10 : 40, fuerte ? 13 : 40);
     doc.text(l, W - 60, yy, { align: 'right' }); doc.text(v, W - 10, yy, { align: 'right' }); yy += fuerte ? 7 : 5;
   });
   return yy;

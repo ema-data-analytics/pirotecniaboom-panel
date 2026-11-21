@@ -250,7 +250,7 @@ async function pdfComprobante(id) {
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     extra: { titulo: 'Condiciones', lineas: [d.condicion === 'contado' ? 'Contado' : 'Cuenta corriente', 'Lista: ' + d.lista, d.origen ? 'Origen: ' + d.origen.numero : '', d.factura_externa ? 'Factura ARCA: ' + d.factura_externa : '', d.pedido ? 'Pedido: ' + d.pedido : '', d.presupuesto ? 'Presupuesto: ' + d.presupuesto : ''] },
     ...pdfItems(d.items, ri),
-    totales: comprobanteTotalesPdf(d, ri),
+    totales: conTotalOfertas(comprobanteTotalesPdf(d, ri), d.items),
     notas: [d.motivo ? 'Motivo / nota: ' + d.motivo : '', d.tipo !== 'NC' && Number(d.saldo) > 0 ? 'Saldo pendiente: ' + fmt(d.saldo) : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero.replace(/\s+/g, '_'));
 }
@@ -329,7 +329,7 @@ async function presupuestoPdf(id) {
   const doc = pdfDocumento({ titulo: 'PRESUPUESTO', numero: d.numero + (d.version > 1 ? ' · v' + d.version : ''), fecha: fmtD(d.fecha), sub: (d.version > 1 ? 'Versión ' + d.version + ' · ' : '') + 'Válido hasta: ' + fmtD(d.valido_hasta),
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     ...pdfItems(d.items, ri),
-    totales: presupuestoTotales(d, ri),
+    totales: conTotalOfertas(presupuestoTotales(d, ri), d.items),
     notas: [d.nota || '', 'Presupuesto válido hasta el ' + fmtD(d.valido_hasta) + '. Precios sujetos a disponibilidad de stock.', (M.empresa || {}).whatsapp ? 'Consultas y pedidos por WhatsApp: ' + M.empresa.whatsapp : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero);
 }
@@ -360,10 +360,21 @@ function desgloseDesc({ items, dcli = 0, dgen = 0, dofer = true, total, neto = f
   return { filas, ahorro, pctAhorro: s0 ? ahorro * 100 / s0 : 0, total: Number(total), subtotal: s0 };
 }
 // Cuadro aparte: solo los productos en oferta (cantidad y total a precio de oferta, precio final)
+// Suma de las líneas en oferta, en precio final (la misma cifra del recuadro "Productos en oferta")
+function totalOfertas(items) {
+  return (items || []).filter(i => i.es_oferta && i.estado !== 'anulado')
+    .reduce((a, i) => a + Number(i.cantidad) * Number(i.precio_neto_unit) * (1 - Number(i.descuento_pct || 0) / 100) * (1 + Number(i.iva_pct || 0) / 100), 0);
+}
+// Agrega la línea "TOTAL OFERTAS" antes del total final del PDF, solo si hay productos en oferta
+function conTotalOfertas(filas, items) {
+  const t = totalOfertas(items);
+  if (t < 0.01) return filas;
+  const r = filas.slice(); r.splice(r.length - 1, 0, ['TOTAL OFERTAS', fmt(t), 1, [209, 0, 0]]); return r;
+}
 function resumenOfertasHtml(items) {
   const of = (items || []).filter(i => i.es_oferta && i.estado !== 'anulado');
   if (!of.length) return '';
-  const tot = of.reduce((a, i) => a + Number(i.cantidad) * Number(i.precio_neto_unit) * (1 - Number(i.descuento_pct || 0) / 100) * (1 + Number(i.iva_pct || 0) / 100), 0);
+  const tot = totalOfertas(items);
   const uni = of.reduce((a, i) => a + Number(i.cantidad), 0);
   return `<div class="tot-box" style="border:2px solid #d10000;background:#fff5f5"><div class="ss mb2" style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d10000"><i class="fas fa-tag"></i> Productos en oferta</div>
     <div class="row"><span>Productos</span><b class="mono">${of.length}</b></div><div class="row"><span>Unidades</span><b class="mono">${fmtN(uni)}</b></div>
