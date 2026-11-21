@@ -369,7 +369,7 @@ function totalOfertas(items) {
 function conTotalOfertas(filas, items) {
   const t = totalOfertas(items);
   if (t < 0.01) return filas;
-  const r = filas.slice(); r.splice(r.length - 1, 0, ['TOTAL OFERTAS', fmt(t), 1, [209, 0, 0]]); return r;
+  const r = filas.slice(); r.splice(r.length - 1, 0, ['TOTAL OFERTAS (incluido en el total)', fmt(t), 1, [209, 0, 0]]); return r;
 }
 function resumenOfertasHtml(items) {
   const of = (items || []).filter(i => i.es_oferta && i.estado !== 'anulado');
