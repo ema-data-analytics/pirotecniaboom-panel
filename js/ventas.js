@@ -240,9 +240,9 @@ function comprobanteTotalesPdf(d, ri) {
 // Ítems de los comprobantes impresos: marca OFERTA y muestra la cantidad por display
 function pdfItems(items, ri) {
   return {
-    cols: ['Código', 'Producto', 'Cant.', 'Cant. x display', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
-    filas: items.map(i => [i.codigo || '', i.producto + (i.es_oferta ? '  · OFERTA' : ''), fmtN(i.cantidad), i.display || '', fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
-    colStyles: { 2: { halign: 'right' }, 3: { halign: 'center' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } } };
+    cols: ['Código', 'Producto', 'Marca', 'Cant.', 'Cant. x display', ri ? 'P. unit. neto' : 'P. unit.', 'Desc.', ri ? 'Neto' : 'Importe'],
+    filas: items.map(i => [i.codigo || '', i.producto + (i.es_oferta ? '  · OFERTA' : ''), i.proveedor || '', fmtN(i.cantidad), i.display || '', fmt(ri ? i.precio_neto_unit : i.precio_final_unit), Number(i.descuento_pct) ? fmtP(i.descuento_pct) : '', fmt(ri ? i.subtotal_neto : i.total)]),
+    colStyles: { 3: { halign: 'right' }, 4: { halign: 'center' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } } };
 }
 async function pdfComprobante(id) {
   const d = await rpc('comprobante_detalle', { p_id: id }); const ri = false; // al cliente: siempre precio final, sin texto de IVA
