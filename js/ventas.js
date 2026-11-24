@@ -103,7 +103,7 @@ function editorPintarLineas() {
       <div class="fg" style="margin:0"><label class="fl">Precio neto unit.</label><input id="ed_pu" type="number" step="0.01" class="fi mono" ${ES_DUENO ? '' : 'disabled'} placeholder="de la lista"></div>
       <div class="fg" style="margin:0"><label class="fl">Desc. línea %</label><input id="ed_dl" type="number" step="0.01" min="0" max="99" class="fi mono" value="0" ${ES_DUENO ? '' : 'disabled'}></div>
       <div><button class="btn btn-p" id="ed_add"><i class="fas fa-plus"></i> <span id="ed_add_t">Agregar</span></button></div></div>
-      <label class="chk mb2" title="Solo cambia algo si el producto está en oferta"><input type="checkbox" id="ed_sinof"> Si está en oferta, cobrarlo al <b>precio normal</b> (sin la oferta)</label><div id="ed_prod_info" class="ss mb3"></div>` : '';
+      <div id="ed_prod_info" class="ss mb3"></div>` : '';
   $('ed_lin').innerHTML = fila + grilla('g_ed', [{ t: 'Código', k: 'codigo' }, { t: 'Producto', k: 'producto', f: r => esc(r.producto) + (r.es_oferta ? ' <span class="badge br">Oferta</span>' : '') + (r.sin_oferta ? ' <span class="badge bw">sin oferta</span>' : '') + (r.display ? ` <small class="ss" style="white-space:nowrap">· Display ${esc(r.display)}</small>` : '') + (r.proveedor ? ` <small class="ss" style="white-space:nowrap">· ${esc(r.proveedor)}</small>` : ''), xf: r => r.producto + (r.display ? ' (Display ' + r.display + ')' : '') + (r.proveedor ? ' [' + r.proveedor + ']' : '') }, { t: 'Cant.', k: 'cantidad', f: 'n', cls: 'tr' },
     { t: 'Precio unit. neto', k: 'precio_neto_unit', f: r => fmt(r.precio_neto_unit) + (r.precio_manual ? ' <span class="badge bw">especial</span>' : ''), cls: 'tr' },
     { t: 'Precio unit. final', k: 'pf', f: r => fmt(Number(r.precio_neto_unit) * (1 + Number(r.iva_pct) / 100)), cls: 'tr' },
@@ -159,7 +159,7 @@ function editorPintarLineas() {
 async function editorAgregarLinea() {
   const pid = Number($('ed_prod').dataset.id || 0); if (!pid) return toast('Elegí un producto.', 'r');
   const cant = numIn('ed_cant'); if (!cant || cant <= 0) return toast('Cantidad inválida.', 'r');
-  const p = { id: ED.lineaEdit, producto_id: pid, cantidad: cant, precio_neto_unit: ES_DUENO && $('ed_pu').value !== '' ? numIn('ed_pu') : null, descuento_pct: ES_DUENO ? (numIn('ed_dl') || 0) : 0, sin_oferta: !!($('ed_sinof') && $('ed_sinof').checked) };
+  const p = { id: ED.lineaEdit, producto_id: pid, cantidad: cant, precio_neto_unit: ES_DUENO && $('ed_pu').value !== '' ? numIn('ed_pu') : null, descuento_pct: ES_DUENO ? (numIn('ed_dl') || 0) : 0, sin_oferta: ED.lineaEdit ? !!(ED.det.items.find(x => x.id === ED.lineaEdit) || {}).sin_oferta : false }; // la oferta se saca/pone con el botón de cada línea
   if (ED.modo === 'venta') { p.borrador_id = ED.id; await rpc('borrador_item_guardar', { p }); } else { p.presupuesto_id = ED.id; await rpc('presupuesto_item_guardar', { p }); }
   ED.lineaEdit = null; await editorRecargar(); setTimeout(() => $('ed_prod') && $('ed_prod').focus(), 50);
 }
@@ -167,7 +167,6 @@ function editorEditarLinea(id) {
   const r = ED.det.items.find(x => x.id === id); ED.lineaEdit = id;
   $('ed_prod').fijar({ id: r.producto_id, label: r.codigo + ' · ' + r.producto }); $('ed_cant').value = r.cantidad;
   if (ES_DUENO) { $('ed_pu').value = r.precio_manual ? r.precio_neto_unit : ''; $('ed_dl').value = r.descuento_pct; }
-  if ($('ed_sinof')) $('ed_sinof').checked = !!r.sin_oferta;
   $('ed_add_t').textContent = 'Guardar línea'; $('ed_cant').focus();
 }
 // Sacar o volver a poner el precio de oferta en una línea
