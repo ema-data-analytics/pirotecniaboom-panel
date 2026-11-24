@@ -36,7 +36,8 @@ async function editorDoc(modo, id) {
     botones: `<button class="btn btn-s" onclick="editorVolver()"><i class="fas fa-arrow-left"></i> Volver al listado</button>`,
     cuerpo: `<div class="panel mb3"><div class="ph"><span class="pt"><span class="paso">1</span>Encabezado</span><span id="ed_est"></span></div><div class="pb" id="ed_hdr"></div></div>
       <div class="panel mb3" id="ed_lin_p"><div class="ph"><span class="pt"><span class="paso">2</span>Productos</span><span class="ss" id="ed_lista_txt"></span></div><div class="pb" id="ed_lin"></div></div>
-      <div class="flex jb fw gap3" style="align-items:flex-start"><div class="flex gap2 fw aic" id="ed_acc"></div><div class="flex gap3 fw" style="align-items:flex-start"><div id="ed_dsc"></div><div id="ed_fin"></div><div class="tot-box" id="ed_tot"></div><div id="ed_ofe"></div></div></div>` });
+      <div class="flex gap2 fw aic mb3" id="ed_acc"></div><div id="ed_tot"></div>
+      <div class="tot-grid" id="ed_grid"><div id="ed_dsc"></div><div id="ed_fin"></div><div id="ed_ofe"></div></div>` });
   if (id) await editorRecargar(); else editorPintarHdr();
 }
 async function editorRecargar() {
@@ -124,19 +125,18 @@ function editorPintarLineas() {
   else t = d;
   const dcli = Number(d.descuento_cliente_pct || 0), dgen = Number(d.descuento_pct || 0);
   const detDesc = [dcli ? 'cliente ' + fmtP(dcli) : '', dgen ? 'general ' + fmtP(dgen) : ''].filter(Boolean).join(' · ');
-  if (!t || !t.error) $('ed_tot').innerHTML = `<div class="row"><span>Subtotal neto</span><b class="mono">${fmt(t.subtotal_neto)}</b></div>${Number(t.descuento_neto) ? `<div class="row"><span>Descuentos${detDesc ? `<br><small class="tdim">incluye ${detDesc}</small>` : ''}</span><b class="mono">- ${fmt(t.descuento_neto)}</b></div>` : ''}${Number(t.recargo_neto) ? `<div class="row"><span>Recargo</span><b class="mono">${fmt(t.recargo_neto)}</b></div>` : ''}${Number(t.envio_neto) ? `<div class="row"><span>Envío</span><b class="mono">${fmt(t.envio_neto)}</b></div>` : ''}<div class="row"><span>IVA</span><b class="mono">${fmt(t.iva)}</b></div><div class="row big"><span>TOTAL</span><span class="mono">${fmt(t.total)}</span></div>`;
+  if (!t || !t.error) $('ed_tot').innerHTML = ''; // el recuadro de neto/IVA ya no se muestra: el resumen central cierra con el mismo total
   ED.total = Number(t.total || 0);
   // desglose de descuentos en precio final, al lado de los totales
-  $('ed_ofe').innerHTML = resumenOfertasHtml(items);
-  $('ed_fin').innerHTML = items.length && t && !t.error ? desgloseHtml(desgloseDesc({ items, dcli: Number(d.descuento_cliente_pct || 0), dgen: Number(d.descuento_pct || 0), dofer: !!d.descuento_en_ofertas, total: t.total,
-      recargo: esV ? Number(d.recargo_neto || 0) : 0, envio: esV ? Number(d.envio_neto || 0) : 0 })) : '';
+  $('ed_ofe').innerHTML = items.length ? resumenOfertasHtml(items) : '';
+  $('ed_fin').innerHTML = items.length && t && !t.error ? resumenHtml(calcResumen({ items, total: t.total, dcli, dgen, recargo: esV ? Number(d.recargo_neto || 0) : 0, envio: esV ? Number(d.envio_neto || 0) : 0 }), esV ? 'Resumen de la venta' : 'Resumen del presupuesto') : '';
   // descuento general al pie (en % o en $), antes de grabar / confirmar
-  $('ed_dsc').innerHTML = !items.length ? '' : (ed ? `<div class="panel" style="min-width:290px;max-width:340px;margin:0"><div class="ph"><span class="pt"><span class="paso">3</span>Descuento general</span></div><div class="pb">
+  $('ed_dsc').innerHTML = !items.length ? '' : (ed ? `<div class="panel" style="margin:0"><div class="ph"><span class="pt"><span class="paso">3</span>Descuento general</span></div><div class="pb">
       ${dcli ? `<div class="ss mb2">El cliente ya tiene <b>${fmtP(dcli)}</b> de descuento propio (se aplica solo).</div>` : ''}
       <div class="flex gap2"><input id="ed_dg" type="number" step="0.01" min="0" class="fi mono" value="${dgen ? Number(dgen.toFixed(2)) : ''}" placeholder="0" ${ES_DUENO ? '' : 'disabled'}><select id="ed_dgm" class="fs" style="width:70px" ${ES_DUENO ? '' : 'disabled'}><option value="pct">%</option><option value="imp">$</option></select></div>
       <label class="fl mt2">Motivo del descuento / precio especial</label><input id="ed_dgmot" class="fi" placeholder="Obligatorio si hay descuento o precio especial" value="${esc(d.descuento_motivo || '')}" ${ES_DUENO ? '' : 'disabled'}>
       ${ES_DUENO ? `<button class="btn btn-s mt2" style="width:100%" onclick="editorDescuento()"><i class="fas fa-tag"></i> Aplicar descuento y motivo</button><div class="ss mt2">En $: es el importe que se descuenta del total con IVA.</div>` : '<div class="ss mt2">El descuento general lo autoriza el dueño.</div>'}</div></div>`
-    : (dgen ? `<div class="panel" style="margin:0;max-width:300px"><div class="pb"><b>Descuento general ${fmtP(dgen)}</b>${d.descuento_motivo ? `<div class="ss">${esc(d.descuento_motivo)}</div>` : ''}</div></div>` : ''));
+    : (dgen ? `<div class="panel" style="margin:0"><div class="pb"><b>Descuento general ${fmtP(dgen)}</b>${d.descuento_motivo ? `<div class="ss">${esc(d.descuento_motivo)}</div>` : ''}</div></div>` : ''));
   // acciones
   let acc = '';
   if (esV) {
@@ -238,30 +238,46 @@ function comprobanteTotalesPdf(d, ri) {
 }
 // Totales del PDF (presupuesto y venta): lista sin ofertas → descuentos por línea → subtotal con descuentos → ofertas → total.
 // No recalcula precios: usa los importes de las líneas y cierra exacto con el total del comprobante.
-function totalesPdfOfertas(d, etiquetaTotal) {
-  const r2 = x => Math.round(x * 100) / 100, fm = v => (v < 0 ? '- ' : '') + fmt(Math.abs(v));
+function calcResumen({ items, total, dcli = 0, dgen = 0, recargo = 0, envio = 0 }) {
+  const r2 = x => Math.round(x * 100) / 100;
   let lista = 0, conDesc = 0, ofer = 0; const ext = [];
-  for (const i of d.items || []) {
+  for (const i of items || []) {
     if (i.estado === 'anulado') continue;
     const q = Number(i.cantidad), p = Number(i.precio_neto_unit), dl = Number(i.descuento_pct || 0) / 100, k = 1 + Number(i.iva_pct || 0) / 100;
     if (/^CONC-/.test(i.codigo || '')) { ext.push([i.producto, r2(q * p * k)]); continue; }
     if (i.es_oferta) { ofer += r2(q * p * (1 - dl) * k); continue; }
     lista += r2(q * p * k); conDesc += r2(q * p * (1 - dl) * k);
   }
-  const rec = Number(d.recargo_neto || 0), env = Number(d.envio_neto || 0);
-  if (rec) ext.push(['Recargo', r2(rec * 1.21)]); if (env) ext.push(['Envío', r2(env * 1.21)]);
-  lista = r2(lista); conDesc = r2(conDesc); ofer = r2(ofer);
-  const sumExt = r2(ext.reduce((a, e) => a + e[1], 0)), total = Number(d.total);
-  let dLin = r2(lista - conDesc), otros = r2(conDesc + ofer + sumExt - total);
-  if (Math.abs(otros) < 0.05) { dLin = r2(dLin + otros); otros = 0; } // redondeo de centavos
-  const sub = r2(lista - dLin - otros), filas = [['Subtotal de lista (sin descuentos)', fmt(lista)]];
-  if (dLin >= 0.01) filas.push(['Descuentos por línea', fm(-dLin), 0, [21, 128, 61]]);
-  if (otros >= 0.01) filas.push([Number(d.descuento_pct) > 0 && !Number(d.descuento_cliente_pct) ? 'Descuento general ' + fmtP(d.descuento_pct) : Number(d.descuento_cliente_pct) > 0 && !Number(d.descuento_pct) ? 'Descuento del cliente ' + fmtP(d.descuento_cliente_pct) : 'Descuento general', fm(-otros), 0, [21, 128, 61]]);
-  if (otros <= -0.01) filas.push(['Ajuste', fmt(-otros)]);
-  if (dLin >= 0.01 || Math.abs(otros) >= 0.01) filas.push(['Subtotal con descuentos', fmt(sub), 0, [20, 20, 20]]);
-  if (ofer >= 0.01) filas.push(['Productos en oferta (precio final)', '+ ' + fmt(ofer)]);
-  ext.forEach(e => filas.push([e[0], (e[1] < 0 ? '- ' : '+ ') + fmt(Math.abs(e[1]))]));
-  filas.push([etiquetaTotal, fmt(total), 1]);
+  if (Number(recargo)) ext.push(['Recargo', r2(Number(recargo) * 1.21)]);
+  if (Number(envio)) ext.push(['Envío', r2(Number(envio) * 1.21)]);
+  lista = r2(lista); conDesc = r2(conDesc); ofer = r2(ofer); total = Number(total);
+  const sumExt = r2(ext.reduce((a, e) => a + e[1], 0));
+  let dLin = r2(lista - conDesc), dGen = r2(conDesc + ofer + sumExt - total);
+  if (Math.abs(dGen) < 0.05) { dLin = r2(dLin + dGen); dGen = 0; } // centavos de redondeo
+  dcli = Number(dcli || 0); dgen = Number(dgen || 0);
+  const lGen = dgen > 0 && !dcli ? 'Descuento general (' + fmtP(dgen) + ')' : dcli > 0 && !dgen ? 'Descuento del cliente (' + fmtP(dcli) + ')' : dcli > 0 && dgen > 0 ? 'Descuento general (' + fmtP(dgen) + ') y del cliente (' + fmtP(dcli) + ')' : 'Descuento general';
+  const totDesc = r2(dLin + dGen);
+  return { lista, dLin, dGen, lGen, totDesc, sub: r2(lista - totDesc), ofer, ext, total };
+}
+function resumenHtml(x, titulo) {
+  const neg = v => '- ' + fmt(v), row = (l, v, c = '') => `<div class="res-r ${c}"><span>${l}</span><b>${v}</b></div>`;
+  let h = row('Subtotal de lista (sin descuentos)', fmt(x.lista));
+  if (x.dLin >= 0.01) h += row('Descuentos por línea', neg(x.dLin), 'neg');
+  if (x.dGen >= 0.01) h += row(esc(x.lGen), neg(x.dGen), 'neg'); else if (x.dGen <= -0.01) h += row('Ajuste', fmt(-x.dGen));
+  if (Math.abs(x.totDesc) >= 0.01) h += row('Total de descuentos', x.totDesc > 0 ? neg(x.totDesc) : fmt(-x.totDesc), 'neg fuerte') + row('Subtotal con descuentos', fmt(x.sub), 'sub');
+  if (x.ofer >= 0.01) h += row('Productos en oferta (precio final)', '+ ' + fmt(x.ofer));
+  x.ext.forEach(e => { h += row(esc(e[0]), (e[1] < 0 ? '- ' : '+ ') + fmt(Math.abs(e[1]))); });
+  return `<div class="res-box"><div class="res-t"><i class="fas fa-coins"></i> ${titulo}</div>${h}<div class="res-tot"><span>TOTAL FINAL</span><b>${fmt(x.total)}</b></div></div>`;
+}
+function totalesPdfOfertas(d, etiquetaTotal) {
+  const x = calcResumen({ items: d.items, total: d.total, dcli: d.descuento_cliente_pct, dgen: d.descuento_pct, recargo: d.recargo_neto, envio: d.envio_neto });
+  const V = [21, 128, 61], filas = [['Subtotal de lista (sin descuentos)', fmt(x.lista)]];
+  if (x.dLin >= 0.01) filas.push(['Descuentos por línea', '- ' + fmt(x.dLin), 0, V]);
+  if (x.dGen >= 0.01) filas.push([x.lGen, '- ' + fmt(x.dGen), 0, V]); else if (x.dGen <= -0.01) filas.push(['Ajuste', fmt(-x.dGen)]);
+  if (Math.abs(x.totDesc) >= 0.01) filas.push(['Total de descuentos', (x.totDesc > 0 ? '- ' : '') + fmt(Math.abs(x.totDesc)), 0, V], ['Subtotal con descuentos', fmt(x.sub), 0, [20, 20, 20]]);
+  if (x.ofer >= 0.01) filas.push(['Productos en oferta (precio final)', '+ ' + fmt(x.ofer)]);
+  x.ext.forEach(e => filas.push([e[0], (e[1] < 0 ? '- ' : '+ ') + fmt(Math.abs(e[1]))]));
+  filas.push([etiquetaTotal, fmt(x.total), 1]);
   return filas;
 }
 // Ítems de los comprobantes impresos: marca OFERTA y muestra la cantidad por display
@@ -400,12 +416,10 @@ function conTotalOfertas(filas, items) {
 }
 function resumenOfertasHtml(items) {
   const of = (items || []).filter(i => i.es_oferta && i.estado !== 'anulado');
-  if (!of.length) return '';
-  const tot = totalOfertas(items);
-  const uni = of.reduce((a, i) => a + Number(i.cantidad), 0);
-  return `<div class="tot-box" style="border:2px solid #d10000;background:#fff5f5"><div class="ss mb2" style="font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d10000"><i class="fas fa-tag"></i> Productos en oferta</div>
-    <div class="row"><span>Productos</span><b class="mono">${of.length}</b></div><div class="row"><span>Unidades</span><b class="mono">${fmtN(uni)}</b></div>
-    <div class="row big" style="color:#d10000"><span>TOTAL OFERTAS</span><span class="mono">${fmt(tot)}</span></div></div>`;
+  const tot = totalOfertas(items), uni = of.reduce((a, i) => a + Number(i.cantidad), 0);
+  return `<div class="ofe-box"><div class="ofe-t"><i class="fas fa-tag"></i> Productos en oferta</div>
+    <div class="ofe-r"><span>Productos</span><b>${of.length}</b></div><div class="ofe-r"><span>Unidades</span><b>${fmtN(uni)}</b></div>
+    <div class="ofe-tot"><span>TOTAL OFERTAS</span><b>${fmt(tot)}</b></div></div>`;
 }
 function desgloseHtml(x, titulo = 'En precio final') {
   return `<div class="tot-box"><div class="ss mb2" style="font-weight:700;text-transform:uppercase;letter-spacing:.5px">${titulo}</div>${x.filas.map(f => `<div class="row"><span>${esc(f.l)}</span><b class="mono ${f.t === 'd' ? 'td' : ''}">${f.v < 0 ? '- ' + fmt(-f.v) : fmt(f.v)}</b></div>`).join('')}
