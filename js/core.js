@@ -3,7 +3,7 @@
 const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
 const SB_URL = LOCAL ? location.origin : 'https://ounzsqhxzdluqkcszkes.supabase.co';
 const SB_KEY = 'sb_publishable_g5SGDg6taIq-O8-skchu0w_Zk1Ze1_W';
-const ES_PRUEBA = true; // base de pruebas: muestra la banda amarilla
+const ES_PRUEBA = false; // true solo en una base de pruebas: muestra la banda amarilla
 const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'pb_panel_v2' } });
 
 let M = {};            // datos maestros (panel_maestros)
