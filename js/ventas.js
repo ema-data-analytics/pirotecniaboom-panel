@@ -236,6 +236,34 @@ function comprobanteTotalesPdf(d, ri) {
   if (ri) return desglosePdf(desgloseDesc({ items: d.items, total: neto, neto: true })).concat([['Neto', fmt(neto)], ['IVA', fmt(d.iva)], ['TOTAL', fmt(d.total), 1]]);
   return desglosePdf(desgloseDesc({ items: d.items, total: d.total })).concat([['TOTAL', fmt(d.total), 1]]);
 }
+// Totales del PDF (presupuesto y venta): lista sin ofertas → descuentos por línea → subtotal con descuentos → ofertas → total.
+// No recalcula precios: usa los importes de las líneas y cierra exacto con el total del comprobante.
+function totalesPdfOfertas(d, etiquetaTotal) {
+  const r2 = x => Math.round(x * 100) / 100, fm = v => (v < 0 ? '- ' : '') + fmt(Math.abs(v));
+  let lista = 0, conDesc = 0, ofer = 0; const ext = [];
+  for (const i of d.items || []) {
+    if (i.estado === 'anulado') continue;
+    const q = Number(i.cantidad), p = Number(i.precio_neto_unit), dl = Number(i.descuento_pct || 0) / 100, k = 1 + Number(i.iva_pct || 0) / 100;
+    if (/^CONC-/.test(i.codigo || '')) { ext.push([i.producto, r2(q * p * k)]); continue; }
+    if (i.es_oferta) { ofer += r2(q * p * (1 - dl) * k); continue; }
+    lista += r2(q * p * k); conDesc += r2(q * p * (1 - dl) * k);
+  }
+  const rec = Number(d.recargo_neto || 0), env = Number(d.envio_neto || 0);
+  if (rec) ext.push(['Recargo', r2(rec * 1.21)]); if (env) ext.push(['Envío', r2(env * 1.21)]);
+  lista = r2(lista); conDesc = r2(conDesc); ofer = r2(ofer);
+  const sumExt = r2(ext.reduce((a, e) => a + e[1], 0)), total = Number(d.total);
+  let dLin = r2(lista - conDesc), otros = r2(conDesc + ofer + sumExt - total);
+  if (Math.abs(otros) < 0.05) { dLin = r2(dLin + otros); otros = 0; } // redondeo de centavos
+  const sub = r2(lista - dLin - otros), filas = [['Subtotal de lista (sin descuentos)', fmt(lista)]];
+  if (dLin >= 0.01) filas.push(['Descuentos por línea', fm(-dLin), 0, [21, 128, 61]]);
+  if (otros >= 0.01) filas.push([Number(d.descuento_pct) > 0 && !Number(d.descuento_cliente_pct) ? 'Descuento general ' + fmtP(d.descuento_pct) : Number(d.descuento_cliente_pct) > 0 && !Number(d.descuento_pct) ? 'Descuento del cliente ' + fmtP(d.descuento_cliente_pct) : 'Descuento general', fm(-otros), 0, [21, 128, 61]]);
+  if (otros <= -0.01) filas.push(['Ajuste', fmt(-otros)]);
+  if (dLin >= 0.01 || Math.abs(otros) >= 0.01) filas.push(['Subtotal con descuentos', fmt(sub), 0, [20, 20, 20]]);
+  if (ofer >= 0.01) filas.push(['Productos en oferta (precio final)', '+ ' + fmt(ofer)]);
+  ext.forEach(e => filas.push([e[0], (e[1] < 0 ? '- ' : '+ ') + fmt(Math.abs(e[1]))]));
+  filas.push([etiquetaTotal, fmt(total), 1]);
+  return filas;
+}
 // Ítems de los comprobantes impresos: marca OFERTA y muestra la cantidad por display
 function pdfItems(items, ri) {
   return {
@@ -249,7 +277,7 @@ async function pdfComprobante(id) {
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     extra: { titulo: 'Condiciones', lineas: [d.condicion === 'contado' ? 'Contado' : 'Cuenta corriente', 'Lista: ' + d.lista, d.origen ? 'Origen: ' + d.origen.numero : '', d.factura_externa ? 'Factura ARCA: ' + d.factura_externa : '', d.pedido ? 'Pedido: ' + d.pedido : '', d.presupuesto ? 'Presupuesto: ' + d.presupuesto : ''] },
     ...pdfItems(d.items, ri),
-    totales: conTotalOfertas(comprobanteTotalesPdf(d, ri), d.items),
+    totales: d.tipo === 'VTA' && !ri ? totalesPdfOfertas(d, 'TOTAL DE LA VENTA') : comprobanteTotalesPdf(d, ri),
     notas: [d.motivo ? 'Motivo / nota: ' + d.motivo : '', d.tipo !== 'NC' && Number(d.saldo) > 0 ? 'Saldo pendiente: ' + fmt(d.saldo) : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero.replace(/\s+/g, '_'));
 }
@@ -328,7 +356,7 @@ async function presupuestoPdf(id) {
   const doc = pdfDocumento({ titulo: 'PRESUPUESTO', numero: d.numero + (d.version > 1 ? ' · v' + d.version : ''), fecha: fmtD(d.fecha), sub: (d.version > 1 ? 'Versión ' + d.version + ' · ' : '') + 'Válido hasta: ' + fmtD(d.valido_hasta),
     receptor: { titulo: 'Cliente', lineas: [d.cliente.nombre, d.cliente.documento, d.cliente.direccion, d.cliente.celular] },
     ...pdfItems(d.items, ri),
-    totales: conTotalOfertas(presupuestoTotales(d, ri), d.items),
+    totales: ri ? presupuestoTotales(d, ri) : totalesPdfOfertas(d, 'TOTAL DEL PRESUPUESTO'),
     notas: [d.nota || '', 'Presupuesto válido hasta el ' + fmtD(d.valido_hasta) + '. Precios sujetos a disponibilidad de stock.', (M.empresa || {}).whatsapp ? 'Consultas y pedidos por WhatsApp: ' + M.empresa.whatsapp : ''].filter(Boolean).join('\n') });
   pdfSave(doc, d.numero);
 }
