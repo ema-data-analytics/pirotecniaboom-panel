@@ -203,3 +203,14 @@ tr.fila-manual td{background:#fff8e1}
 .ofe-tot{border-top:1px solid #f0b4b4;margin-top:8px;padding-top:8px;color:#d10000;font-weight:800}
 .ofe-tot span{display:block;font-size:14px}
 .ofe-tot b{display:block;font-size:26px;line-height:1.2;white-space:nowrap}
+
+/* Descuento por línea predeterminado (arriba de la tabla de productos) */
+.dlp-box{background:#fff;border:1px solid var(--border);border-left:4px solid var(--vino);border-radius:8px;padding:10px 14px}
+.dlp-t{font-weight:800;color:var(--vino);text-transform:uppercase;font-size:13px;letter-spacing:.3px;margin-bottom:6px}
+.dlp-t i{color:var(--rojo);margin-right:4px}
+.dlp-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:4px}
+.dlp-in{display:flex;align-items:center;gap:6px}
+.dlp-in input{width:90px}
+.dlp-in span{font-weight:700;color:var(--dim)}
+.dlp-btn{background:var(--vino);color:#fff;border-color:var(--vino);margin-left:auto}.dlp-btn:hover{background:var(--vino2)}
+@media (max-width:640px){.dlp-btn{margin-left:0;width:100%}}
